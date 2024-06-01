@@ -8,8 +8,9 @@ import rolesRouters from "./routes/rolesRoutes.js";
 
 const app = express();
 const port = process.env.PORT;
-const DATABASE_URL = process.env.DATABASE_URL;
-console.log(DATABASE_URL);
+console.log("port", port);
+const DATABASE_URL = process.env.DATEBASE_URL;
+console.log("DB_URL", DATABASE_URL);
 
 // CORS Policy
 app.use(cors());
