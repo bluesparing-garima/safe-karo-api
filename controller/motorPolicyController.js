@@ -1,8 +1,20 @@
 import MotorPolicyModel from "../models/motorpolicy.js";
+import upload from "../middlewares/multerMiddleware.js";
 
 const createMotorPolicy = async (req, res) => {
   console.log("RECEIVED REQ", req);
   try {
+    upload.fields([
+      { name: 'rcFront', maxCount: 1 },
+      { name: 'currentPolicy', maxCount: 1 },
+      { name: 'rcBack', maxCount: 1 },
+      { name: 'previousPolicy', maxCount: 1 },
+      { name: 'survey', maxCount: 1 },
+      { name: 'puc', maxCount: 1 },
+      { name: 'fitness', maxCount: 1 },
+      { name: 'propsal', maxCount: 1 },
+      { name: 'other', maxCount: 1 },
+    ]);
     const {
       policyCategory,
       policyType,
@@ -34,10 +46,6 @@ const createMotorPolicy = async (req, res) => {
       finalPremium,
       paymentMode,
       madeBy,
-    } = req.body;
-
-    // Extract file paths from req.files object
-    const {
       rcFront,
       currentPolicy,
       rcBack,
@@ -47,7 +55,20 @@ const createMotorPolicy = async (req, res) => {
       fitness,
       propsal,
       other,
-    } = req.files;
+    } = req.body;
+
+    // Extract file paths from req.files object
+    // const {
+    //   rcFront,
+    //   currentPolicy,
+    //   rcBack,
+    //   previousPolicy,
+    //   survey,
+    //   puc,
+    //   fitness,
+    //   propsal,
+    //   other,
+    // } = req.files;
 
     // Create new motor policy instance
     const motorPolicy = new MotorPolicyModel({
