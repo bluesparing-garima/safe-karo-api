@@ -1,20 +1,22 @@
 import MotorPolicyModel from "../models/motorpolicy.js";
 import upload from "../middlewares/multerMiddleware.js";
 
-const createMotorPolicy = async (req, res) => {
-  console.log("RECEIVED REQ", req);
-  try {
-    upload.fields([
-      { name: 'rcFront', maxCount: 1 },
-      { name: 'currentPolicy', maxCount: 1 },
-      { name: 'rcBack', maxCount: 1 },
-      { name: 'previousPolicy', maxCount: 1 },
-      { name: 'survey', maxCount: 1 },
-      { name: 'puc', maxCount: 1 },
-      { name: 'fitness', maxCount: 1 },
-      { name: 'propsal', maxCount: 1 },
-      { name: 'other', maxCount: 1 },
-    ]);
+const createMotorPolicy = (req, res) => {
+  upload.fields([
+    { name: 'rcFront', maxCount: 1 },
+    { name: 'currentPolicy', maxCount: 1 },
+    { name: 'rcBack', maxCount: 1 },
+    { name: 'previousPolicy', maxCount: 1 },
+    { name: 'survey', maxCount: 1 },
+    { name: 'puc', maxCount: 1 },
+    { name: 'fitness', maxCount: 1 },
+    { name: 'propsal', maxCount: 1 },
+    { name: 'other', maxCount: 1 },
+  ])(req, res, async (err) => {
+    if (err) {
+      return res.status(400).json({ message: err.message });
+    }
+
     const {
       policyCategory,
       policyType,
@@ -46,32 +48,9 @@ const createMotorPolicy = async (req, res) => {
       finalPremium,
       paymentMode,
       madeBy,
-      rcFront,
-      currentPolicy,
-      rcBack,
-      previousPolicy,
-      survey,
-      puc,
-      fitness,
-      propsal,
-      other,
     } = req.body;
 
-    // Extract file paths from req.files object
-    // const {
-    //   rcFront,
-    //   currentPolicy,
-    //   rcBack,
-    //   previousPolicy,
-    //   survey,
-    //   puc,
-    //   fitness,
-    //   propsal,
-    //   other,
-    // } = req.files;
-
-    // Create new motor policy instance
-    const motorPolicy = new MotorPolicyModel({
+    const newPolicyData = {
       policyCategory,
       policyType,
       caseType,
@@ -102,23 +81,26 @@ const createMotorPolicy = async (req, res) => {
       finalPremium,
       paymentMode,
       madeBy,
-      rcFront: rcFront ? rcFront[0].path : "", 
-      currentPolicy: currentPolicy ? currentPolicy[0].path : "", 
-      rcBack: rcBack ? rcBack[0].path : "", 
-      previousPolicy: previousPolicy ? previousPolicy[0].path : "", 
-      survey: survey ? survey[0].path : "",  
-      puc: puc ? puc[0].path : "", 
-      fitness: fitness ? fitness[0].path : "", 
-      propsal: propsal ? propsal[0].path : "", 
-      other: other ? other[0].path : "", 
-    });
+      rcFront: req.files.rcFront ? req.files.rcFront[0].path : "",
+      currentPolicy: req.files.currentPolicy ? req.files.currentPolicy[0].path : "",
+      rcBack: req.files.rcBack ? req.files.rcBack[0].path : "",
+      previousPolicy: req.files.previousPolicy ? req.files.previousPolicy[0].path : "",
+      survey: req.files.survey ? req.files.survey[0].path : "",
+      puc: req.files.puc ? req.files.puc[0].path : "",
+      fitness: req.files.fitness ? req.files.fitness[0].path : "",
+      propsal: req.files.propsal ? req.files.propsal[0].path : "",
+      other: req.files.other ? req.files.other[0].path : ""
+    };
 
-    await motorPolicy.save();
-    res.status(201).json({ message: "Motor policy created successfully" });
-  } catch (error) {
-    console.error("Error creating motor policy:", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
+    try {
+      const newPolicy = new MotorPolicyModel(newPolicyData);
+      await newPolicy.save();
+      res.status(201).json({ message: "Motor policy created successfully", data: newPolicy });
+    } catch (error) {
+      console.error("Error creating motor policy:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
 };
 
-export default createMotorPolicy;
+export { createMotorPolicy };

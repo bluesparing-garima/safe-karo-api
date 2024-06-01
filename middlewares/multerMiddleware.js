@@ -1,16 +1,17 @@
 import multer from 'multer';
 import path from 'path';
 
-// Multer configuration for file uploads
+// Define storage options for multer
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../uploads'));
+    cb(null, 'uploads/'); // Ensure this directory exists
   },
   filename: (req, file, cb) => {
-    const fileName = file.originalname.toLowerCase().split(' ').join('-');
-    cb(null, `${fileName}-${Date.now()}${path.extname(file.originalname)}`);
+    cb(null, `${Date.now()}-${file.originalname}`);
   }
 });
+
+// Initialize multer with the storage options
 const upload = multer({ storage });
 
 export default upload;
