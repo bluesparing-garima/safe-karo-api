@@ -24,15 +24,15 @@ const createMotorPolicy = async (req, res) => {
       fuelType, RTO, seatCapacity, cc, registerDate, ncb, vehicleNumber, policyNumber,
       fullName, emailId, phoneNumber, mfgYear, tenure, issueDate, endDate, idv, od, tp,
       netPremium, finalPremium, paymentMode, madeBy,
-      rcFront: req.files['rcFront'][0].path,
-      rcBack: req.files['rcBack'][0].path,
-      previousPolicy: req.files['previousPolicy'][0].path,
-      survey: req.files['survey'][0].path,
-      puc: req.files['puc'][0].path,
-      fitness: req.files['fitness'][0].path,
-      proposal: req.files['proposal'][0].path,
-      currentPolicy: req.files['currentPolicy'][0].path,
-      other: req.files['other'][0].path
+      // rcFront: req.files['rcFront'][0].path,
+      // rcBack: req.files['rcBack'][0].path,
+      // previousPolicy: req.files['previousPolicy'][0].path,
+      // survey: req.files['survey'][0].path,
+      // puc: req.files['puc'][0].path,
+      // fitness: req.files['fitness'][0].path,
+      // proposal: req.files['proposal'][0].path,
+      // currentPolicy: req.files['currentPolicy'][0].path,
+      // other: req.files['other'][0].path
     });
 
     await newMotorPolicy.save();

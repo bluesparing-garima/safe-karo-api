@@ -32,17 +32,17 @@ const motorpolicySchema = new mongoose.Schema({
   finalPremium: { type: Number, require: true, trim: true },
   paymentMode: { type: String, require: true, trim: true },
   madeBy: { type: String, require: true, trim: true },
-  rcFront: { type: String, required: true, trim: true },
-  rcBack: { type: String, required: true, trim: true },
-  previousPolicy: { type: String, required: true, trim: true },
-  survey: { type: String, required: true, trim: true },
-  puc: { type: String, required: true, trim: true },
-  fitness: { type: String, required: true, trim: true },
-  propsal: { type: String, required: true, trim: true },
-  currentPolicy: { type: String, required: true, trim: true },
-  other: { type: String, required: true, trim: true },
+  // rcFront: { type: String, required: true, trim: true },
+  // rcBack: { type: String, required: true, trim: true },
+  // previousPolicy: { type: String, required: true, trim: true },
+  // survey: { type: String, required: true, trim: true },
+  // puc: { type: String, required: true, trim: true },
+  // fitness: { type: String, required: true, trim: true },
+  // propsal: { type: String, required: true, trim: true },
+  // currentPolicy: { type: String, required: true, trim: true },
+  // other: { type: String, required: true, trim: true },
   createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date }
+  updatedAt: { type: Date , default: null}
 });
 
 //Model

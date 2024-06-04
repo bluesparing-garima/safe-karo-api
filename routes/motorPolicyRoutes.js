@@ -14,6 +14,7 @@ router.post('/motorPolicy', upload.fields([
   { name: 'proposal', maxCount: 1 },
   { name: 'currentPolicy', maxCount: 1 },
   { name: 'other', maxCount: 1 }
-]), createMotorPolicy);
+])
+, createMotorPolicy);
 
 export default router;

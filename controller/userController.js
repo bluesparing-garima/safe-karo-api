@@ -1,7 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from "jsonwebtoken";
 import UserModel from "../models/user.js";
-// import nodemailer from 'nodemailer';
 
 const userRegistration = async (req, res) => {
     console.log("RECEIVED event: ", req);
@@ -19,15 +18,6 @@ const userRegistration = async (req, res) => {
         .status(400)
         .json({ status: "failed", message: "All fields are required" });
     }
-
-    // if (password !== password_confirmation) {
-    //   return res
-    //     .status(400)
-    //     .json({
-    //       status: "failed",
-    //       message: "Password and Confirm Password doesn't match",
-    //     });
-    // }
 
     const salt = await bcrypt.genSalt(10);
     console.log("salt", salt);
