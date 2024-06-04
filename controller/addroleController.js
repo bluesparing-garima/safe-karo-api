@@ -13,7 +13,7 @@ const createNewRole = async (req, res) => {
     }
 
     const newRoleName = new CreateRoleModel({
-        roleName,
+      roleName,
       createdBy
     });
     await newRoleName.save();
@@ -49,11 +49,11 @@ const getAllRoles = async (req, res) => {
 
 const updateRoles = async (req, res) => {
   try {
-    const { roleName } = req.params;
+    const { id } = req.params;
     const { updatedBy, ...updateData } = req.body;
 
     // Check if case type exists
-    const existingroleName = await CreateRoleModel.findOne({ roleName });
+    const existingroleName = await CreateRoleModel.findById(id);
     if (!existingroleName) {
       return res
         .status(404)
@@ -61,8 +61,8 @@ const updateRoles = async (req, res) => {
     }
 
     // Update the case type
-    const updatedRoleName = await CreateRoleModel.findOneAndUpdate(
-      { roleName },
+    const updatedRoleName = await CreateRoleModel.findByIdAndUpdate(
+      id,
       { $set: { ...updateData, updatedBy, updatedOn: new Date() } }, // Add updatedBy and updatedBy
       { new: true }
     );
@@ -79,12 +79,12 @@ const updateRoles = async (req, res) => {
   }
 };
 
-const deleteRoleByName = async (req, res) => {
+const deleteRoleById = async (req, res) => {
   try {
-    const { roleName } = req.params;
+    const { id } = req.params;
 
     // Check if case type exists
-    const existingRoleName = await CreateRoleModel.findOne({ roleName });
+    const existingRoleName = await CreateRoleModel.findById( id );
     if (!existingRoleName) {
       return res
         .status(404)
@@ -92,7 +92,7 @@ const deleteRoleByName = async (req, res) => {
     }
 
     // Delete the case type
-    await CreateRoleModel.findOneAndDelete({ roleName });
+    await CreateRoleModel.findByIdAndDelete(id);
     res
       .status(200)
       .json({ status: "success", message: "Role deleted successfully" });
@@ -104,4 +104,4 @@ const deleteRoleByName = async (req, res) => {
   }
 };
 
-export { createNewRole, getAllRoles, updateRoles, deleteRoleByName };
+export { createNewRole, getAllRoles, updateRoles, deleteRoleById };

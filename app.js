@@ -28,7 +28,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api/user", userRoutes);
 
 //assignee roles Routes
-app.use("/api/assignee", assigneeRolesRouters);
+app.use("/api/user-roles", assigneeRolesRouters);
 
 // motor policy Routes
 app.use("/api/policy/motor", motorPolicyRoutes);
@@ -40,7 +40,7 @@ app.use("/api/policy-type", policyTypeRoutes);
 app.use("/api/case-type", caseTypeRoutes);
 
 //add Roles
-app.use("/api/role", addRolesRoutes);
+app.use("/api/roles", addRolesRoutes);
 
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);

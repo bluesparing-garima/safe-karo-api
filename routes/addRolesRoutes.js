@@ -1,20 +1,20 @@
 import expres from "express";
 import {
-    createNewRole, getAllRoles, updateRoles, deleteRoleByName
+    createNewRole, getAllRoles, updateRoles, deleteRoleById
 } from "../controller/addroleController.js";
 
 const router = expres.Router();
 
 // Create a new Role
-router.post('/create/new-role', createNewRole);
+router.post('/', createNewRole);
 
 // Get all Role  or filter by Role name
-router.get('/get/all-roles', getAllRoles);
+router.get('/', getAllRoles);
 
 // Update a Role type by Name
-router.post('/update/:roleName', updateRoles);
+router.post('/:id', updateRoles);
 
 // Delete a Role type by Name
-router.delete('/delete/role/:roleName', deleteRoleByName);
+router.delete('/:id', deleteRoleById);
 
 export default router;
