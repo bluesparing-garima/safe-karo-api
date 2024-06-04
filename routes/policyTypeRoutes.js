@@ -3,25 +3,25 @@ import {
   createPolicyType,
   getAllPolicyTypes,
   getPolicyTypeByName,
-  updatePolicyTypeByName,
-  deletePolicyTypeByName,
+  updatePolicyTypeById,
+  deletePolicyTypeById
 } from "../controller/policyTypeController.js";
 
 const router = expres.Router();
 
 // Create a new policy type
-router.post('/policy-types', createPolicyType);
+router.post('/', createPolicyType);
 
 // Get all policy types or filter by policy name
-router.get('/policy-types/get-all', getAllPolicyTypes);
+router.get('/', getAllPolicyTypes);
 
 // Get a policy type by Name
-router.get('/policy-types/get-with-name/:policyType', getPolicyTypeByName);
+router.get('/:policyType', getPolicyTypeByName);
 
 // Update a policy type by Name
-router.post('/policy-types/update/:policyType', updatePolicyTypeByName);
+router.post('/:id', updatePolicyTypeById);
 
 // Delete a policy type by Name
-router.delete('/policy-types/delete/:policyType', deletePolicyTypeByName);
+router.delete('/:id', deletePolicyTypeById);
 
 export default router;

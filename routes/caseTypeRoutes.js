@@ -1,23 +1,23 @@
 import expres from "express";
 import {
-    createCaseType, deleteCaseTypeByName, updateCaseTypeByName, getCaseTypeByName, getAllCaseTypes
+    createCaseType, deleteCaseTypeById, updateCaseTypeById, getCaseTypeByName, getAllCaseTypes
 } from "../controller/caseTypecontroller.js";
 
 const router = expres.Router();
 
 // Create a new case type
-router.post('/case-types', createCaseType);
+router.post('/', createCaseType);
 
 // Get all case types or filter by case name
-router.get('/case-types/get-all', getAllCaseTypes);
+router.get('/', getAllCaseTypes);
 
 // Get a case type by Name
-router.get('/case-types/get-with-name/:caseType', getCaseTypeByName);
+router.get('/:caseType', getCaseTypeByName);
 
 // Update a case type by Name
-router.post('/case-types/update/:caseType', updateCaseTypeByName);
+router.post('/:id', updateCaseTypeById);
 
 // Delete a case type by Name
-router.delete('/case-types/delete/:caseType', deleteCaseTypeByName);
+router.delete('/:id', deleteCaseTypeById);
 
 export default router;

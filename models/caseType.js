@@ -7,10 +7,6 @@ const caseTypeSchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
-    description: {
-      type: String,
-      required: true,
-    },
     createdBy: {
       type: String,
       required: true,
@@ -19,10 +15,17 @@ const caseTypeSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    createdOn: {
+      type: Date,
+      default: Date.now,
+    },
+  
+    updatedOn: {
+      type: Date,
+      default: null,
+    },
   },
-  {
-    timestamps: Date.now, // Automatically manages createdAt and updatedAt fields
-  }
+
 );
 
 const CaseTypeModel = mongoose.model('CaseType', caseTypeSchema);

@@ -33,11 +33,11 @@ app.use("/api/assignee", assigneeRolesRouters);
 // motor policy Routes
 app.use("/api/policy/motor", motorPolicyRoutes);
 
-//create new POlicy Routes
-app.use("/api/create/policy", policyTypeRoutes);
+//create new Policy Routes
+app.use("/api/policy-type", policyTypeRoutes);
 
 //create new case type Routes
-app.use("/api/caseType", caseTypeRoutes);
+app.use("/api/case-type", caseTypeRoutes);
 
 //add Roles
 app.use("/api/role", addRolesRoutes);

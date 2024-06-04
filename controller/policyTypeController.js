@@ -54,22 +54,22 @@ const getPolicyTypeByName  = async (req, res) => {
   }
 };
 
-const updatePolicyTypeByName = async (req, res) => {
+const updatePolicyTypeById = async (req, res) => {
   try {
-    const { policyType } = req.params;
-    const updateData = req.body;
+    const { id } = req.params;
+    const { updatedBy, ...updateData } = req.body;
 
     // Check if policy type exists
-    const existingPolicyType = await PolicyTypeModel.findOne({policyType});
+    const existingPolicyType = await PolicyTypeModel.findById(id);
     if (!existingPolicyType) {
       return res.status(404).json({ status: "failed", message: "Policy type not found" });
     }
 
     // Update the policy type
-    const updatedPolicyType = await PolicyTypeModel.findOneAndUpdate(
-        {policyType},
-        { $set: updateData},
-        { new: true}
+    const updatedPolicyType = await PolicyTypeModel.findByIdAndUpdate(
+        id,
+        { $set: { ...updateData, updatedBy, updatedOn: new Date() }},
+        { new: true, runValidators: true}
     );
     res.status(200).json({
       status: "success",
@@ -82,18 +82,18 @@ const updatePolicyTypeByName = async (req, res) => {
   }
 };
 
-const deletePolicyTypeByName = async (req, res) => {
+const deletePolicyTypeById = async (req, res) => {
   try {
-    const { policyType } = req.params;
+    const { id } = req.params;
 
     // Check if policy type exists
-    const existingPolicyType = await PolicyTypeModel.findOne({policyType});
+    const existingPolicyType = await PolicyTypeModel.findById( id );
     if (!existingPolicyType) {
       return res.status(404).json({ status: "failed", message: "Policy type not found" });
     }
 
     // Delete the policy type
-    await PolicyTypeModel.findOneAndDelete({policyType});
+    await PolicyTypeModel.findByIdAndDelete(id);
     res.status(200).json({ status: "success", message: "Policy type deleted successfully" });
   } catch (error) {
     console.error(error);
@@ -101,4 +101,4 @@ const deletePolicyTypeByName = async (req, res) => {
   }
 };
 
-export { createPolicyType, getAllPolicyTypes, getPolicyTypeByName, updatePolicyTypeByName, deletePolicyTypeByName };
+export { createPolicyType, getAllPolicyTypes, getPolicyTypeByName, updatePolicyTypeById, deletePolicyTypeById };

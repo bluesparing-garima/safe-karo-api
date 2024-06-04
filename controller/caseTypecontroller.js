@@ -2,7 +2,7 @@ import CaseTypeModel from "../models/caseType.js";
 
 const createCaseType = async (req, res) => {
   try {
-    const { caseType, createdBy, description } = req.body;
+    const { caseType, createdBy } = req.body;
 
     // Check if case type already exists
     const existingCaseType = await CaseTypeModel.findOne({ caseType });
@@ -14,8 +14,7 @@ const createCaseType = async (req, res) => {
 
     const newCaseType = new CaseTypeModel({
       caseType,
-      createdBy,
-      description
+      createdBy
     });
     await newCaseType.save();
     res.status(200).json({
@@ -65,13 +64,13 @@ const getCaseTypeByName = async (req, res) => {
   }
 };
 
-const updateCaseTypeByName = async (req, res) => {
+const updateCaseTypeById = async (req, res) => {
   try {
-    const { caseType } = req.params;
+    const { id } = req.params;
     const { updatedBy, ...updateData } = req.body;
 
     // Check if case type exists
-    const existingCaseType = await CaseTypeModel.findOne({ caseType });
+    const existingCaseType = await CaseTypeModel.findById(id);
     if (!existingCaseType) {
       return res
         .status(404)
@@ -79,30 +78,33 @@ const updateCaseTypeByName = async (req, res) => {
     }
 
     // Update the case type
-    const updatedCaseType = await CaseTypeModel.findOneAndUpdate(
-      { caseType },
-      { $set: { ...updateData, updatedBy, updatedAt: new Date() } }, // Add updatedBy and updatedAt
-      { new: true }
+    const updatedCaseType = await CaseTypeModel.findByIdAndUpdate(
+      id,
+      { $set: { ...updateData, updatedBy, updatedOn: new Date() } }, // Add updatedBy and updatedAt
+      { new: true, runValidators: true }  // Return the updated document and run validation
     );
+
     res.status(200).json({
       status: "success",
       data: updatedCaseType,
-      message: "Case type updated successfully",
+      message: `Case type ${id} updated successfully`,
     });
   } catch (error) {
     console.error(error);
-    res
-      .status(500)
-      .json({ status: "failed", message: "Unable to update case type" });
+    res.status(500).json({
+      status: "failed",
+      message: "Unable to update case type",
+    });
   }
 };
 
-const deleteCaseTypeByName = async (req, res) => {
+
+const deleteCaseTypeById = async (req, res) => {
   try {
-    const { caseType } = req.params;
+    const { id } = req.params;
 
     // Check if case type exists
-    const existingCaseType = await CaseTypeModel.findOne({ caseType });
+    const existingCaseType = await CaseTypeModel.findById(id);
     if (!existingCaseType) {
       return res
         .status(404)
@@ -110,7 +112,7 @@ const deleteCaseTypeByName = async (req, res) => {
     }
 
     // Delete the case type
-    await CaseTypeModel.findOneAndDelete({ caseType });
+    await CaseTypeModel.findByIdAndDelete(id);
     res
       .status(200)
       .json({ status: "success", message: "Case type deleted successfully" });
@@ -122,4 +124,5 @@ const deleteCaseTypeByName = async (req, res) => {
   }
 };
 
-export { createCaseType, deleteCaseTypeByName, updateCaseTypeByName, getCaseTypeByName, getAllCaseTypes };
+
+export { createCaseType, deleteCaseTypeById, updateCaseTypeById, getCaseTypeByName, getAllCaseTypes };
