@@ -6,16 +6,16 @@ import {
   getUsersByRole,
   getAllUser,
   updateUserByEmail
-} from "../controller/rolesController.js";
+} from "../controller/assigneeRolesController.js";
 
 const router = express.Router();
 
-router.post('/createRoles', createRoles);
+router.post('/new/roles', createRoles);
 router.get("/user/:email", getUserRoles);
 router.get("/getalluser", getAllUser);
-router.get("/getalluserbyroles", getUsersByRole);
-router.delete("/delete/user/:email", deleteUserByEmail);
-router.post("/update/user/:email", updateUserByEmail);
+router.get("/getall/user/with-role-name", getUsersByRole);
+router.delete("/user/delete/:email", deleteUserByEmail);
+router.post("/update/user/role/:email", updateUserByEmail);
 
 export default router;
 

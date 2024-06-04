@@ -4,7 +4,7 @@ import express from "express";
 import cors from "cors";
 import connectDB from "./config/connectdb.js";
 import userRoutes from "./routes/userRoutes.js";
-import rolesRouters from "./routes/rolesRoutes.js";
+import assigneeRolesRouters from "./routes/assigneeRolesRoutes.js";
 import motorPolicyRoutes from "./routes/motorPolicyRoutes.js";
 import policyTypeRoutes from "./routes/policyTypeRoutes.js";
 import caseTypeRoutes from "./routes/caseTypeRoutes.js";
@@ -27,14 +27,14 @@ app.use(express.urlencoded({ extended: true }));
 // Load Routes
 app.use("/api/user", userRoutes);
 
-// roles Routes
-app.use("/api/roles", rolesRouters);
+//assignee roles Routes
+app.use("/api/assignee", assigneeRolesRouters);
 
 // motor policy Routes
 app.use("/api/policy/motor", motorPolicyRoutes);
 
 //create new POlicy Routes
-app.use("/api/create/policy", policyTypeRoutes)
+app.use("/api/create/policy", policyTypeRoutes);
 
 //create new case type Routes
 app.use("/api/caseType", caseTypeRoutes);

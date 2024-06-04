@@ -17,18 +17,18 @@ const roleSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  created_By: {
+  createdBy: {
     type: String,
     required: true,
   },
-  created_At: {
-    type: Date, default: Date.now()
+  createdOn: {
+    type: Date, default: Date.now
   },
   phoneNumber: {
     type: String,
     required: true
   },
-  assigned_role: {
+  assignedRole: {
     type: String,
     required: true
   },
@@ -39,6 +39,6 @@ const roleSchema = new mongoose.Schema({
 });
 
 //Model
-const RoleModel = mongoose.model('roles', roleSchema);
+const RoleModel = mongoose.model('roleassigneed', roleSchema);
 
 export default RoleModel;

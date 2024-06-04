@@ -1,10 +1,10 @@
-import RoleModel from "../models/role.js";
+import RoleModel from "../models/assigneeRole.js";
 import { v4 as uuidv4 } from "uuid";
 
 const createRoles = async (req, res) => {
   console.log("RECIVE REQ", req);
   try {
-    const { name, description, created_By, phoneNumber, assigned_role, email } =
+    const { name, description, createdBy, phoneNumber, assignedRole, email } =
       req.body;
     const uuid = uuidv4();
 
@@ -12,9 +12,9 @@ const createRoles = async (req, res) => {
       uuid,
       name,
       description,
-      created_By,
+      createdBy,
       phoneNumber,
-      assigned_role,
+      assignedRole,
       email,
     });
     await newRole.save();
@@ -29,7 +29,7 @@ const createRoles = async (req, res) => {
     console.error(error);
     res
       .status(500)
-      .json({ status: "failed", message: "Unable to user with roles" });
+      .json({ status: "failed", message: "Unable create user with this roles as user with same role already existes in db...!!!" });
   }
 };
 
@@ -86,14 +86,14 @@ const getAllUser = async (req, res) => {
 const getUsersByRole = async (req, res) => {
   console.log("RECIVE REQ", req);
   try {
-    const { role } = req.body;
+    const { roleName } = req.body;
     // Query the roles collection to find users with the specified role
-    const users = await RoleModel.find({ assigned_role: role });
+    const users = await RoleModel.find({ assignedRole: roleName });
 
     if (!users || users.length === 0) {
       return res.status(404).json({
         status: "failed",
-        message: `No users found with role ${role}`,
+        message: `No users found with role ${roleName}`,
       });
     }
     // If users found, send them as a response
@@ -146,7 +146,7 @@ const updateUserByEmail = async (req, res) => {
   try {
         const { email } = req.params;
         const updateData = req.body;
-    // const updateValue = { [key]: value};
+
     const updatedUser = await RoleModel.findOneAndUpdate(
       {email},
       { $set: updateData},
