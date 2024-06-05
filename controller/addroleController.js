@@ -9,7 +9,7 @@ const createNewRole = async (req, res) => {
     if (existingRole) {
       return res
         .status(400)
-        .json({ status: "failed", message: "Case type already exists" });
+        .json({ status: "failed", message: "rolo type already exists" });
     }
 
     const newRoleName = new CreateRoleModel({
@@ -46,6 +46,29 @@ const getAllRoles = async (req, res) => {
   }
 };
 
+const getRolesById = async (req, res) => {
+  try {
+    const { id } = req.params;
+        // Check if role type exists
+        const existingRole = await CreateRoleModel.findById(id);
+        if (!existingRole) {
+          return res
+            .status(404)
+            .json({ status: "failed", message: "role type not found" });
+        }
+        res.status(200).json({
+          status: "success",
+          data: existingRole,
+          message: "Success! Here are all your role with ID",
+        });
+
+  } catch (error) {
+     console.error(error);
+    res
+      .status(500)
+      .json({ status: "failed", message: "Unable to retrieve roles" });
+  }
+}
 
 const updateRoles = async (req, res) => {
   try {
@@ -104,4 +127,4 @@ const deleteRoleById = async (req, res) => {
   }
 };
 
-export { createNewRole, getAllRoles, updateRoles, deleteRoleById };
+export { createNewRole, getAllRoles, updateRoles, deleteRoleById, getRolesById };

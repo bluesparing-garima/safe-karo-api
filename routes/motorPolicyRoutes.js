@@ -4,7 +4,7 @@ import { createMotorPolicy } from '../controller/motorPolicyController.js';
 
 const router = express.Router();
 
-router.post('/motorPolicy', upload.fields([
+router.post('/', upload.fields([
   { name: 'rcFront', maxCount: 1 },
   { name: 'rcBack', maxCount: 1 },
   { name: 'previousPolicy', maxCount: 1 },
