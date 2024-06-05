@@ -1,39 +1,23 @@
+// multerMiddleware.js
 import multer from 'multer';
 import path from 'path';
-const storage = multer.diskStorage({
-  destination:function(req, file, cb){
-      if(file.mimetype === 'image/jpeg' 
-      || file.mimetype === 'image/png'){
-          cb(null,path.join(__dirname,'../public/image'));
-      }
-      else{
-          cb(null,path.join(__dirname,'../public/document'));
-      }
-  },
-  filename:function(req,file,cb){
-      const name = Date.now()+'-'+file.originalname;
-      cb(null,name);
-  }
-});
+import fs from 'fs';
 
-const fileFilter = (req,file,cb) => {
-  if (file.fieldname === "image") {
-      (file.mimetype === 'image/jpeg' 
-       || file.mimetype === 'image/png')
-      ? cb(null,true)
-      : cb(null,false);
-  }
-  else if(file.fieldname === "document"){
-      (file.mimetype === 'application/msword' 
-      || file.mimetype === 'application/pdf')
-      ? cb(null,true)
-      : cb(null,false);
-  }
+// Ensure the uploads directory exists
+const uploadsDir = 'uploads';
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-const upload = multer({
-  storage:storage,
-  fileFilter:fileFilter
+const storage = multer.diskStorage({
+  destination: function(req, file, cb) {
+    cb(null, uploadsDir); // Destination folder for file uploads
+  },
+  filename: function(req, file, cb) {
+    cb(null, `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`); // Unique filename
+  }
 });
+
+const upload = multer({ storage: storage });
 
 export default upload;

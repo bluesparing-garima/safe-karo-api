@@ -8,7 +8,7 @@ import assigneeRolesRouters from "./routes/assigneeRolesRoutes.js";
 import motorPolicyRoutes from "./routes/motorPolicyRoutes.js";
 import policyTypeRoutes from "./routes/policyTypeRoutes.js";
 import caseTypeRoutes from "./routes/caseTypeRoutes.js";
-import addRolesRoutes from "./routes/addRolesRoutes.js"
+import addRolesRoutes from "./routes/addRolesRoutes.js";
 
 const app = express();
 const port = process.env.PORT;
