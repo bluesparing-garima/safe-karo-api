@@ -24,9 +24,12 @@ const createRoleSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
-  },
 
-    
+    isActive: {
+      type: Boolean,
+      default: true
+    }
+  },
 );
 
 const CreateRoleModel = mongoose.model("newRoles", createRoleSchema);

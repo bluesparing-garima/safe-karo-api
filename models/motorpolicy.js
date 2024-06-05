@@ -43,8 +43,9 @@ const motorpolicySchema = new mongoose.Schema({
   propsal: { type: String, required: true, trim: true },
   currentPolicy: { type: String, required: true, trim: true },
   other: { type: String, required: true, trim: true },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date , default: null}
+  createdOn: { type: Date, default: Date.now },
+  updatedOn: { type: Date , default: null},
+  updatedBy: { type: String, default: null}
 });
 
 //Model
