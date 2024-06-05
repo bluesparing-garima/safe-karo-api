@@ -13,7 +13,7 @@ const createNewRole = async (req, res) => {
     }
 
     const newRoleName = new CreateRoleModel({
-      roleName,
+      roleName, 
       createdBy
     });
     await newRoleName.save();
