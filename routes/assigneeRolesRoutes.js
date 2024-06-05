@@ -11,11 +11,11 @@ import {
 const router = express.Router();
 
 router.post('/', createRoles);
-router.get("/:id", getUserRoles);
+router.get("/:email", getUserRoles);
 router.get("/", getAllUser);
-router.get("/:rolename", getUsersByRole);
-router.delete("/:id", deleteUserByEmail);
-router.post("/:id", updateUserByEmail);
+router.get("/all/:roleName", getUsersByRole);
+router.delete("/:email", deleteUserByEmail);
+router.post("/:email", updateUserByEmail);
 
 export default router;
 
