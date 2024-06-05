@@ -8,20 +8,6 @@ const userSchema = new mongoose.Schema({
   phoneNumber: { type: String, require: true, trim: true },
   createdOn: { type: Date, default: Date.now },
   lastLogin: { type: Date, default: Date.now },
-  // profile: {
-  //   firstName: { type: String },
-  //   lastName: { type: String },
-  //   address: { type: String },
-  //   phoneNumber: {type: String},
-  //   pancardImage: {type: String},
-  //   aadharCardImage: { type: String},
-  //   photo: { type: String},
-  //   bankDetails: {
-  //     bankName: { type: String},
-  //     accountNumber: { type: String},
-  //     ifscCode: {type: String}   
-  //   }
-  // },
 });
 
 //Model

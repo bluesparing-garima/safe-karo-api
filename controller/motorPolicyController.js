@@ -1,26 +1,17 @@
-import MotorPolicyModel from "../models/motorpolicy.js";
-import upload from "../middlewares/multerMiddleware.js";
+// controllers/motorPolicyController.js
+import MotorPolicyModel from "../models/motorPolicy.js";
+import { v4 as uuidv4 } from "uuid";
 
 const createMotorPolicy = async (req, res) => {
-  console.log("RECEIVED REQ", req);
+  console.log("REQUEST BODY", req.body);
+  console.log("REQUEST FILE", req.files);
   try {
-    upload.fields([
-      { name: 'rcFront', maxCount: 1 },
-      { name: 'currentPolicy', maxCount: 1 },
-      { name: 'rcBack', maxCount: 1 },
-      { name: 'previousPolicy', maxCount: 1 },
-      { name: 'survey', maxCount: 1 },
-      { name: 'puc', maxCount: 1 },
-      { name: 'fitness', maxCount: 1 },
-      { name: 'propsal', maxCount: 1 },
-      { name: 'other', maxCount: 1 },
-    ]);
     const {
       policyCategory,
       policyType,
       caseType,
       product,
-      insureanceComapny,
+      insuranceCompany,
       broker,
       make,
       model,
@@ -30,7 +21,7 @@ const createMotorPolicy = async (req, res) => {
       cc,
       registerDate,
       ncb,
-      vechileNumber,
+      vehicleNumber,
       policyNumber,
       fullName,
       emailId,
@@ -46,37 +37,26 @@ const createMotorPolicy = async (req, res) => {
       finalPremium,
       paymentMode,
       madeBy,
-      rcFront,
-      currentPolicy,
-      rcBack,
-      previousPolicy,
-      survey,
-      puc,
-      fitness,
-      propsal,
-      other,
     } = req.body;
 
-    // Extract file paths from req.files object
-    // const {
-    //   rcFront,
-    //   currentPolicy,
-    //   rcBack,
-    //   previousPolicy,
-    //   survey,
-    //   puc,
-    //   fitness,
-    //   propsal,
-    //   other,
-    // } = req.files;
+    const files = req.files;
+    const filePaths = {};
 
-    // Create new motor policy instance
-    const motorPolicy = new MotorPolicyModel({
+    if (files) {
+      for (const key in files) {
+        if (files.hasOwnProperty(key)) {
+          filePaths[key] = files[key][0].path;
+        }
+      }
+    }
+
+    const newMotorPolicy = new MotorPolicyModel({
+      uuid: uuidv4(),
       policyCategory,
       policyType,
       caseType,
       product,
-      insureanceComapny,
+      insuranceCompany,
       broker,
       make,
       model,
@@ -86,7 +66,7 @@ const createMotorPolicy = async (req, res) => {
       cc,
       registerDate,
       ncb,
-      vechileNumber,
+      vehicleNumber,
       policyNumber,
       fullName,
       emailId,
@@ -102,23 +82,24 @@ const createMotorPolicy = async (req, res) => {
       finalPremium,
       paymentMode,
       madeBy,
-      rcFront: rcFront ? rcFront[0].path : "", 
-      currentPolicy: currentPolicy ? currentPolicy[0].path : "", 
-      rcBack: rcBack ? rcBack[0].path : "", 
-      previousPolicy: previousPolicy ? previousPolicy[0].path : "", 
-      survey: survey ? survey[0].path : "",  
-      puc: puc ? puc[0].path : "", 
-      fitness: fitness ? fitness[0].path : "", 
-      propsal: propsal ? propsal[0].path : "", 
-      other: other ? other[0].path : "", 
+      ...filePaths,
     });
 
-    await motorPolicy.save();
-    res.status(201).json({ message: "Motor policy created successfully" });
+    await newMotorPolicy.save();
+
+    res.status(201).json({
+      status: "success",
+      data: newMotorPolicy,
+      message: "Motor policy created successfully",
+    });
   } catch (error) {
-    console.error("Error creating motor policy:", error);
-    res.status(500).json({ error: "Internal server error" });
+    console.error(error);
+    res.status(500).json({
+      status: "failed",
+      message: "Unable to create motor policy",
+      error: error.message,
+    });
   }
 };
 
-export default createMotorPolicy;
+export { createMotorPolicy };
