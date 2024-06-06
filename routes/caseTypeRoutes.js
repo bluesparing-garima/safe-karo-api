@@ -1,7 +1,7 @@
 import expres from "express";
 import {
     createCaseType, deleteCaseTypeById, updateCaseTypeById, getCaseTypeByName, getAllCaseTypes
-} from "../controller/caseTypecontroller.js";
+} from "../controller/adminController/caseTypecontroller.js";
 
 const router = expres.Router();
 

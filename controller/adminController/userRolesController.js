@@ -1,4 +1,4 @@
-import RoleModel from "../models/assigneeRole.js";
+import RoleModel from "../../models/userRole.js";
 import { v4 as uuidv4 } from "uuid";
 
 // Create a new role

@@ -1,7 +1,7 @@
 import expres from "express";
 import {
     createNewRole, getAllRoles, updateRoles, deleteRoleById, getRolesById
-} from "../controller/addroleController.js";
+} from "../controller/adminController/roleController.js";
 
 const router = expres.Router();
 

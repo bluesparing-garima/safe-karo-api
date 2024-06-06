@@ -6,7 +6,7 @@ import {
   getUsersByRole,
   getAllUser,
   updateUserByEmail
-} from "../controller/assigneeRolesController.js";
+} from "../controller/adminController/userRolesController.js";
 
 const router = express.Router();
 

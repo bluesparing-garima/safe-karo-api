@@ -1,6 +1,7 @@
-import CaseTypeModel from "../models/caseType.js";
+import CaseTypeModel from "../../models/caseType.js";
 
 const createCaseType = async (req, res) => {
+  console.log("REVIVED REQ", req.body);
   try {
     const { caseType, createdBy } = req.body;
 
