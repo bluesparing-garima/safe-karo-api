@@ -5,7 +5,7 @@ import {
   getPolicyTypeByName,
   updatePolicyTypeById,
   deletePolicyTypeById
-} from "../controller/policyTypeController.js";
+} from "../controller/adminController/policyTypeController.js";
 
 const router = expres.Router();
 

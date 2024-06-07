@@ -5,7 +5,6 @@ const caseTypeSchema = new mongoose.Schema(
     caseType: {
       type: String,
       required: true,
-      unique: true,
     },
     createdBy: {
       type: String,
@@ -19,7 +18,6 @@ const caseTypeSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
-  
     updatedOn: {
       type: Date,
       default: null,
