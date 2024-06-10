@@ -1,13 +1,12 @@
-// routes/motorPolicyRoutes.js
 import express from "express";
-import uploadMiddleware from "../middlewares/uploadMiddleware .js";
+import uploadMiddleware from "../middlewares/uploadMiddleware.js";
 import {
   createMotorPolicy,
   getMotorPolicies,
   // deleteMotorPolicyById,
   // getMotorPolicyById,
   // updateMotorPolicyById,
-} from "../controller/dasboardController/motorPolicyController.js";
+} from "../controller/policyController/motorPolicyController.js";
 
 const router = express.Router();
 
