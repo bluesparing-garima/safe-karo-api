@@ -1,20 +1,20 @@
-import express from 'express';
-import upload from '../middlewares/multer.js';
-import { createMotorPolicy } from '../controller/motorPolicyController.js';
+// routes/motorPolicyRoutes.js
+import express from "express";
+import uploadMiddleware from "../middlewares/uploadMiddleware .js";
+import {
+  createMotorPolicy,
+  getMotorPolicies,
+  // deleteMotorPolicyById,
+  // getMotorPolicyById,
+  // updateMotorPolicyById,
+} from "../controller/dasboardController/motorPolicyController.js";
 
 const router = express.Router();
 
-router.post('/', upload.fields([
-  { name: 'rcFront', maxCount: 1 },
-  { name: 'rcBack', maxCount: 1 },
-  { name: 'previousPolicy', maxCount: 1 },
-  { name: 'survey', maxCount: 1 },
-  { name: 'puc', maxCount: 1 },
-  { name: 'fitness', maxCount: 1 },
-  { name: 'proposal', maxCount: 1 },
-  { name: 'currentPolicy', maxCount: 1 },
-  { name: 'other', maxCount: 1 }
-])
-, createMotorPolicy);
+router.post("/", uploadMiddleware, createMotorPolicy);
+router.get("/", getMotorPolicies);
+// router.delete("/:id", deleteMotorPolicyById);
+// router.get("/:id", getMotorPolicyById);
+// router.post("/:id", uploadMiddleware, updateMotorPolicyById);
 
 export default router;
