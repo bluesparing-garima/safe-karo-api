@@ -15,7 +15,7 @@ router.get("/:email", getUserRoles);
 router.get("/", getAllUser);
 router.get("/all/:roleName", getUsersByRole);
 router.delete("/:email", deleteUserByEmail);
-router.post("/:email", updateUserByEmail);
+router.put("/:email", updateUserByEmail);
 
 export default router;
 

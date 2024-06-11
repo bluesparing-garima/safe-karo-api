@@ -39,6 +39,26 @@ const getAllPolicyTypes = async (req, res) => {
     res.status(500).json({ status: "failed", message: "Unable to retrieve policy types" });
   }
 };
+// Get case type by ID
+const getPolicyTypeById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if case type exists
+    const existingPolicyType = await PolicyTypeModel.findById(id);
+    if (!existingPolicyType) {
+      return res.status(404).json({ status: "failed", message: "Case type not found" });
+    }
+    res.status(200).json({
+      status: "success",
+      data: existingPolicyType,
+      message: "Success! Here is the case type with ID",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ status: "failed", message: "Unable to retrieve case type" });
+  }
+};
 
 const getPolicyTypeByName  = async (req, res) => {
   try {
@@ -79,7 +99,6 @@ const getPolicyTypeById = async (req, res) => {
     res.status(500).json({ status: "failed", message: "Unable to retrieve policy type" });
   }
 };
-
 
 const updatePolicyType = async (req, res) => {
   try {
@@ -128,4 +147,5 @@ const deletePolicyType = async (req, res) => {
   }
 };
 
-export { createPolicyType, getAllPolicyTypes, getPolicyTypeByName, getPolicyTypeById,updatePolicyType, deletePolicyType };
+export { createPolicyType, getAllPolicyTypes, getPolicyTypeById,getPolicyTypeByName, updatePolicyType, deletePolicyType };
+
