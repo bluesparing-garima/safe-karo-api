@@ -1,77 +1,97 @@
 import MotorPolicyModel from "../../models/motorPolicy.js";
 
 // Create Motor Policy
-// Create Motor Policy
 export const createMotorPolicy = async (req, res) => {
   console.log("REQUEST BODY", req.body);
 
+  // Properly destructure req.body directly
   const {
     policyType,
     caseType,
-    policyCategory: category,
-    insuranceCompany: companyName,
-    broker,
-    make,
-    model,
-    fuelType,
-    seatCapacity: seatingCapacity,
-    ncb,
-    vehicleNumber,
-    fullName,
-    emailId,
-    phoneNumber,
-    mfgYear: mgfYear,
-    tenure,
-    cc,
-    idv,
-    od,
-    tp,
-    netPremium,
-    finalPremium,
-    paymentMode,
-    RTO: rto,
-    documents,
-  } = req.body;
-
-  const formData = {
-    policyType,
-    caseType,
+    policyCategory,
     category,
+    subCategory,
     companyName,
     broker,
     make,
     model,
     fuelType,
-    seatingCapacity,
-    ncb,
+    rto,
     vehicleNumber,
+    seatingCapacity,
+    cc,
+    ncb,
+    policyNumber,
     fullName,
     emailId,
-    phoneNumber,
-    mgfYear,
+    iphoneNumber,
+    mfgYear,
     tenure,
-    cc,
+    registrationDate,
+    endDate,
+    issueDate,
     idv,
     od,
     tp,
     netPremium,
     finalPremium,
     paymentMode,
+    policyCreatedBy,
+    documents
+  } = req.body;
+
+  // Create the formData object
+  const formData = {
+    policyType,
+    caseType,
+    policyCategory,
+    category,
+    subCategory,
+    companyName,
+    broker,
+    make,
+    model,
+    fuelType,
     rto,
-    documents,
+    vehicleNumber,
+    seatingCapacity,
+    cc,
+    ncb,
+    policyNumber,
+    fullName,
+    emailId,
+    iphoneNumber,
+    mfgYear,
+    tenure,
+    registrationDate,
+    endDate,
+    issueDate,
+    idv,
+    od,
+    tp,
+    netPremium,
+    finalPremium,
+    paymentMode,
+    policyCreatedBy,
+    documents
   };
 
   console.log("FORM DATA", formData); // Log formData to debug
 
+  // Create a new instance of MotorPolicyModel with formData
   const newForm = new MotorPolicyModel(formData);
 
   try {
+    // Save the new form to the database
     const savedForm = await newForm.save();
+    // Respond with the created form data
     res.status(201).json({ status: "success", data: [savedForm] });
   } catch (error) {
+    // Handle any errors during the save operation
     res.status(500).json({ status: "error", message: error.message });
   }
 };
+
 
 // Get Motor Policies with Pagination
 export const getMotorPolicies = async (req, res) => {
@@ -119,57 +139,71 @@ export const updateMotorPolicy = async (req, res) => {
   const {
     policyType,
     caseType,
-    policyCategory: category,
-    insuranceCompany: companyName,
-    broker,
-    make,
-    model,
-    fuelType,
-    seatCapacity: seatingCapacity,
-    ncb,
-    vehicleNumber,
-    fullName,
-    emailId,
-    phoneNumber,
-    mfgYear: mgfYear,
-    tenure,
-    cc,
-    idv,
-    od,
-    tp,
-    netPremium,
-    finalPremium,
-    paymentMode,
-    RTO: rto,
-    documents,
-  } = req.body;
-
-  const formData = {
-    policyType,
-    caseType,
+    policyCategory,
     category,
+    subCategory,
     companyName,
     broker,
     make,
     model,
     fuelType,
-    seatingCapacity,
-    ncb,
+    rto,
     vehicleNumber,
+    seatingCapacity,
+    cc,
+    ncb,
+    policyNumber,
     fullName,
     emailId,
-    phoneNumber,
-    mgfYear,
+    iphoneNumber,
+    mfgYear,
     tenure,
-    cc,
+    registrationDate,
+    endDate,
+    issueDate,
     idv,
     od,
     tp,
     netPremium,
     finalPremium,
     paymentMode,
+    policyCreatedBy,
+    documents
+  } = req.body;
+
+  const formData = {
+    policyType,
+    caseType,
+    policyCategory,
+    category,
+    subCategory,
+    companyName,
+    broker,
+    make,
+    model,
+    fuelType,
     rto,
-    documents,
+    vehicleNumber,
+    seatingCapacity,
+    cc,
+    ncb,
+    policyNumber,
+    fullName,
+    emailId,
+    iphoneNumber,
+    mfgYear,
+    tenure,
+    registrationDate,
+    endDate,
+    issueDate,
+    idv,
+    od,
+    tp,
+    netPremium,
+    finalPremium,
+    paymentMode,
+    policyCreatedBy,
+    documents
   };
 
   try {

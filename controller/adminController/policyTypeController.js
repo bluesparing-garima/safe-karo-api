@@ -54,7 +54,34 @@ const getPolicyTypeByName  = async (req, res) => {
   }
 };
 
-const updatePolicyTypeById = async (req, res) => {
+const getPolicyTypeById = async (req, res) => {
+  try {
+    const { id } = req.params; // Extract ID from request parameters
+    console.log("Fetching policy type with ID:", id); // Log for debugging
+
+    // Check if policy type exists by ID
+    const existingPolicyType = await PolicyTypeModel.findById(id);
+    
+    if (!existingPolicyType) {
+      // If not found, send a 404 response
+      return res.status(404).json({ status: "failed", message: "Policy type not found" });
+    }
+    // If found, send the data with a success status
+    res.status(200).json({
+      status: "success",
+      data: existingPolicyType,
+      message: "Success! Here is the policy type with the specified ID",
+    });
+  } catch (error) {
+    // Log the error for debugging
+    console.error("Error fetching policy type by ID:", error);
+    // Send a 500 response with the error message
+    res.status(500).json({ status: "failed", message: "Unable to retrieve policy type" });
+  }
+};
+
+
+const updatePolicyType = async (req, res) => {
   try {
     const { id } = req.params;
     const { updatedBy, ...updateData } = req.body;
@@ -82,7 +109,7 @@ const updatePolicyTypeById = async (req, res) => {
   }
 };
 
-const deletePolicyTypeById = async (req, res) => {
+const deletePolicyType = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -101,4 +128,4 @@ const deletePolicyTypeById = async (req, res) => {
   }
 };
 
-export { createPolicyType, getAllPolicyTypes, getPolicyTypeByName, updatePolicyTypeById, deletePolicyTypeById };
+export { createPolicyType, getAllPolicyTypes, getPolicyTypeByName, getPolicyTypeById,updatePolicyType, deletePolicyType };
