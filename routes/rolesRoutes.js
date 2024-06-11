@@ -1,6 +1,6 @@
 import expres from "express";
 import {
-    createNewRole, getAllRoles, updateRoles, deleteRoleById, getRolesById
+    createNewRole, getAllRoles, updateRoles, deleteRole, getRolesById
 } from "../controller/adminController/roleController.js";
 
 const router = expres.Router();
@@ -11,11 +11,11 @@ router.post('/', createNewRole);
 // Get all Role  or filter by Role name
 router.get('/', getAllRoles);
 
-// Update a Role type by Name
-router.post('/:id', updateRoles);
+// Update a Role type by id
+router.put('/:id', updateRoles);
 
-// Delete a Role type by Name
-router.delete('/:id', deleteRoleById);
+// Delete a Role type by id
+router.delete('/:id', deleteRole);
 
 //get role by ID
 router.get('/:id', getRolesById);

@@ -102,7 +102,7 @@ const updateRoles = async (req, res) => {
   }
 };
 
-const deleteRoleById = async (req, res) => {
+const deleteRole = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -127,4 +127,4 @@ const deleteRoleById = async (req, res) => {
   }
 };
 
-export { createNewRole, getAllRoles, updateRoles, deleteRoleById, getRolesById };
+export { createNewRole, getAllRoles, updateRoles, deleteRole, getRolesById };
