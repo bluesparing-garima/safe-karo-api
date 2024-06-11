@@ -9,6 +9,8 @@ import motorPolicyRoutes from "./routes/motorPolicyRoutes.js";
 import policyTypeRoutes from "./routes/policyTypeRoutes.js";
 import caseTypeRoutes from "./routes/caseTypeRoutes.js";
 import addRolesRoutes from "./routes/rolesRoutes.js";
+import excelRoutes  from './routes/excelRoutes.js';
+
 
 const app = express();
 const port = process.env.PORT;
@@ -41,6 +43,9 @@ app.use("/api/case-type", caseTypeRoutes);
 
 //add Roles
 app.use("/api/roles", addRolesRoutes);
+
+// upload excel
+app.use('/api/excel', excelRoutes);
 
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);
