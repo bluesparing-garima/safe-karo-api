@@ -1,6 +1,6 @@
 import expres from "express";
 import {
-    createCaseType, deleteCaseTypeById, updateCaseTypeById, getCaseTypeByName, getAllCaseTypes
+    createCaseType, deleteCaseType, updateCaseType, getCaseTypeByName, getAllCaseTypes,getCaseTypeById
 } from "../controller/adminController/caseTypecontroller.js";
 
 const router = expres.Router();
@@ -11,13 +11,16 @@ router.post('/', createCaseType);
 // Get all case types or filter by case name
 router.get('/', getAllCaseTypes);
 
+// Get case types by ID
+router.get('/:id', getCaseTypeById);
+
 // Get a case type by Name
 router.get('/:caseType', getCaseTypeByName);
 
 // Update a case type by id
-router.post('/:id', updateCaseTypeById);
+router.put('/:id', updateCaseType);
 
 // Delete a case type by id
-router.delete('/:id', deleteCaseTypeById);
+router.delete('/:id', deleteCaseType);
 
 export default router;

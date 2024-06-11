@@ -2,9 +2,9 @@ import express from "express";
 import {
     createMotorPolicy,
     getMotorPolicies,
-    deleteMotorPolicyById,
+    deleteMotorPolicy,
     getMotorPolicyById,
-    updateMotorPolicyById
+    updateMotorPolicy
 } from "../controller/policyController/motorPolicyController.js";
 
 const router = express.Router();
@@ -12,7 +12,7 @@ const router = express.Router();
 router.post("/", createMotorPolicy);
 router.get("/", getMotorPolicies);
 router.get("/:id", getMotorPolicyById);
-router.put("/:id", updateMotorPolicyById);
-router.delete("/:id", deleteMotorPolicyById);
+router.put("/:id", updateMotorPolicy);
+router.delete("/:id", deleteMotorPolicy);
 
 export default router;

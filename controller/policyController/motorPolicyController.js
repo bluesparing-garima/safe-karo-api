@@ -1,6 +1,7 @@
 import MotorPolicyModel from "../../models/motorPolicy.js";
 
 // Create Motor Policy
+// Create Motor Policy
 export const createMotorPolicy = async (req, res) => {
   console.log("REQUEST BODY", req.body);
 
@@ -42,7 +43,7 @@ export const createMotorPolicy = async (req, res) => {
     model,
     fuelType,
     seatingCapacity,
-    ncb,  
+    ncb,
     vehicleNumber,
     fullName,
     emailId,
@@ -60,13 +61,15 @@ export const createMotorPolicy = async (req, res) => {
     documents,
   };
 
+  console.log("FORM DATA", formData); // Log formData to debug
+
   const newForm = new MotorPolicyModel(formData);
 
   try {
     const savedForm = await newForm.save();
-    res.status(201).json({savedForm});
+    res.status(201).json({ status: "success", data: [savedForm] });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ status: "error", message: error.message });
   }
 };
 
@@ -85,13 +88,14 @@ export const getMotorPolicies = async (req, res) => {
     const totalCount = await MotorPolicyModel.countDocuments();
 
     res.status(200).json({
-      currentPage: page,
-      totalPages: Math.ceil(totalCount / limit),
-      totalCount,
+      status: "success",
+      // currentPage: page,
+      // totalPages: Math.ceil(totalCount / limit),
+      // totalCount,
       data: forms,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ status: "error", message: error.message });
   }
 };
 
@@ -100,16 +104,16 @@ export const getMotorPolicyById = async (req, res) => {
   try {
     const form = await MotorPolicyModel.findById(req.params.id);
     if (!form) {
-      return res.status(404).json({ message: "Motor Policy not found" });
+      return res.status(404).json({ status: "error", message: "Motor Policy not found" });
     }
-    res.status(200).json(form);
+    res.status(200).json({ status: "success", data: [form] });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ status: "error", message: error.message });
   }
 };
 
 // Update Motor Policy by ID
-export const updateMotorPolicyById = async (req, res) => {
+export const updateMotorPolicy = async (req, res) => {
   console.log("REQUEST BODY", req.body);
 
   const {
@@ -175,23 +179,23 @@ export const updateMotorPolicyById = async (req, res) => {
       { new: true }
     );
     if (!updatedForm) {
-      return res.status(404).json({ message: "Motor Policy not found" });
+      return res.status(404).json({ status: "error", message: "Motor Policy not found" });
     }
-    res.status(200).json(updatedForm);
+    res.status(200).json({ status: "success", data: [updatedForm] });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ status: "error", message: error.message });
   }
 };
 
 // Delete Motor Policy by ID
-export const deleteMotorPolicyById = async (req, res) => {
+export const deleteMotorPolicy = async (req, res) => {
   try {
     const deletedForm = await MotorPolicyModel.findByIdAndDelete(req.params.id);
     if (!deletedForm) {
-      return res.status(404).json({ message: "Motor Policy not found" });
+      return res.status(404).json({ status: "error", message: "Motor Policy not found" });
     }
-    res.status(200).json({ message: "Motor Policy deleted successfully" });
+    res.status(200).json({ status: "success", message: "Motor Policy deleted successfully" });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ status: "error", message: error.message });
   }
 };
