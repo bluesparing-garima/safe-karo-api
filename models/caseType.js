@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const caseTypeSchema = new mongoose.Schema(
+const caseTypesSchema = new mongoose.Schema(
   {
     caseType: {
       type: String,
@@ -20,12 +20,12 @@ const caseTypeSchema = new mongoose.Schema(
     },
     updatedOn: {
       type: Date,
-      default: null,
+      default: Date.now,
     },
   },
 
 );
 
-const CaseTypeModel = mongoose.model('CaseType', caseTypeSchema);
+const CaseTypesModel = mongoose.model('CaseType', caseTypesSchema);
 
-export default CaseTypeModel;
+export default CaseTypesModel;

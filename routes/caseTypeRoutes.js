@@ -14,10 +14,10 @@ router.get('/', getAllCaseTypes);
 // Get a case type by Name
 router.get('/:caseType', getCaseTypeByName);
 
-// Update a case type by Name
+// Update a case type by id
 router.post('/:id', updateCaseTypeById);
 
-// Delete a case type by Name
+// Delete a case type by id
 router.delete('/:id', deleteCaseTypeById);
 
 export default router;

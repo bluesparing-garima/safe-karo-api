@@ -1,19 +1,18 @@
 import express from "express";
-import uploadMiddleware from "../middlewares/uploadMiddleware.js";
 import {
-  createMotorPolicy,
-  getMotorPolicies,
-  // deleteMotorPolicyById,
-  // getMotorPolicyById,
-  // updateMotorPolicyById,
+    createMotorPolicy,
+    getMotorPolicies,
+    deleteMotorPolicyById,
+    getMotorPolicyById,
+    updateMotorPolicyById
 } from "../controller/policyController/motorPolicyController.js";
 
 const router = express.Router();
 
-router.post("/", uploadMiddleware, createMotorPolicy);
+router.post("/", createMotorPolicy);
 router.get("/", getMotorPolicies);
-// router.delete("/:id", deleteMotorPolicyById);
-// router.get("/:id", getMotorPolicyById);
-// router.post("/:id", uploadMiddleware, updateMotorPolicyById);
+router.get("/:id", getMotorPolicyById);
+router.put("/:id", updateMotorPolicyById);
+router.delete("/:id", deleteMotorPolicyById);
 
 export default router;
