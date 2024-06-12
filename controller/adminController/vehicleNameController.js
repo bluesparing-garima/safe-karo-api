@@ -69,7 +69,7 @@ const getvehicleNameById = async (req, res) => {
     const { id } = req.params;
 
     // Check if vehicle type exists
-    const existingvehicleName = await vehicleNameModel.findById(id);
+    const existingvehicleName = await VehicleNameModel.findById(id);
     if (!existingvehicleName) {
       return res.status(404).json({ status: "failed", message: "Vehicle type not found" });
     }
