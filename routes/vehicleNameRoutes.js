@@ -15,7 +15,7 @@ router.get('/', getAllvehicleNames);
 router.get('/:id', getvehicleNameById);
 
 // Get a vehicle type by Name
-router.get('/name/:vehicleType', getvehicleNameByName);
+router.get('/name/:vehicleName', getvehicleNameByName);
 
 // Update a vehicle type by id
 router.put('/:id', updatevehicleName);
