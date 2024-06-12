@@ -82,7 +82,7 @@ const getAllData = async (req, res) => {
         const dataFromMongo = await ExcelDataModel.find();
         res.status(200).json({
             message: 'File uploaded and data processed successfully.',
-            data: extractedData,
+            data: dataFromMongo,
             status: "Success"
         });
     } catch (error) {
