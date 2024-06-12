@@ -40,9 +40,9 @@ const userRegistration = async (req, res) => {
     );
 
     res.status(201).json({
-      status: "success",
       message: "Registration Success",
-      token: token,
+      token: {token},
+      status: "success",
     });
   } catch (error) {
     console.error(error);
