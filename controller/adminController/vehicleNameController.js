@@ -2,49 +2,53 @@ import VehicleNameModel from "../../models/vehicleName.js";
 
 // Create a new vehicle type
 const createVehicleName = async (req, res) => {
-    try {
-      const { vehicleName, createdBy } = req.body;
-  
-      // Check if all required fields are provided
-      if (!vehicleName || !createdBy) {
-        return res.status(400).json({ status: "failed", message: "Required fields are missing" });
-      }
-  
-      const newvehicleName = new VehicleNameModel({
-        vehicleName,
-        createdBy,
-        updatedBy: null, // Set updatedBy to null initially
-        updatedOn: null, // Set updatedOn to null initially
-      });
-  
-      await newvehicleName.save();
-      res.status(200).json({
-        status: "success",
-        data: newvehicleName,
-        message: "New vehicle type created successfully",
-      });
-    } catch (error) {
-      console.error("Error creating vehicle type:", error);
-      res.status(500).json({
-        status: "failed",
-        message: "Unable to create new vehicle name",
-        error: error.message,
-      });
+  try {
+    const { vehicleName, createdBy } = req.body;
+
+    // Check if all required fields are provided
+    if (!vehicleName || !createdBy) {
+      return res
+        .status(400)
+        .json({ status: "failed", message: "Required fields are missing" });
     }
-  };
-  
+
+    const newvehicleName = new VehicleNameModel({
+      vehicleName,
+      createdBy,
+      updatedBy: null, // Set updatedBy to null initially
+      updatedOn: null, // Set updatedOn to null initially
+    });
+
+    await newvehicleName.save();
+    res.status(200).json({
+      message: "New vehicle type created successfully",
+      data: { newvehicleName },
+      status: "success",
+    });
+  } catch (error) {
+    console.error("Error creating vehicle type:", error);
+    res.status(500).json({
+      status: "failed",
+      message: "Unable to create new vehicle name",
+      error: error.message,
+    });
+  }
+};
+
 // Get all vehicle types
 const getAllvehicleNames = async (req, res) => {
   try {
     const VehicleNames = await VehicleNameModel.find();
     res.status(200).json({
-      status: "success",
-      data: VehicleNames,
       message: "Success! Here are all vehicle types",
+      data: { VehicleNames },
+      status: "success",
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ status: "failed", message: "Unable to retrieve vehicle name" });
+    res
+      .status(500)
+      .json({ status: "failed", message: "Unable to retrieve vehicle name" });
   }
 };
 
@@ -54,12 +58,22 @@ const getvehicleNameByName = async (req, res) => {
     const { VehicleName } = req.params;
     const vehicleName = await VehicleNameModel.findOne({ VehicleName });
     if (!vehicleName) {
-      return res.status(404).json({ status: "failed", message: "Vehicle type not found" });
+      return res
+        .status(404)
+        .json({ status: "failed", message: "Vehicle type not found" });
     }
-    res.status(200).json({ status: "success", data: vehicleName });
+    res
+      .status(200)
+      .json({
+        message: "Success! Here are all vehicle Names",
+        data: { vehicleName },
+        status: "success",
+      });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ status: "failed", message: "Unable to retrieve vehicle name" });
+    res
+      .status(500)
+      .json({ status: "failed", message: "Unable to retrieve vehicle name" });
   }
 };
 
@@ -71,16 +85,20 @@ const getvehicleNameById = async (req, res) => {
     // Check if vehicle type exists
     const existingvehicleName = await VehicleNameModel.findById(id);
     if (!existingvehicleName) {
-      return res.status(404).json({ status: "failed", message: "Vehicle type not found" });
+      return res
+        .status(404)
+        .json({ status: "failed", message: "Vehicle type not found" });
     }
     res.status(200).json({
-      status: "success",
-      data: existingvehicleName,
       message: "Success! Here is the vehicle type with ID",
+      data: { existingvehicleName },
+      status: "success",
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ status: "failed", message: "Unable to retrieve vehicle name" });
+    res
+      .status(500)
+      .json({ status: "failed", message: "Unable to retrieve vehicle name" });
   }
 };
 
@@ -93,7 +111,9 @@ const updatevehicleName = async (req, res) => {
     // Check if vehicle type exists
     const existingvehicleName = await VehicleNameModel.findById(id);
     if (!existingvehicleName) {
-      return res.status(404).json({ status: "failed", message: "Vehicle name not found" });
+      return res
+        .status(404)
+        .json({ status: "failed", message: "Vehicle name not found" });
     }
 
     // Update the vehicle type
@@ -104,9 +124,9 @@ const updatevehicleName = async (req, res) => {
     );
 
     res.status(200).json({
-      status: "success",
-      data: updatedvehicleName,
       message: `Vehicle type ${id} updated successfully`,
+      data: { updatedvehicleName },
+      status: "success",
     });
   } catch (error) {
     console.error(error);
@@ -125,16 +145,32 @@ const deletevehicleName = async (req, res) => {
     // Check if vehicle type exists
     const existingvehicleName = await VehicleNameModel.findById(id);
     if (!existingvehicleName) {
-      return res.status(404).json({ status: "failed", message: "Vehicle type not found" });
+      return res
+        .status(404)
+        .json({ status: "failed", message: "Vehicle type not found" });
     }
 
     // Delete the vehicle type
-    await VehicleNamesModel.findByIdAndDelete(id);
-    res.status(200).json({ status: "success", message: "Vehicle type deleted successfully" });
+    await VehicleNameModel.findByIdAndDelete(id);
+    res
+      .status(200)
+      .json({
+        status: "success",
+        message: "Vehicle type deleted successfully",
+      });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ status: "failed", message: "Unable to delete vehicle type" });
+    res
+      .status(500)
+      .json({ status: "failed", message: "Unable to delete vehicle type" });
   }
 };
 
-export { createVehicleName,getAllvehicleNames,getvehicleNameByName,getvehicleNameById,updatevehicleName,deletevehicleName };
+export {
+  createVehicleName,
+  getAllvehicleNames,
+  getvehicleNameByName,
+  getvehicleNameById,
+  updatevehicleName,
+  deletevehicleName,
+};
