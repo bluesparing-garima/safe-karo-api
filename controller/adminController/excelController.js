@@ -80,7 +80,11 @@ const getAllData = async (req, res) => {
     try {
         // Fetch data only from MongoDB
         const dataFromMongo = await ExcelDataModel.find();
-        res.status(200).json(dataFromMongo);
+        res.status(200).json({
+            message: 'File uploaded and data processed successfully.',
+            data: extractedData,
+            status: "Success"
+        });
     } catch (error) {
         console.error("Error retrieving data:", error);
         res.status(500).json({ message: 'Error retrieving data', error: error.message });
