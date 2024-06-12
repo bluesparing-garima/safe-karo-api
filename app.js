@@ -11,7 +11,9 @@ import caseTypeRoutes from "./routes/caseTypeRoutes.js";
 import addRolesRoutes from "./routes/rolesRoutes.js";
 import excelRoutes from './routes/excelRoutes.js';
 import fileUpload from "express-fileupload";
-
+import payInRoutes from './routes/payInRoutes.js';
+import vehicleTypes from './routes/vehicleTypeRoutes.js';
+import vehicleNames from './routes/vehicleNameRoutes.js';
 
 const app = express();
 const port = process.env.PORT;
@@ -43,15 +45,23 @@ app.use("/api/policy/motor", motorPolicyRoutes);
 //create new Policy Routes
 app.use("/api/policy-type", policyTypeRoutes);
 
-//create new case type Routes
+//create case type Routes
 app.use("/api/case-type", caseTypeRoutes);
 
 //add Roles
 app.use("/api/roles", addRolesRoutes);
 
-
 // upload excel
 app.use('/api/excel', excelRoutes);
+
+// PayIn Routes
+app.use("/api/calculate", payInRoutes);
+
+// Vehicle Routes
+app.use('/api/vehicle-type', vehicleTypes);
+
+// Vehicle Names
+app.use('/api/vehicle-name', vehicleNames)
 
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);

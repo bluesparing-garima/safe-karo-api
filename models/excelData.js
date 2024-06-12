@@ -2,19 +2,22 @@ import mongoose from 'mongoose';
 
 const DataSchema = new mongoose.Schema({
     vehicleType: String,
+    subCategory: String,
     fuelType: String,
-    Engine: String,
+    engine: String,
     ncb: String,
     policyType: String,
+    rto: String,
+    insuredType: String,
     caseType: String,
     companyName: String,
     make: String,
     model: String,
     age: String,
-    OD: Number,
-    TP: Number,
-    RTO: String,
+    od: Number,
+    tp: Number,
 }, { timestamps: true });
 
-const DataModel = mongoose.model('Data', DataSchema);
-export default DataModel;
+const ExcelDataModel = mongoose.model('ExcelData', DataSchema);
+export default ExcelDataModel;
+
