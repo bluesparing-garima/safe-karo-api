@@ -49,8 +49,9 @@ app.use("/api/case-type", caseTypeRoutes);
 //add Roles
 app.use("/api/roles", addRolesRoutes);
 
-// Excel Routes
-app.use("/api/excel", excelRoutes); 
+
+// upload excel
+app.use('/api/excel', excelRoutes);
 
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);

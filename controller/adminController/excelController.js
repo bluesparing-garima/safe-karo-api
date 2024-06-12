@@ -6,13 +6,13 @@ import DataModel from '../../models/excelData.js';
 // Path to local JSON file for storing data
 const dataFilePath = path.join(process.cwd(), 'data', 'data.json');
 
-
 if (!fs.existsSync(path.join(process.cwd(), 'data'))) {
     fs.mkdirSync(path.join(process.cwd(), 'data'));
 }
 
 const uploadExcel = async (req, res) => {
     console.log("Received a request to upload an Excel file.");
+
     try {
 
         if (!req.files || !req.files.excel) {
@@ -63,12 +63,11 @@ const uploadExcel = async (req, res) => {
         console.error("Error processing file:", error);
         res.status(500).json({ message: 'Error processing file', error: error.message });
     }
-};
+}
 
 const getAllData = async (req, res) => {
     try {
         const dataFromMongo = await DataModel.find();
-
         // Read data from the local JSON file
         let dataFromFile = [];
         if (fs.existsSync(dataFilePath)) {
