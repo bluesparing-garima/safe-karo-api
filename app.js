@@ -9,6 +9,9 @@ import motorPolicyRoutes from "./routes/motorPolicyRoutes.js";
 import policyTypeRoutes from "./routes/policyTypeRoutes.js";
 import caseTypeRoutes from "./routes/caseTypeRoutes.js";
 import addRolesRoutes from "./routes/rolesRoutes.js";
+import excelRoutes from './routes/excelRoutes.js';
+import fileUpload from "express-fileupload";
+
 
 const app = express();
 const port = process.env.PORT;
@@ -23,6 +26,10 @@ connectDB(DATABASE_URL);
 // JSON
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.use(fileUpload({
+  createParentPath: true, // Allow creating parent path if it doesn't exist
+}));
 
 // Load Routes
 app.use("/api/user", userRoutes);
@@ -41,6 +48,9 @@ app.use("/api/case-type", caseTypeRoutes);
 
 //add Roles
 app.use("/api/roles", addRolesRoutes);
+
+// Excel Routes
+app.use("/api/excel", excelRoutes); 
 
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);

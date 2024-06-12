@@ -1,0 +1,35 @@
+[
+  {
+    "vehicleType": "Car",
+    "fuelType": "CNG",
+    "Engine": 1500,
+    "ncb": "yes",
+    "policyType": "Third Party Only/ TP",
+    "caseType": "Renewal",
+    "companyName": "Cholamandalam MS General Insurance",
+    "make": "A V AUTOMOTIVES PVT",
+    "model": "SUPRO / MAXI TRUCK",
+    "age": ">5",
+    "OD": 43,
+    "TP": 45,
+    "RTO": "RJ04"
+  },
+  {
+    "vehicleType": "Auto",
+    "fuelType": "LPG",
+    "Engine": 1000,
+    "ncb": "no",
+    "policyType": "Comprehensive/ Package",
+    "caseType": "New",
+    "companyName": "Bajaj Allianz General Insurance",
+    "make": "MAHINDRA & MAHINDRA",
+    "model": "BOLERO PICKUP",
+    "age": "1-2year",
+    "OD": 42.5,
+    "TP": 44,
+    "RTO": "RJ02"
+  },
+  {
+    "policyType": "saod"
+  }
+]
