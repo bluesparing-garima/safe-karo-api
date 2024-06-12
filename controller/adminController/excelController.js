@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
 import fs from 'fs';
 import path from 'path';
-import DataModel from '../../models/excelData.js';
+import ExcelDataModel from '../../models/excelData.js';
 
 // Path to local JSON file for storing data
 const dataFilePath = path.join(process.cwd(), 'data', 'data.json');
@@ -11,7 +11,6 @@ if (!fs.existsSync(path.join(process.cwd(), 'data'))) {
 }
 
 const uploadExcel = async (req, res) => {
-    console.log("Received a request to upload an Excel file.");
 
     try {
 
@@ -20,7 +19,6 @@ const uploadExcel = async (req, res) => {
         }
 
         const file = req.files.excel;
-        console.log("File received:", file);
 
         const workbook = XLSX.read(file.data, { type: 'buffer' });
         const sheetName = workbook.SheetNames[0];
@@ -28,22 +26,24 @@ const uploadExcel = async (req, res) => {
 
         const extractedData = worksheet.map((row) => ({
             vehicleType: row.vehicleType || row['Vehicle Type'],
+            subCategory: row.subCategory || row['subCategory'],
             fuelType: row.fuelType || row['Fuel Type'],
-            Engine: row.Engine,
+            engine: row.engine,
             ncb: row.ncb,
             policyType: row.policyType || row['Policy Type'],
+            rto:row.rto,
+            insuredType:row.insuredType,
             caseType: row.caseType || row['Case Type'],
             companyName: row.companyName || row['Company Name'],
             make: row.make,
             model: row.model,
             age: row.age,
-            OD: row.OD,
-            TP: row.TP,
-            RTO: row.RTO,
+            od: row.od,
+            tp: row.tp,
         }));
 
         // Store in MongoDB
-        await DataModel.insertMany(extractedData);
+        await ExcelDataModel.insertMany(extractedData);
 
         // Read existing data from the file
         let existingData = [];
@@ -67,21 +67,9 @@ const uploadExcel = async (req, res) => {
 
 const getAllData = async (req, res) => {
     try {
-        const dataFromMongo = await DataModel.find();
-        // Read data from the local JSON file
-        let dataFromFile = [];
-        if (fs.existsSync(dataFilePath)) {
-            const rawData = fs.readFileSync(dataFilePath);
-            dataFromFile = JSON.parse(rawData);
-        }
-
-        // Combine data from MongoDB and local file
-        const combinedData = {
-            mongoData: dataFromMongo,
-            fileData: dataFromFile
-        };
-
-        res.status(200).json(combinedData);
+        // Fetch data only from MongoDB
+        const dataFromMongo = await ExcelDataModel.find();
+        res.status(200).json(dataFromMongo);
     } catch (error) {
         console.error("Error retrieving data:", error);
         res.status(500).json({ message: 'Error retrieving data', error: error.message });
