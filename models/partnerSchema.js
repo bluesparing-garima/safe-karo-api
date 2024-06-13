@@ -1,4 +1,3 @@
-// models/partnerId.js
 import mongoose from 'mongoose';
 
 const PartnerSchema = new mongoose.Schema({

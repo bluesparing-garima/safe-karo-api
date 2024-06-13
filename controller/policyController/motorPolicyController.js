@@ -1,7 +1,7 @@
 // controllers/motorPolicyController.js
 import MotorPolicyModel from "../../models/motorpolicySchema.js";
-import PartnerModel from "../../models/partnerSchema.js";
 
+// Create Motor Policy
 export const createMotorPolicy = async (req, res) => {
   try {
     const {
@@ -40,21 +40,15 @@ export const createMotorPolicy = async (req, res) => {
       finalPremium,
       paymentMode,
       policyCreatedBy,
-      documents
+      documents,
+      isActive // Add isActive to capture from request body
     } = req.body;
 
-    // Check if the provided partnerId exists in the PartnerId collection
-    // const existingPartner = await PartnerModel.findOne({ partnerId });
-    // if (!existingPartner) {
-    //   return res.status(400).json({ status: "error", message: "PartnerId not found" });
-    // }
-
-    // Create a new instance of MotorPolicyModel with formData
     const newMotorPolicy = new MotorPolicyModel({
-      partnerId: partnerId || "", 
-      partnerName: partnerName || "", 
-      relationshipManagerId: relationshipManagerId || "", 
-      relationshipManagerName: relationshipManagerName || "", 
+      partnerId: partnerId || "",
+      partnerName: partnerName || "",
+      relationshipManagerId: relationshipManagerId || "",
+      relationshipManagerName: relationshipManagerName || "",
       policyType,
       caseType,
       policyCategory,
@@ -86,16 +80,17 @@ export const createMotorPolicy = async (req, res) => {
       finalPremium,
       paymentMode,
       policyCreatedBy,
-      documents
+      documents,
+      isActive: isActive !== undefined ? isActive : true // Set default to true if not provided
     });
 
-    // Save the new motor policy to the database
     const savedMotorPolicy = await newMotorPolicy.save();
-
-    // Respond with success message and saved data
-    res.status(201).json({ status: "success", message: "Motor Policy created successfully", data: {savedMotorPolicy} });
+    res.status(201).json({
+      status: "success",
+      message: "Motor Policy created successfully",
+      data: savedMotorPolicy
+    });
   } catch (error) {
-    // Handle any errors during the save operation
     res.status(500).json({ status: "error", message: error.message });
   }
 };
@@ -107,19 +102,19 @@ export const getMotorPolicies = async (req, res) => {
   const skip = (page - 1) * limit;
 
   try {
-    const forms = await MotorPolicyModel.find()
+    const forms = await MotorPolicyModel.find({ isActive: true }) // Retrieve only active motor policies
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
-    const totalCount = await MotorPolicyModel.countDocuments();
+    const totalCount = await MotorPolicyModel.countDocuments({ isActive: true }); // Count only active motor policies
 
     res.status(200).json({
       status: "success",
-      // currentPage: page,
-      // totalPages: Math.ceil(totalCount / limit),
-      // totalCount,
       data: forms,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page
     });
   } catch (error) {
     res.status(500).json({ status: "error", message: error.message });
@@ -130,10 +125,10 @@ export const getMotorPolicies = async (req, res) => {
 export const getMotorPolicyById = async (req, res) => {
   try {
     const form = await MotorPolicyModel.findById(req.params.id);
-    if (!form) {
+    if (!form || !form.isActive) {
       return res.status(404).json({ status: "error", message: "Motor Policy not found" });
     }
-    res.status(200).json({ status: "success", data: [form] });
+    res.status(200).json({ status: "success", data: form });
   } catch (error) {
     res.status(500).json({ status: "error", message: error.message });
   }
@@ -141,8 +136,6 @@ export const getMotorPolicyById = async (req, res) => {
 
 // Update Motor Policy by ID
 export const updateMotorPolicy = async (req, res) => {
-  console.log("REQUEST BODY", req.body);
-
   const {
     policyType,
     caseType,
@@ -162,7 +155,7 @@ export const updateMotorPolicy = async (req, res) => {
     policyNumber,
     fullName,
     emailId,
-    iphoneNumber,
+    phoneNumber,
     mfgYear,
     tenure,
     registrationDate,
@@ -175,7 +168,8 @@ export const updateMotorPolicy = async (req, res) => {
     finalPremium,
     paymentMode,
     policyCreatedBy,
-    documents
+    documents,
+    isActive // Add isActive to capture from request body
   } = req.body;
 
   const formData = {
@@ -197,7 +191,7 @@ export const updateMotorPolicy = async (req, res) => {
     policyNumber,
     fullName,
     emailId,
-    iphoneNumber,
+    phoneNumber,
     mfgYear,
     tenure,
     registrationDate,
@@ -210,7 +204,8 @@ export const updateMotorPolicy = async (req, res) => {
     finalPremium,
     paymentMode,
     policyCreatedBy,
-    documents
+    documents,
+    isActive: isActive !== undefined ? isActive : true // Set default to true if not provided
   };
 
   try {
@@ -222,7 +217,7 @@ export const updateMotorPolicy = async (req, res) => {
     if (!updatedForm) {
       return res.status(404).json({ status: "error", message: "Motor Policy not found" });
     }
-    res.status(200).json({ status: "success", data: [updatedForm] });
+    res.status(200).json({ status: "success", data: updatedForm });
   } catch (error) {
     res.status(500).json({ status: "error", message: error.message });
   }
@@ -231,10 +226,14 @@ export const updateMotorPolicy = async (req, res) => {
 // Delete Motor Policy by ID
 export const deleteMotorPolicy = async (req, res) => {
   try {
-    const deletedForm = await MotorPolicyModel.findByIdAndDelete(req.params.id);
+    const deletedForm = await MotorPolicyModel.findById(req.params.id);
     if (!deletedForm) {
       return res.status(404).json({ status: "error", message: "Motor Policy not found" });
     }
+
+    deletedForm.isActive = false; // Soft delete by marking isActive as false
+    await deletedForm.save();
+
     res.status(200).json({ status: "success", message: "Motor Policy deleted successfully" });
   } catch (error) {
     res.status(500).json({ status: "error", message: error.message });

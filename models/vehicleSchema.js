@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const vehicleNamesSchema = new mongoose.Schema(
+const vehicleSchema = new mongoose.Schema(
   {
     vehicleName: {
       type: String,
@@ -22,9 +22,13 @@ const vehicleNamesSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
   },
 );
 
-const VehicleNamesModel = mongoose.model('VehicleName', vehicleNamesSchema);
+const VehicleModel = mongoose.model('Vehicle', vehicleSchema);
 
-export default VehicleNamesModel;
+export default VehicleModel;

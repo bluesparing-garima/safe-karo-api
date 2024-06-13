@@ -22,8 +22,11 @@ const caseTypeSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
-  },
-
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+  }
 );
 
 const CaseTypeModel = mongoose.model('CaseType', caseTypeSchema);

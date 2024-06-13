@@ -1,9 +1,8 @@
-
 import mongoose from 'mongoose';
 
-const productNamesSchema = new mongoose.Schema(
+const categorySchema = new mongoose.Schema(
   {
-    productName: {
+    categoryName: {
       type: String,
       required: true,
     },
@@ -23,9 +22,13 @@ const productNamesSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
   },
 );
 
-const ProductNamesModel = mongoose.model('ProductName', productNamesSchema);
+const CategoryModel = mongoose.model('Category', categorySchema);
 
-export default ProductNamesModel;
+export default CategoryModel;

@@ -1,4 +1,3 @@
-// models/motorPolicy.js
 import mongoose from "mongoose";
 
 const DocumentSchema = new mongoose.Schema({
@@ -40,10 +39,11 @@ const MotorPolicySchema = new mongoose.Schema(
     paymentMode: { type: String },
     policyCreatedBy: { type: String },
     documents: [DocumentSchema],
-    partnerId: { type: String, default: "" }, 
+    partnerId: { type: String, default: "" },
     partnerName: { type: String, default: "" },
-    relationshipManagerId: { type: String, default: "" }, 
+    relationshipManagerId: { type: String, default: "" },
     relationshipManagerName: { type: String, default: "" },
+    isActive: { type: Boolean, default: true }, // Add isActive field
   },
   { timestamps: true }
 );
