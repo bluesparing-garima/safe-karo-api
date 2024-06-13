@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
 
-const caseTypesSchema = new mongoose.Schema(
+const brokerSchema = new mongoose.Schema(
   {
-    caseType: {
+    brokerName: {
       type: String,
       required: true,
     },
@@ -22,10 +22,13 @@ const caseTypesSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    isActive: {
+      type: Boolean,
+      default: true,    
+    },
   },
-
 );
 
-const CaseTypesModel = mongoose.model('CaseType', caseTypesSchema);
+const BrokerModel = mongoose.model('Broker', brokerSchema);
 
-export default CaseTypesModel;
+export default BrokerModel;

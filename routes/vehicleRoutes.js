@@ -1,7 +1,7 @@
 import express from "express";
 import {
     createVehicleName,getAllVehicleNames,getVehicleNameByName,getVehicleNameById,updateVehicleName,deleteVehicleName 
-} from "../controller/adminController/vehicleNameController.js";
+} from "../controller/adminController/vehicleController.js";
 
 const router = express.Router();
 

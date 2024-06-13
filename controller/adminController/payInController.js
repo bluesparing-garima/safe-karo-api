@@ -1,4 +1,4 @@
-import ExcelDataModel from '../../models/excelData.js';
+import ExcelDataModel from '../../models/excelDataSchema.js';
 
 
 const calculateODandTP = async (req, res) => {

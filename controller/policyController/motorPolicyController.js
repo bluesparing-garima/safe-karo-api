@@ -1,6 +1,6 @@
 // controllers/motorPolicyController.js
-import MotorPolicyModel from "../../models/motorPolicy.js";
-import PartnerIdModel from "../../models/partnerId.js";
+import MotorPolicyModel from "../../models/motorpolicySchema.js";
+import PartnerModel from "../../models/partnerSchema.js";
 
 export const createMotorPolicy = async (req, res) => {
   try {
@@ -44,7 +44,7 @@ export const createMotorPolicy = async (req, res) => {
     } = req.body;
 
     // Check if the provided partnerId exists in the PartnerId collection
-    // const existingPartner = await PartnerIdModel.findOne({ partnerId });
+    // const existingPartner = await PartnerModel.findOne({ partnerId });
     // if (!existingPartner) {
     //   return res.status(400).json({ status: "error", message: "PartnerId not found" });
     // }

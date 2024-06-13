@@ -3,7 +3,7 @@ import * as XLSX from 'xlsx';
 import fs from 'fs';
 import path from 'path';
 import moment from 'moment';
-import PartnerIdModel from '../../models/partnerId.js';
+import PartnerModel from '../../models/partnerSchema.js';
 
 // Path to local JSON file for storing data
 const dataFilePath = path.join(process.cwd(), 'data', 'partnerData.json');
@@ -64,7 +64,7 @@ const uploadPartnerIdExcel = async (req, res) => {
             }
 
             // Check if partnerId or email already exists in the database
-            const existingPartner = await PartnerIdModel.findOne({
+            const existingPartner = await PartnerModel.findOne({
                 $or: [{ partnerId: partnerId }, { email: email }]
             });
 
@@ -97,7 +97,7 @@ const uploadPartnerIdExcel = async (req, res) => {
 
         // Insert valid data into MongoDB
         if (validData.length > 0) {
-            await PartnerIdModel.insertMany(validData);
+            await PartnerModel.insertMany(validData);
         }
 
         // Read existing data from the file
@@ -126,10 +126,10 @@ const uploadPartnerIdExcel = async (req, res) => {
 
 const getAllPartners = async (req, res) => {
     try {
-        const partners = await PartnerIdModel.find();
+        const partners = await PartnerModel.find();
         res.status(200).json({
             message: 'Data retrieved successfully.',
-            data: { partners },
+            data:  partners ,
             status: "Success"
         });
     } catch (error) {
