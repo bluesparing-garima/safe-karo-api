@@ -1,4 +1,4 @@
-import ProductNameModel from "../../models/productName.js";
+import ProductModel from "../../models/product.js";
 
 // Create a new product name
 const createProductName = async (req, res) => {
@@ -12,7 +12,7 @@ const createProductName = async (req, res) => {
         .json({ status: "failed", message: "Required fields are missing" });
     }
 
-    const newproductName = new ProductNameModel({
+    const newproductName = new ProductModel({
       productName,
       createdBy,
       updatedBy: null, // Set updatedBy to null initially
@@ -38,7 +38,7 @@ const createProductName = async (req, res) => {
 // Get all product names
 const getAllProductNames = async (req, res) => {
   try {
-    const ProductNames = await ProductNameModel.find();
+    const ProductNames = await ProductModel.find();
     res.status(200).json({
       message: "Success! Here are all product names",
       data:  ProductNames ,
@@ -58,7 +58,7 @@ const getProductNameById = async (req, res) => {
     const { id } = req.params;
 
     // Check if product name exists
-    const existingproductName = await ProductNameModel.findById(id);
+    const existingproductName = await ProductModel.findById(id);
     if (!existingproductName) {
       return res
         .status(404)
@@ -84,7 +84,7 @@ const updateProductName = async (req, res) => {
       const { productName, updatedBy } = req.body;
   
       // Check if product name exists
-      const existingProductName = await ProductNameModel.findById(id);
+      const existingProductName = await ProductModel.findById(id);
       if (!existingProductName) {
         return res.status(404).json({ status: "failed", message: "Product name not found" });
       }
@@ -116,7 +116,7 @@ const deleteProductName = async (req, res) => {
     const { id } = req.params;
 
     // Check if product name exists
-    const existingproductName = await ProductNameModel.findById(id);
+    const existingproductName = await ProductModel.findById(id);
     if (!existingproductName) {
       return res
         .status(404)
@@ -124,7 +124,7 @@ const deleteProductName = async (req, res) => {
     }
 
     // Delete the product name
-    await ProductNameModel.findByIdAndDelete(id);
+    await ProductModel.findByIdAndDelete(id);
     res
       .status(200)
       .json({

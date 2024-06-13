@@ -1,6 +1,6 @@
 // routes/partnerIdRoutes.js
 import express from 'express';
-import { uploadPartnerIdExcel, getAllPartners } from '../controller/adminController/partnerIdController.js';
+import { uploadPartnerIdExcel, getAllPartners } from '../controller/adminController/partnerController.js';
 
 const router = express.Router();
 

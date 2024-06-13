@@ -13,9 +13,11 @@ import excelRoutes from './routes/excelRoutes.js';
 import fileUpload from "express-fileupload";
 import payInRoutes from './routes/payInRoutes.js';
 import vehicleType from './routes/vehicleTypeRoutes.js';
-import vehicleName from './routes/vehicleNameRoutes.js';
+import vehicle from './routes/vehicleRoutes.js';
 import partnerIdRoutes from './routes/partnerIdRoutes.js';
 import productName from './routes/productRoutes.js';
+import company from './routes/companyRoutes.js';
+import broker from './routes/brokerRoutes.js';
 
 const app = express();
 const port = process.env.PORT;
@@ -63,13 +65,20 @@ app.use("/api/calculate", payInRoutes);
 app.use('/api/vehicle-type', vehicleType);
 
 // Vehicle Names
-app.use('/api/vehicle', vehicleName)
+app.use('/api/vehicle', vehicle)
 
 // Use the partnerId routes
 app.use('/api/partner', partnerIdRoutes);
 
 // Product Name
 app.use('/api/product',productName);
+
+// Company Name's
+app.use('/api/company', company);
+
+// Broker 
+app.use('/api/broker',broker);
+
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);
 });

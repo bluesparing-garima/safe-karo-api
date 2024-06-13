@@ -1,4 +1,4 @@
-import VehicleTypeModel from "../../models/vehicleType.js";
+import VehicleTypeModel from "../../models/vehicleTypeSchema.js";
 
 // Create a new vehicle type
 const createVehicleType = async (req, res) => {
@@ -23,7 +23,7 @@ const createVehicleType = async (req, res) => {
     await newVehicleType.save();
     res.status(200).json({
       message: "New vehicle type created successfully",
-      data: { newVehicleType },
+      data:  newVehicleType ,
       status: "success",
     });
   } catch (error) {
@@ -42,7 +42,7 @@ const getAllVehicleTypes = async (req, res) => {
     const vehicleTypes = await VehicleTypeModel.find();
     res.status(200).json({
       message: "Success! Here are all vehicle types",
-      data: { vehicleTypes },
+      data:  vehicleTypes ,
       status: "success",
     });
   } catch (error) {
@@ -67,7 +67,7 @@ const getVehicleTypeByName = async (req, res) => {
       .status(200)
       .json({
         message: "Success! Here is the vehicle type with ID",
-        data: { vehicleName },
+        data: vehicleName ,
         status: "success",
       });
   } catch (error) {
@@ -92,7 +92,7 @@ const getVehicleTypeById = async (req, res) => {
     }
     res.status(200).json({
       status: "success",
-      data: { existingVehicleType },
+      data: existingVehicleType ,
       message: "Success! Here is the vehicle type with ID",
     });
   } catch (error) {
@@ -126,7 +126,7 @@ const updateVehicleType = async (req, res) => {
 
     res.status(200).json({
       status: "success",
-      data: { updatedVehicleType },
+      data:  updatedVehicleType ,
       message: `Vehicle type ${id} updated successfully`,
     });
   } catch (error) {

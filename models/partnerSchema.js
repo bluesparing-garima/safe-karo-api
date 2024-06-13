@@ -1,7 +1,7 @@
 // models/partnerId.js
 import mongoose from 'mongoose';
 
-const PartnerIdSchema = new mongoose.Schema({
+const PartnerSchema = new mongoose.Schema({
     partnerId: { type: String },
     name: { type: String },
     mobile: { type: String },
@@ -16,5 +16,5 @@ const PartnerIdSchema = new mongoose.Schema({
     updatedOn: { type: Date }
 });
 
-const PartnerIdModel = mongoose.model('PartnerId', PartnerIdSchema);
-export default PartnerIdModel;
+const PartnerModel = mongoose.model('PartnerId', PartnerSchema);
+export default PartnerModel;

@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
 import fs from 'fs';
 import path from 'path';
-import ExcelDataModel from '../../models/excelData.js';
+import ExcelDataModel from '../../models/excelDataSchema.js';
 
 // Path to local JSON file for storing data
 const dataFilePath = path.join(process.cwd(), 'data', 'data.json');

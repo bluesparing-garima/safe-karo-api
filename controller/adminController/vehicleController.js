@@ -1,4 +1,4 @@
-import VehicleNameModel from "../../models/vehicleName.js";
+import VehicleModel from "../../models/vehicleSchema.js";
 
 // Create a new vehicle type
 const createVehicleName = async (req, res) => {
@@ -12,7 +12,7 @@ const createVehicleName = async (req, res) => {
         .json({ status: "failed", message: "Required fields are missing" });
     }
 
-    const newvehicleName = new VehicleNameModel({
+    const newvehicleName = new VehicleModel({
       vehicleName,
       createdBy,
       updatedBy: null, // Set updatedBy to null initially
@@ -22,7 +22,7 @@ const createVehicleName = async (req, res) => {
     await newvehicleName.save();
     res.status(200).json({
       message: "New vehicle type created successfully",
-      data: { newvehicleName },
+      data: newvehicleName ,
       status: "success",
     });
   } catch (error) {
@@ -38,10 +38,10 @@ const createVehicleName = async (req, res) => {
 // Get all vehicle types
 const getAllVehicleNames = async (req, res) => {
   try {
-    const VehicleNames = await VehicleNameModel.find();
+    const VehicleNames = await VehicleModel.find();
     res.status(200).json({
       message: "Success! Here are all vehicle types",
-      data: { VehicleNames },
+      data:  VehicleNames ,
       status: "success",
     });
   } catch (error) {
@@ -56,7 +56,7 @@ const getAllVehicleNames = async (req, res) => {
 const getVehicleNameByName = async (req, res) => {
   try {
     const { VehicleName } = req.params;
-    const vehicleName = await VehicleNameModel.findOne({ VehicleName });
+    const vehicleName = await VehicleModel.findOne({ VehicleName });
     if (!vehicleName) {
       return res
         .status(404)
@@ -66,7 +66,7 @@ const getVehicleNameByName = async (req, res) => {
       .status(200)
       .json({
         message: "Success! Here are all vehicle Names",
-        data: { vehicleName },
+        data:  vehicleName ,
         status: "success",
       });
   } catch (error) {
@@ -83,7 +83,7 @@ const getVehicleNameById = async (req, res) => {
     const { id } = req.params;
 
     // Check if vehicle type exists
-    const existingvehicleName = await VehicleNameModel.findById(id);
+    const existingvehicleName = await VehicleModel.findById(id);
     if (!existingvehicleName) {
       return res
         .status(404)
@@ -91,7 +91,7 @@ const getVehicleNameById = async (req, res) => {
     }
     res.status(200).json({
       message: "Success! Here is the vehicle type with ID",
-      data: { existingvehicleName },
+      data: existingvehicleName ,
       status: "success",
     });
   } catch (error) {
@@ -109,7 +109,7 @@ const updateVehicleName = async (req, res) => {
     const { updatedBy, ...updateData } = req.body;
 
     // Check if vehicle type exists
-    const existingvehicleName = await VehicleNameModel.findById(id);
+    const existingvehicleName = await VehicleModel.findById(id);
     if (!existingvehicleName) {
       return res
         .status(404)
@@ -117,7 +117,7 @@ const updateVehicleName = async (req, res) => {
     }
 
     // Update the vehicle type
-    const updatedvehicleName = await VehicleNameModel.findByIdAndUpdate(
+    const updatedvehicleName = await VehicleModel.findByIdAndUpdate(
       id,
       { $set: { ...updateData, updatedBy, updatedOn: new Date() } },
       { new: true, runValidators: true }
@@ -125,7 +125,7 @@ const updateVehicleName = async (req, res) => {
 
     res.status(200).json({
       message: `Vehicle type ${id} updated successfully`,
-      data: { updatedvehicleName },
+      data:  updatedvehicleName ,
       status: "success",
     });
   } catch (error) {
@@ -143,7 +143,7 @@ const deleteVehicleName = async (req, res) => {
     const { id } = req.params;
 
     // Check if vehicle type exists
-    const existingvehicleName = await VehicleNameModel.findById(id);
+    const existingvehicleName = await VehicleModel.findById(id);
     if (!existingvehicleName) {
       return res
         .status(404)
@@ -151,7 +151,7 @@ const deleteVehicleName = async (req, res) => {
     }
 
     // Delete the vehicle type
-    await VehicleNameModel.findByIdAndDelete(id);
+    await VehicleModel.findByIdAndDelete(id);
     res
       .status(200)
       .json({
