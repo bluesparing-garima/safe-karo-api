@@ -1,97 +1,104 @@
+// controllers/motorPolicyController.js
 import MotorPolicyModel from "../../models/motorPolicy.js";
+import PartnerIdModel from "../../models/partnerId.js";
 
-// Create Motor Policy
 export const createMotorPolicy = async (req, res) => {
-  console.log("REQUEST BODY", req.body);
-
-  // Properly destructure req.body directly
-  const {
-    policyType,
-    caseType,
-    policyCategory,
-    category,
-    subCategory,
-    companyName,
-    broker,
-    make,
-    model,
-    fuelType,
-    rto,
-    vehicleNumber,
-    seatingCapacity,
-    cc,
-    ncb,
-    policyNumber,
-    fullName,
-    emailId,
-    iphoneNumber,
-    mfgYear,
-    tenure,
-    registrationDate,
-    endDate,
-    issueDate,
-    idv,
-    od,
-    tp,
-    netPremium,
-    finalPremium,
-    paymentMode,
-    policyCreatedBy,
-    documents
-  } = req.body;
-
-  // Create the formData object
-  const formData = {
-    policyType,
-    caseType,
-    policyCategory,
-    category,
-    subCategory,
-    companyName,
-    broker,
-    make,
-    model,
-    fuelType,
-    rto,
-    vehicleNumber,
-    seatingCapacity,
-    cc,
-    ncb,
-    policyNumber,
-    fullName,
-    emailId,
-    iphoneNumber,
-    mfgYear,
-    tenure,
-    registrationDate,
-    endDate,
-    issueDate,
-    idv,
-    od,
-    tp,
-    netPremium,
-    finalPremium,
-    paymentMode,
-    policyCreatedBy,
-    documents
-  };
-
-  console.log("FORM DATA", formData); // Log formData to debug
-
-  // Create a new instance of MotorPolicyModel with formData
-  const newForm = new MotorPolicyModel(formData);
-
   try {
-    // Save the new form to the database
-    const savedForm = await newForm.save();
-    // Respond with the created form data
-    res.status(201).json({ status: "success", data: [savedForm] });
+    const {
+      partnerId,
+      partnerName,
+      relationshipManagerId,
+      relationshipManagerName,
+      policyType,
+      caseType,
+      policyCategory,
+      category,
+      subCategory,
+      companyName,
+      broker,
+      make,
+      model,
+      fuelType,
+      rto,
+      vehicleNumber,
+      seatingCapacity,
+      cc,
+      ncb,
+      policyNumber,
+      fullName,
+      emailId,
+      phoneNumber,
+      mfgYear,
+      tenure,
+      registrationDate,
+      endDate,
+      issueDate,
+      idv,
+      od,
+      tp,
+      netPremium,
+      finalPremium,
+      paymentMode,
+      policyCreatedBy,
+      documents
+    } = req.body;
+
+    // Check if the provided partnerId exists in the PartnerId collection
+    // const existingPartner = await PartnerIdModel.findOne({ partnerId });
+    // if (!existingPartner) {
+    //   return res.status(400).json({ status: "error", message: "PartnerId not found" });
+    // }
+
+    // Create a new instance of MotorPolicyModel with formData
+    const newMotorPolicy = new MotorPolicyModel({
+      partnerId: partnerId || "", 
+      partnerName: partnerName || "", 
+      relationshipManagerId: relationshipManagerId || "", 
+      relationshipManagerName: relationshipManagerName || "", 
+      policyType,
+      caseType,
+      policyCategory,
+      category,
+      subCategory,
+      companyName,
+      broker,
+      make,
+      model,
+      fuelType,
+      rto,
+      vehicleNumber,
+      seatingCapacity,
+      cc,
+      ncb,
+      policyNumber,
+      fullName,
+      emailId,
+      phoneNumber,
+      mfgYear,
+      tenure,
+      registrationDate,
+      endDate,
+      issueDate,
+      idv,
+      od,
+      tp,
+      netPremium,
+      finalPremium,
+      paymentMode,
+      policyCreatedBy,
+      documents
+    });
+
+    // Save the new motor policy to the database
+    const savedMotorPolicy = await newMotorPolicy.save();
+
+    // Respond with success message and saved data
+    res.status(201).json({ status: "success", message: "Motor Policy created successfully", data: {savedMotorPolicy} });
   } catch (error) {
     // Handle any errors during the save operation
     res.status(500).json({ status: "error", message: error.message });
   }
 };
-
 
 // Get Motor Policies with Pagination
 export const getMotorPolicies = async (req, res) => {

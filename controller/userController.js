@@ -1,10 +1,9 @@
-import bcrypt from 'bcryptjs';
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import UserModel from "../models/user.js";
 
 const userRegistration = async (req, res) => {
-    console.log("RECEIVED event: ", req);
-  const { name, email, password, phoneNumber} = req.body;
+  const { name, email, password, phoneNumber, role } = req.body; 
   try {
     const user = await UserModel.findOne({ email: email });
     if (user) {
@@ -13,24 +12,24 @@ const userRegistration = async (req, res) => {
         .json({ status: "failed", message: "Email already exists" });
     }
 
-    if (!name || !email || !password || !phoneNumber) {
+    if (!name || !email || !password || !phoneNumber || !role) {
       return res
         .status(400)
         .json({ status: "failed", message: "All fields are required" });
     }
 
     const salt = await bcrypt.genSalt(10);
-    console.log("salt", salt);
     const hashPassword = await bcrypt.hash(password, salt);
-    console.log("hashpassword", hashPassword);
 
-    const doc = new UserModel({
+    const newUser = new UserModel({
       name,
       email,
       password: hashPassword,
+      phoneNumber,
+      role,
     });
 
-    await doc.save();
+    await newUser.save();
 
     const saved_user = await UserModel.findOne({ email: email });
     const token = jwt.sign(
@@ -41,7 +40,7 @@ const userRegistration = async (req, res) => {
 
     res.status(201).json({
       message: "Registration Success",
-      token: {token},
+      token: token,
       status: "success",
     });
   } catch (error) {
@@ -81,6 +80,10 @@ const userLogin = async (req, res) => {
       status: "success",
       message: "Login Success",
       token: token,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      phoneNumber: user.phoneNumber
     });
   } catch (error) {
     console.error(error);

@@ -36,7 +36,7 @@ const createVehicleName = async (req, res) => {
 };
 
 // Get all vehicle types
-const getAllvehicleNames = async (req, res) => {
+const getAllVehicleNames = async (req, res) => {
   try {
     const VehicleNames = await VehicleNameModel.find();
     res.status(200).json({
@@ -53,7 +53,7 @@ const getAllvehicleNames = async (req, res) => {
 };
 
 // Get vehicle type by name
-const getvehicleNameByName = async (req, res) => {
+const getVehicleNameByName = async (req, res) => {
   try {
     const { VehicleName } = req.params;
     const vehicleName = await VehicleNameModel.findOne({ VehicleName });
@@ -78,7 +78,7 @@ const getvehicleNameByName = async (req, res) => {
 };
 
 // Get vehicle type by ID
-const getvehicleNameById = async (req, res) => {
+const getVehicleNameById = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -103,7 +103,7 @@ const getvehicleNameById = async (req, res) => {
 };
 
 // Update vehicle type
-const updatevehicleName = async (req, res) => {
+const updateVehicleName = async (req, res) => {
   try {
     const { id } = req.params;
     const { updatedBy, ...updateData } = req.body;
@@ -138,7 +138,7 @@ const updatevehicleName = async (req, res) => {
 };
 
 // Delete vehicle type
-const deletevehicleName = async (req, res) => {
+const deleteVehicleName = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -168,9 +168,9 @@ const deletevehicleName = async (req, res) => {
 
 export {
   createVehicleName,
-  getAllvehicleNames,
-  getvehicleNameByName,
-  getvehicleNameById,
-  updatevehicleName,
-  deletevehicleName,
+  getAllVehicleNames,
+  getVehicleNameByName,
+  getVehicleNameById,
+  updateVehicleName,
+  deleteVehicleName,
 };
