@@ -22,7 +22,7 @@ const createProductName = async (req, res) => {
     await newproductName.save();
     res.status(200).json({
       message: "New product name created successfully",
-      data: { newproductName },
+      data:  newproductName ,
       status: "success",
     });
   } catch (error) {
@@ -41,7 +41,7 @@ const getAllProductNames = async (req, res) => {
     const ProductNames = await ProductNameModel.find();
     res.status(200).json({
       message: "Success! Here are all product names",
-      data: { ProductNames },
+      data:  ProductNames ,
       status: "success",
     });
   } catch (error) {
@@ -66,7 +66,7 @@ const getProductNameById = async (req, res) => {
     }
     res.status(200).json({
       message: "Success! Here is the product name with ID",
-      data: { existingproductName },
+      data:  existingproductName ,
       status: "success",
     });
   } catch (error) {
@@ -98,7 +98,7 @@ const updateProductName = async (req, res) => {
   
       res.status(200).json({
         message: `Product name ${id} updated successfully`,
-        data: { updatedProductName },
+        data: updatedProductName ,
         status: "success",
       });
     } catch (error) {
