@@ -36,7 +36,7 @@ const createProductName = async (req, res) => {
 };
 
 // Get all product names
-const getAllproductNames = async (req, res) => {
+const getAllProductNames = async (req, res) => {
   try {
     const ProductNames = await ProductNameModel.find();
     res.status(200).json({
@@ -53,7 +53,7 @@ const getAllproductNames = async (req, res) => {
 };
 
 // Get product name by ID
-const getproductNameById = async (req, res) => {
+const getProductNameById = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -78,7 +78,7 @@ const getproductNameById = async (req, res) => {
 };
 
 // Update product name
-const updateproductName = async (req, res) => {
+const updateProductName = async (req, res) => {
     try {
       const { id } = req.params;
       const { productName, updatedBy } = req.body;
@@ -111,7 +111,7 @@ const updateproductName = async (req, res) => {
   };
 
 // Delete productname
-const deleteproductName = async (req, res) => {
+const deleteProductName = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -141,8 +141,8 @@ const deleteproductName = async (req, res) => {
 
 export {
   createProductName,
-  getAllproductNames,
-  getproductNameById,
-  updateproductName,
-  deleteproductName,
+  getAllProductNames,
+  getProductNameById,
+  updateProductName,
+  deleteProductName,
 };

@@ -63,13 +63,13 @@ app.use("/api/calculate", payInRoutes);
 app.use('/api/vehicle-type', vehicleType);
 
 // Vehicle Names
-app.use('/api/vehicle-name', vehicleName)
+app.use('/api/vehicle', vehicleName)
 
 // Use the partnerId routes
 app.use('/api/partner', partnerIdRoutes);
 
 // Product Name
-app.use('/api/product-name',productName);
+app.use('/api/product',productName);
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);
 });

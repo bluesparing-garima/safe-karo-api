@@ -1,10 +1,10 @@
 import expres from "express";
 import {
-    createProductName,
-  getAllproductNames,
-  getproductNameById,
-  updateproductName,
-  deleteproductName,
+  createProductName,
+  getAllProductNames,
+  getProductNameById,
+  updateProductName,
+  deleteProductName,
 } from "../controller/adminController/productController.js";
 
 const router = expres.Router();
@@ -13,15 +13,15 @@ const router = expres.Router();
 router.post('/', createProductName);
 
 // Get all case types or filter by product name
-router.get('/', getAllproductNames);
+router.get('/', getAllProductNames);
 
 // Get product types by ID
-router.get('/:id', getproductNameById);
+router.get('/:id', getProductNameById);
 
 // Update a product type by id
-router.put('/:id', updateproductName);
+router.put('/:id', updateProductName);
 
 // Delete a product type by id
-router.delete('/:id', deleteproductName);
+router.delete('/:id', deleteProductName);
 
 export default router;
