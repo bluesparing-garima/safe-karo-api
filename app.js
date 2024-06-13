@@ -14,7 +14,7 @@ import fileUpload from "express-fileupload";
 import payInRoutes from './routes/payInRoutes.js';
 import vehicleTypes from './routes/vehicleTypeRoutes.js';
 import vehicleNames from './routes/vehicleNameRoutes.js';
-
+import partnerIdRoutes from './routes/partnerIdRoutes.js';
 const app = express();
 const port = process.env.PORT;
 const DATABASE_URL = process.env.DATEBASE_URL;
@@ -62,6 +62,9 @@ app.use('/api/vehicle-type', vehicleTypes);
 
 // Vehicle Names
 app.use('/api/vehicle-name', vehicleNames)
+
+// Use the partnerId routes
+app.use('/api/partner', partnerIdRoutes);
 
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);
