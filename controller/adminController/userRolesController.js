@@ -1,5 +1,4 @@
 import RoleModel from "../../models/userRoleSchema.js";
-import { v4 as uuidv4 } from "uuid";
 
 // Create a new role
 const createRoles = async (req, res) => {
@@ -7,7 +6,6 @@ const createRoles = async (req, res) => {
   try {
     const { name, description, createdBy, phoneNumber, assignedRole, email } =
       req.body;
-    const uuid = uuidv4();
 
     // Check if the user already exists
     const user = await RoleModel.findOne({ email });
@@ -18,13 +16,13 @@ const createRoles = async (req, res) => {
     }
 
     const newRole = new RoleModel({
-      uuid,
       name,
       description,
       createdBy,
       phoneNumber,
       assignedRole,
       email,
+      isActive: true, // Set isActive to true initially
     });
 
     await newRole.save();
@@ -48,8 +46,8 @@ const getUserRoles = async (req, res) => {
   try {
     const { email } = req.params;
 
-    // Query the roles collection by email
-    const user = await RoleModel.findOne({ email });
+    // Query the roles collection by email and isActive
+    const user = await RoleModel.findOne({ email, isActive: true });
     if (!user) {
       return res
         .status(404)
@@ -66,22 +64,22 @@ const getUserRoles = async (req, res) => {
   }
 };
 
-// Get all users
+// Get all active users
 const getAllUser = async (req, res) => {
   console.log("Received Request");
   try {
-    // Query the roles collection to fetch all users
-    const data = await RoleModel.find();
+    // Query the roles collection to fetch all active users
+    const data = await RoleModel.find({ isActive: true });
     if (!data || data.length === 0) {
       return res
         .status(404)
-        .json({ status: "failed", message: "No roles found" });
+        .json({ status: "failed", message: "No active roles found" });
     }
 
     res.status(200).json({
       status: "success",
       data: data,
-      message: "Here are all the users in the roles collection",
+      message: "Here are all the active users in the roles collection",
     });
   } catch (error) {
     console.error(error);
@@ -98,37 +96,37 @@ const getUsersByRole = async (req, res) => {
   try {
     const { roleName } = req.params;
 
-    // Query the roles collection to find users with the specified role
-    const users = await RoleModel.find({ assignedRole: roleName });
+    // Query the roles collection to find active users with the specified role
+    const users = await RoleModel.find({ assignedRole: roleName, isActive: true });
     if (!users || users.length === 0) {
       return res.status(404).json({
         status: "failed",
-        message: `No users found with role ${roleName}`,
+        message: `No active users found with role ${roleName}`,
       });
     }
 
     res.status(200).json({
       status: "success",
       data: users,
-      message: "Here are the users with the specified role",
+      message: `Here are the active users with the specified role ${roleName}`,
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({
       status: "failed",
-      message: "Unable to retrieve users by role. Please try again.",
+      message: "Unable to retrieve active users by role. Please try again.",
     });
   }
 };
 
-// Delete user by email
+// Delete user by email (soft delete by setting isActive to false)
 const deleteUserByEmail = async (req, res) => {
   console.log("Received Request", req.params);
   try {
     const { email } = req.params;
 
-    // Delete the user with the specified email
-    const result = await RoleModel.findOneAndDelete({ email });
+    // Update isActive to false instead of deleting the user physically
+    const result = await RoleModel.findOneAndUpdate({ email }, { isActive: false });
     if (!result) {
       return res.status(404).json({
         status: "failed",
@@ -138,13 +136,13 @@ const deleteUserByEmail = async (req, res) => {
 
     res.status(200).json({
       status: "success",
-      message: `User with email ${email} deleted successfully`,
+      message: `User with email ${email} marked as inactive successfully`,
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({
       status: "failed",
-      message: "Unable to delete user. Please try again.",
+      message: "Unable to update user. Please try again.",
     });
   }
 };
@@ -157,7 +155,7 @@ const updateUserByEmail = async (req, res) => {
     const { updatedBy, ...updateData } = req.body;
 
     const updatedUser = await RoleModel.findOneAndUpdate(
-      { email },
+      { email, isActive: true }, // Ensure the user is active
       { $set: { ...updateData, updatedBy, updatedOn: new Date() } },
       { new: true, runValidators: true }
     );
@@ -165,7 +163,7 @@ const updateUserByEmail = async (req, res) => {
     if (!updatedUser) {
       return res.status(404).json({
         status: "failed",
-        message: `No user found with email ${email}`,
+        message: `No active user found with email ${email}`,
       });
     }
 

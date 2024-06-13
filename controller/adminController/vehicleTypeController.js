@@ -3,7 +3,7 @@ import VehicleTypeModel from "../../models/vehicleTypeSchema.js";
 // Create a new vehicle type
 const createVehicleType = async (req, res) => {
   try {
-    const { vehicleId, vehicleType, createdBy } = req.body;
+    const { vehicleId, vehicleName, vehicleType, createdBy, isActive } = req.body;
 
     // Check if all required fields are provided
     if (!vehicleType || !createdBy) {
@@ -13,18 +13,20 @@ const createVehicleType = async (req, res) => {
     }
 
     const newVehicleType = new VehicleTypeModel({
-      vehicleId: vehicleId || null, // Set vehicleId or default to null
+      vehicleId: vehicleId || "",
+      vehicleName: vehicleName || "",
       vehicleType,
       createdBy,
       updatedBy: null, // Set updatedBy to null initially
       updatedOn: null, // Set updatedOn to null initially
+      isActive: isActive !== undefined ? isActive : true, // Set isActive to true if not provided
     });
 
     await newVehicleType.save();
     res.status(200).json({
-      message: "New vehicle type created successfully",
-      data:  newVehicleType ,
       status: "success",
+      data: newVehicleType,
+      message: "New vehicle type created successfully",
     });
   } catch (error) {
     console.error("Error creating vehicle type:", error);
@@ -39,17 +41,18 @@ const createVehicleType = async (req, res) => {
 // Get all vehicle types
 const getAllVehicleTypes = async (req, res) => {
   try {
-    const vehicleTypes = await VehicleTypeModel.find();
+    const vehicleTypes = await VehicleTypeModel.find({ isActive: true });
     res.status(200).json({
-      message: "Success! Here are all vehicle types",
-      data:  vehicleTypes ,
       status: "success",
+      data: vehicleTypes,
+      message: "Success! Here are all vehicle types",
     });
   } catch (error) {
     console.error(error);
-    res
-      .status(500)
-      .json({ status: "failed", message: "Unable to retrieve vehicle types" });
+    res.status(500).json({
+      status: "failed",
+      message: "Unable to retrieve vehicle types",
+    });
   }
 };
 
@@ -57,24 +60,23 @@ const getAllVehicleTypes = async (req, res) => {
 const getVehicleTypeByName = async (req, res) => {
   try {
     const { vehicleType } = req.params;
-    const vehicleName = await VehicleTypeModel.findOne({ vehicleType });
-    if (!vehicleName) {
+    const vehicle = await VehicleTypeModel.findOne({ vehicleType, isActive: true });
+    if (!vehicle) {
       return res
         .status(404)
         .json({ status: "failed", message: "Vehicle type not found" });
     }
-    res
-      .status(200)
-      .json({
-        message: "Success! Here is the vehicle type with ID",
-        data: vehicleName ,
-        status: "success",
-      });
+    res.status(200).json({
+      status: "success",
+      data: vehicle,
+      message: "Success! Here is the vehicle type with specified name",
+    });
   } catch (error) {
     console.error(error);
-    res
-      .status(500)
-      .json({ status: "failed", message: "Unable to retrieve vehicle type" });
+    res.status(500).json({
+      status: "failed",
+      message: "Unable to retrieve vehicle type",
+    });
   }
 };
 
@@ -84,22 +86,23 @@ const getVehicleTypeById = async (req, res) => {
     const { id } = req.params;
 
     // Check if vehicle type exists
-    const existingVehicleType = await VehicleTypeModel.findById(id);
-    if (!existingVehicleType) {
+    const vehicle = await VehicleTypeModel.findById(id);
+    if (!vehicle || !vehicle.isActive) {
       return res
         .status(404)
         .json({ status: "failed", message: "Vehicle type not found" });
     }
     res.status(200).json({
       status: "success",
-      data: existingVehicleType ,
-      message: "Success! Here is the vehicle type with ID",
+      data: vehicle,
+      message: "Success! Here is the vehicle type with specified ID",
     });
   } catch (error) {
     console.error(error);
-    res
-      .status(500)
-      .json({ status: "failed", message: "Unable to retrieve vehicle type" });
+    res.status(500).json({
+      status: "failed",
+      message: "Unable to retrieve vehicle type",
+    });
   }
 };
 
@@ -107,7 +110,7 @@ const getVehicleTypeById = async (req, res) => {
 const updateVehicleType = async (req, res) => {
   try {
     const { id } = req.params;
-    const { updatedBy, ...updateData } = req.body;
+    const { updatedBy, isActive, ...updateData } = req.body;
 
     // Check if vehicle type exists
     const existingVehicleType = await VehicleTypeModel.findById(id);
@@ -118,15 +121,17 @@ const updateVehicleType = async (req, res) => {
     }
 
     // Update the vehicle type
-    const updatedVehicleType = await VehicleTypeModel.findByIdAndUpdate(
-      id,
-      { $set: { ...updateData, updatedBy, updatedOn: new Date() } },
-      { new: true, runValidators: true }
-    );
+    existingVehicleType.set({
+      ...updateData,
+      updatedBy,
+      updatedOn: new Date(),
+      isActive: isActive !== undefined ? isActive : existingVehicleType.isActive,
+    });
+    const updatedVehicleType = await existingVehicleType.save();
 
     res.status(200).json({
       status: "success",
-      data:  updatedVehicleType ,
+      data: updatedVehicleType,
       message: `Vehicle type ${id} updated successfully`,
     });
   } catch (error) {
@@ -153,17 +158,16 @@ const deleteVehicleType = async (req, res) => {
 
     // Delete the vehicle type
     await VehicleTypeModel.findByIdAndDelete(id);
-    res
-      .status(200)
-      .json({
-        status: "success",
-        message: "Vehicle type deleted successfully",
-      });
+    res.status(200).json({
+      status: "success",
+      message: "Vehicle type deleted successfully",
+    });
   } catch (error) {
     console.error(error);
-    res
-      .status(500)
-      .json({ status: "failed", message: "Unable to delete vehicle type" });
+    res.status(500).json({
+      status: "failed",
+      message: "Unable to delete vehicle type",
+    });
   }
 };
 

@@ -39,31 +39,31 @@ const getAllPolicyTypes = async (req, res) => {
     res.status(500).json({ status: "failed", message: "Unable to retrieve policy types" });
   }
 };
-// Get case type by ID
+
 const getPolicyTypeById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Check if case type exists
+    // Check if policy type exists
     const existingPolicyType = await PolicyTypeModel.findById(id);
     if (!existingPolicyType) {
-      return res.status(404).json({ status: "failed", message: "Case type not found" });
+      return res.status(404).json({ status: "failed", message: "Policy type not found" });
     }
     res.status(200).json({
       status: "success",
       data: existingPolicyType,
-      message: "Success! Here is the case type with ID",
+      message: "Success! Here is the policy type with ID",
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ status: "failed", message: "Unable to retrieve case type" });
+    res.status(500).json({ status: "failed", message: "Unable to retrieve policy type" });
   }
 };
 
-const getPolicyTypeByName  = async (req, res) => {
+const getPolicyTypeByName = async (req, res) => {
   try {
     const { policyType } = req.params;
-    const policyName = await PolicyTypeModel.findOne({policyType});
+    const policyName = await PolicyTypeModel.findOne({ policyType });
     if (!policyName) {
       return res.status(404).json({ status: "failed", message: "Policy type not found" });
     }
@@ -74,10 +74,11 @@ const getPolicyTypeByName  = async (req, res) => {
   }
 };
 
+// Update policy type by ID
 const updatePolicyType = async (req, res) => {
   try {
     const { id } = req.params;
-    const { updatedBy, ...updateData } = req.body;
+    const { updatedBy, isActive, ...updateData } = req.body;
 
     // Check if policy type exists
     const existingPolicyType = await PolicyTypeModel.findById(id);
@@ -85,12 +86,23 @@ const updatePolicyType = async (req, res) => {
       return res.status(404).json({ status: "failed", message: "Policy type not found" });
     }
 
-    // Update the policy type
-    const updatedPolicyType = await PolicyTypeModel.findByIdAndUpdate(
-        id,
-        { $set: { ...updateData, updatedBy, updatedOn: new Date() }},
-        { new: true, runValidators: true}
-    );
+    // Update the policy type fields
+    Object.keys(updateData).forEach((key) => {
+      existingPolicyType[key] = updateData[key];
+    });
+
+    // Manually update isActive if provided in the request body
+    if (isActive !== undefined) {
+      existingPolicyType.isActive = isActive;
+    }
+
+    // Set updatedBy and updatedOn fields
+    existingPolicyType.updatedBy = updatedBy;
+    existingPolicyType.updatedOn = new Date();
+
+    // Save the updated policy type
+    const updatedPolicyType = await existingPolicyType.save();
+
     res.status(200).json({
       status: "success",
       data: updatedPolicyType,
@@ -102,12 +114,13 @@ const updatePolicyType = async (req, res) => {
   }
 };
 
+
 const deletePolicyType = async (req, res) => {
   try {
     const { id } = req.params;
 
     // Check if policy type exists
-    const existingPolicyType = await PolicyTypeModel.findById( id );
+    const existingPolicyType = await PolicyTypeModel.findById(id);
     if (!existingPolicyType) {
       return res.status(404).json({ status: "failed", message: "Policy type not found" });
     }
@@ -121,5 +134,4 @@ const deletePolicyType = async (req, res) => {
   }
 };
 
-export { createPolicyType, getAllPolicyTypes, getPolicyTypeById,getPolicyTypeByName, updatePolicyType, deletePolicyType };
-
+export { createPolicyType, getAllPolicyTypes, getPolicyTypeById, getPolicyTypeByName, updatePolicyType, deletePolicyType };

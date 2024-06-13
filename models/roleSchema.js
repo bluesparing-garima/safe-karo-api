@@ -5,7 +5,6 @@ const createRoleSchema = new mongoose.Schema(
     roleName: {
       type: String,
       required: true,
-      unique: true,
     },
     createdBy: {
       type: String,
@@ -19,15 +18,13 @@ const createRoleSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
-  
     updatedOn: {
       type: Date,
       default: null,
     },
-
     isActive: {
       type: Boolean,
-      default: true
+      default: true,
     }
   },
 );

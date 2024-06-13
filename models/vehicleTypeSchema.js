@@ -4,7 +4,11 @@ const vehicleTypesSchema = new mongoose.Schema(
   {
     vehicleId: {
       type: String,
-      default: null, // Initially set to null
+      default: null,
+    },
+    vehicleName: {
+      type: String,
+      default: null,
     },
     vehicleType: {
       type: String,
@@ -26,9 +30,13 @@ const vehicleTypesSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
   },
 );
 
-const VehicleTypesModel = mongoose.model('VehicleType', vehicleTypesSchema);
+const VehicleTypeModel = mongoose.model('VehicleType', vehicleTypesSchema);
 
-export default VehicleTypesModel;
+export default VehicleTypeModel;

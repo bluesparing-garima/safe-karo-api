@@ -1,21 +1,13 @@
 import mongoose from "mongoose";
 
-// define schema
+// Define schema
 const policyTypeSchema = new mongoose.Schema({
-  policyType: { type: String, require: true, trim: true },
-  createdBy: { type: String, require: true, trim: true },
-  updatedBy: {
-    type: String,
-    default: null,
-  },
-  createdOn: {
-    type: Date,
-    default: Date.now,
-  },
-  updatedOn: {
-    type: Date,
-    default: null,
-  },
+  policyType: { type: String, required: true, trim: true },
+  createdBy: { type: String, required: true, trim: true },
+  updatedBy: { type: String, default: null },
+  createdOn: { type: Date, default: Date.now },
+  updatedOn: { type: Date, default: null },
+  isActive: { type: Boolean, default: true }, 
 });
 
 const PolicyTypeModel = mongoose.model("policyType", policyTypeSchema);

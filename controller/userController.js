@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import UserModel from "../models/userSchema.js";
 
 const userRegistration = async (req, res) => {
-  const { name, email, password, phoneNumber, role } = req.body; 
+  const { name, email, password, phoneNumber, role, isActive } = req.body; // Include isActive in req.body if sent
   try {
     const user = await UserModel.findOne({ email: email });
     if (user) {
@@ -27,13 +27,13 @@ const userRegistration = async (req, res) => {
       password: hashPassword,
       phoneNumber,
       role,
+      isActive: isActive !== undefined ? isActive : true, // Set default value if isActive is not provided
     });
 
     await newUser.save();
 
-    const saved_user = await UserModel.findOne({ email: email });
     const token = jwt.sign(
-      { userID: saved_user._id },
+      { userID: newUser._id },
       process.env.JWT_SECRET_KEY,
       { expiresIn: "5d" }
     );
@@ -58,7 +58,7 @@ const userLogin = async (req, res) => {
         .json({ status: "failed", message: "All Fields are Required" });
     }
 
-    const user = await UserModel.findOne({ email: email });
+    const user = await UserModel.findOne({ email: email, isActive: true }); // Ensure user is active
     if (!user) {
       return res
         .status(400)
@@ -83,7 +83,7 @@ const userLogin = async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
-      phoneNumber: user.phoneNumber
+      phoneNumber: user.phoneNumber,
     });
   } catch (error) {
     console.error(error);

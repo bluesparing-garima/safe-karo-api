@@ -1,12 +1,13 @@
 import mongoose from "mongoose";
 import { v4 as uuidv4 } from "uuid";
+
 const uuid = uuidv4();
 
 const roleSchema = new mongoose.Schema({
   uuid: {
     type: String,
     unique: true,
-    default: uuid
+    default: uuid,
   },
   name: {
     type: String,
@@ -22,23 +23,27 @@ const roleSchema = new mongoose.Schema({
     required: true,
   },
   createdOn: {
-    type: Date, default: Date.now
+    type: Date,
+    default: Date.now,
   },
   phoneNumber: {
     type: String,
-    required: true
+    required: true,
   },
   assignedRole: {
     type: String,
-    required: true
+    required: true,
   },
   email: {
     type: String,
-    required: true
-  }
+    required: true,
+  },
+  isActive: {
+    type: Boolean,
+    default: true,
+  },
 });
 
-//Model
-const RoleModel = mongoose.model('roleassigneed', roleSchema);
+const RoleModel = mongoose.model("roleassigneed", roleSchema);
 
 export default RoleModel;

@@ -1,9 +1,9 @@
 import CaseTypeModel from "../../models/caseTypeSchema.js";
 
-// Create a new case type
+// Create CaseType
 const createCaseType = async (req, res) => {
   try {
-    const { caseType, createdBy } = req.body;
+    const { caseType, createdBy, isActive } = req.body;
 
     // Check if all required fields are provided
     if (!caseType || !createdBy) {
@@ -18,7 +18,8 @@ const createCaseType = async (req, res) => {
 
     const newCaseType = new CaseTypeModel({
       caseType,
-      createdBy
+      createdBy,
+      isActive: isActive !== undefined ? isActive : true,
     });
 
     await newCaseType.save();
@@ -92,7 +93,7 @@ const getCaseTypeById = async (req, res) => {
 const updateCaseType = async (req, res) => {
   try {
     const { id } = req.params;
-    const { updatedBy, ...updateData } = req.body;
+    const { updatedBy, isActive, ...updateData } = req.body;
 
     // Check if case type exists
     const existingCaseType = await CaseTypeModel.findById(id);
@@ -103,7 +104,7 @@ const updateCaseType = async (req, res) => {
     // Update the case type
     const updatedCaseType = await CaseTypeModel.findByIdAndUpdate(
       id,
-      { $set: { ...updateData, updatedBy, updatedOn: new Date() } },
+      { $set: { ...updateData, updatedBy, updatedOn: new Date(), ...(isActive !== undefined && { isActive }) } },
       { new: true, runValidators: true }
     );
 
@@ -120,6 +121,7 @@ const updateCaseType = async (req, res) => {
     });
   }
 };
+
 
 // Delete case type
 const deleteCaseType = async (req, res) => {

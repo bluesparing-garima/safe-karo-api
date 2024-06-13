@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
 
-const companySchema = new mongoose.Schema(
+const productNamesSchema = new mongoose.Schema(
   {
-    companyName: {
+    productName: {
       type: String,
       required: true,
     },
@@ -26,9 +26,9 @@ const companySchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-  }
+  },
 );
 
-const CompanyModel = mongoose.model('Company', companySchema);
+const ProductNamesModel = mongoose.model('ProductName', productNamesSchema);
 
-export default CompanyModel;
+export default ProductNamesModel;
