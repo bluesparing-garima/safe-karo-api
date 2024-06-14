@@ -1,16 +1,8 @@
 import mongoose from 'mongoose';
 
-const vehicleTypesSchema = new mongoose.Schema(
+const fuelTypeSchema = new mongoose.Schema(
   {
-    vehicleId: {
-      type: String,
-      default: null,
-    },
-    vehicleName: {
-      type: String,
-      default: null,
-    },
-    vehicleType: {
+    fuelType: {
       type: String,
       required: true,
     },
@@ -32,11 +24,11 @@ const vehicleTypesSchema = new mongoose.Schema(
     },
     isActive: {
       type: Boolean,
-      default: true,
+      default: true,    
     },
   },
 );
 
-const VehicleTypeModel = mongoose.model('VehicleType', vehicleTypesSchema);
+const FuelTypeModel = mongoose.model('Fuel', fuelTypeSchema);
 
-export default VehicleTypeModel;
+export default FuelTypeModel;

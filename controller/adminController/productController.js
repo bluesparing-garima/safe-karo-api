@@ -3,16 +3,18 @@ import ProductModel from "../../models/productSchema.js";
 // Create a new product name
 const createProductName = async (req, res) => {
   try {
-    const { productName, createdBy, isActive } = req.body;
+    const { productName,categoryId,categoryName,createdBy, isActive } = req.body;
 
     // Check if all required fields are provided
-    if (!productName || !createdBy) {
+    if (!categoryId || !categoryName || !productName || !createdBy) {
       return res
         .status(400)
         .json({ status: "failed", message: "Required fields are missing" });
     }
 
     const newProductName = new ProductModel({
+      categoryId,
+      categoryName,
       productName,
       createdBy,
       updatedBy: null,
@@ -78,7 +80,7 @@ const getProductNameById = async (req, res) => {
 const updateProductName = async (req, res) => {
   try {
     const { id } = req.params;
-    const { productName, updatedBy, isActive } = req.body;
+    const { productName,categoryName,categoryId, updatedBy, isActive } = req.body;
 
     // Check if product name exists
     const existingProductName = await ProductModel.findById(id);
@@ -88,6 +90,8 @@ const updateProductName = async (req, res) => {
 
     // Update the product name
     existingProductName.productName = productName;
+    existingProductName.categoryName = categoryName;
+    existingProductName.categoryId = categoryId;
     existingProductName.updatedBy = updatedBy;
     existingProductName.updatedOn = new Date();
     existingProductName.isActive = isActive !== undefined ? isActive : existingProductName.isActive;

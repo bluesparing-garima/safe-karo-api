@@ -12,13 +12,15 @@ import addRolesRoutes from "./routes/rolesRoutes.js";
 import excelRoutes from './routes/excelRoutes.js';
 import fileUpload from "express-fileupload";
 import payInRoutes from './routes/payInRoutes.js';
-import vehicleType from './routes/vehicleTypeRoutes.js';
-import vehicle from './routes/vehicleRoutes.js';
+import vehicleType from './routes/productSubTypeRoutes.js';
 import partnerRoutes from './routes/partnerIdRoutes.js';
 import productName from './routes/productRoutes.js';
 import company from './routes/companyRoutes.js';
 import broker from './routes/brokerRoutes.js';
 import category from './routes/categoryRoutes.js';
+import fuelType from './routes/fuelTypeRoutes.js';
+import make from './routes/makeRoutes.js';
+import model from './routes/modelRoutes.js';
 
 const app = express();
 const port = process.env.PORT;
@@ -62,17 +64,14 @@ app.use('/api/excel', excelRoutes);
 // PayIn Routes
 app.use("/api/calculate", payInRoutes);
 
-// Vehicle Routes
-app.use('/api/vehicle-type', vehicleType);
-
-// Vehicle Names
-app.use('/api/vehicle', vehicle)
-
-// Use the partnerId routes
-app.use('/api/partner', partnerRoutes);
+// product-type Routes
+app.use('/api/product-type', vehicleType);
 
 // Product Name
 app.use('/api/product',productName);
+
+// Use the partnerId routes
+app.use('/api/partner', partnerRoutes);
 
 // Company Name's
 app.use('/api/company', company);
@@ -82,6 +81,16 @@ app.use('/api/broker',broker);
 
 // Category
 app.use('/api/category',category)
+
+// FuelType
+app.use('/api/fuel-type',fuelType)
+
+// Make
+app.use('/api/make',make);
+
+// Model
+app.use('/api/model',model);
+
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);
 });

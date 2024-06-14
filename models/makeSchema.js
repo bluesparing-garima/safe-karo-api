@@ -1,14 +1,13 @@
 import mongoose from 'mongoose';
 
-const vehicleSchema = new mongoose.Schema(
+const makeSchema = new mongoose.Schema(
   {
-    vehicleName: {
+    makeName: {
       type: String,
       required: true,
     },
     createdBy: {
       type: String,
-      required: true,
     },
     updatedBy: {
       type: String,
@@ -29,6 +28,6 @@ const vehicleSchema = new mongoose.Schema(
   },
 );
 
-const VehicleModel = mongoose.model('Vehicle', vehicleSchema);
+const MakeModel = mongoose.model('Make', makeSchema);
 
-export default VehicleModel;
+export default MakeModel;
