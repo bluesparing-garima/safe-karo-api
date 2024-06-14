@@ -15,5 +15,5 @@ const PartnerSchema = new mongoose.Schema({
     updatedOn: { type: Date }
 });
 
-const PartnerModel = mongoose.model('PartnerId', PartnerSchema);
+const PartnerModel = mongoose.model('Partner', PartnerSchema);
 export default PartnerModel;

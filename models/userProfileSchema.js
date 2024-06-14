@@ -25,7 +25,7 @@ const userProfileSchema = new mongoose.Schema({
     salary: { type: Number },
     isActive: { type: Boolean, default: true }, // Add isActive field
     document:[DocumentSchema]
-},);
+});
 
 const UserModel = mongoose.model("UserProfile", userProfileSchema);
 
