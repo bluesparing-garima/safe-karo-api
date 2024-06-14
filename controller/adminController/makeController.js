@@ -82,7 +82,7 @@ const getMakeById = async (req, res) => {
 const updateMake = async (req, res) => {
   try {
     const { id } = req.params;
-    const { make, updatedBy, isActive } = req.body;
+    const { makeName, updatedBy, isActive } = req.body;
 
     // Check if make exists
     const existingMake = await MakeModel.findById(id);
@@ -93,7 +93,7 @@ const updateMake = async (req, res) => {
     }
 
     // Update the make
-    existingMake.make = make;
+    existingMake.makeName = makeName;
     existingMake.updatedBy = updatedBy;
     existingMake.updatedOn = new Date();
     if (isActive !== undefined) {
