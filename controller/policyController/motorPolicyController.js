@@ -1,3 +1,4 @@
+
 // controllers/motorPolicyController.js
 import MotorPolicyModel from "../../models/motorpolicySchema.js";
 
@@ -9,6 +10,7 @@ export const createMotorPolicy = async (req, res) => {
       partnerName,
       relationshipManagerId,
       relationshipManagerName,
+      paymentDetails,
       policyType,
       caseType,
       policyCategory,
@@ -49,6 +51,7 @@ export const createMotorPolicy = async (req, res) => {
       partnerName: partnerName || "",
       relationshipManagerId: relationshipManagerId || "",
       relationshipManagerName: relationshipManagerName || "",
+      paymentDetails: paymentDetails || "",
       policyType,
       caseType,
       policyCategory,
@@ -81,55 +84,67 @@ export const createMotorPolicy = async (req, res) => {
       paymentMode,
       policyCreatedBy,
       documents,
-      isActive: isActive !== undefined ? isActive : true // Set default to true if not provided
+      isActive: isActive !== undefined ? isActive : true, // Set default to true if not provided
+      updatedBy: null, // Explicitly set updatedBy to null
+      updatedOn: null, // Explicitly set updatedOn to null
     });
 
     const savedMotorPolicy = await newMotorPolicy.save();
     res.status(201).json({
-      status: "success",
       message: "Motor Policy created successfully",
-      data: savedMotorPolicy
+      data: savedMotorPolicy,
+      status: "success",
     });
   } catch (error) {
     res.status(500).json({ status: "error", message: error.message });
   }
 };
 
-// Get Motor Policies with Pagination
+// Get Motor Policies 
 export const getMotorPolicies = async (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 20;
-  const skip = (page - 1) * limit;
+  // const page = parseInt(req.query.page) || 1;
+  // const limit = parseInt(req.query.limit) || 20;
+  // const skip = (page - 1) * limit;
 
   try {
-    const forms = await MotorPolicyModel.find({ isActive: true }) // Retrieve only active motor policies
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
+    const forms = await MotorPolicyModel.find() 
+      // .sort({ createdAt: -1 })
+      // .skip(skip)
+      // .limit(limit);
 
-    const totalCount = await MotorPolicyModel.countDocuments({ isActive: true }); // Count only active motor policies
+     const totalCount = await MotorPolicyModel.countDocuments({ isActive: true });
 
     res.status(200).json({
-      status: "success",
+      message:"All Motor Policy's.",
       data: forms,
-      totalCount,
-      totalPages: Math.ceil(totalCount / limit),
-      currentPage: page
+      status: "success",
+      // totalCount,
+      // totalPages: Math.ceil(totalCount / limit),
+      // currentPage: page
     });
   } catch (error) {
     res.status(500).json({ status: "error", message: error.message });
   }
 };
 
-// Get Motor Policy by ID
+// Get Motor Policy by partnerId
 export const getMotorPolicyById = async (req, res) => {
   try {
-    const form = await MotorPolicyModel.findById(req.params.id);
-    if (!form || !form.isActive) {
+    const { partnerId } = req.params; // Extract the partnerId from the request parameters
+
+    const policy = await MotorPolicyModel.findOne({ partnerId });
+
+    if (!policy) {
       return res.status(404).json({ status: "error", message: "Motor Policy not found" });
     }
-    res.status(200).json({ status: "success", data: form });
+
+    res.status(200).json({
+      message: `Motor Policy with Partner ID ${partnerId} retrieved successfully`,
+      data: policy,
+      status: "success"
+    });
   } catch (error) {
+    console.error("Error retrieving motor policy by partnerId:", error);
     res.status(500).json({ status: "error", message: error.message });
   }
 };
@@ -137,6 +152,11 @@ export const getMotorPolicyById = async (req, res) => {
 // Update Motor Policy by ID
 export const updateMotorPolicy = async (req, res) => {
   const {
+    partnerId,
+    partnerName,
+    relationshipManagerId,
+    relationshipManagerName,
+    paymentDetails,
     policyType,
     caseType,
     policyCategory,
@@ -169,7 +189,8 @@ export const updateMotorPolicy = async (req, res) => {
     paymentMode,
     policyCreatedBy,
     documents,
-    isActive // Add isActive to capture from request body
+    isActive, // Add isActive to capture from request body
+    updatedBy, // Assume this is provided in the request
   } = req.body;
 
   const formData = {
@@ -205,20 +226,37 @@ export const updateMotorPolicy = async (req, res) => {
     paymentMode,
     policyCreatedBy,
     documents,
-    isActive: isActive !== undefined ? isActive : true // Set default to true if not provided
+    isActive: isActive !== undefined ? isActive : true, // Default to true if not provided
+    updatedBy: updatedBy || "system", // Set to 'system' or user info if not provided
+    updatedOn: new Date(), // Set the current date for updatedOn
   };
+
+  // Check if partnerId and partnerName are provided in the request body
+  if (partnerId !== undefined) {
+    formData.partnerId = partnerId;
+  }
+  if (partnerName !== undefined) {
+    formData.partnerName = partnerName;
+  }
 
   try {
     const updatedForm = await MotorPolicyModel.findByIdAndUpdate(
       req.params.id,
       formData,
-      { new: true }
+      { new: true, runValidators: true }
     );
+
     if (!updatedForm) {
       return res.status(404).json({ status: "error", message: "Motor Policy not found" });
     }
-    res.status(200).json({ status: "success", data: updatedForm });
+
+    res.status(200).json({
+      message: `Motor Policy with ID ${req.params.id} updated successfully`,
+      data: updatedForm,
+      status: "success"
+    });
   } catch (error) {
+    console.error("Error updating motor policy:", error);
     res.status(500).json({ status: "error", message: error.message });
   }
 };

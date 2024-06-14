@@ -38,11 +38,12 @@ const MotorPolicySchema = new mongoose.Schema(
     finalPremium: { type: String },
     paymentMode: { type: String },
     policyCreatedBy: { type: String },
-    documents: [DocumentSchema],
     partnerId: { type: String, default: "" },
     partnerName: { type: String, default: "" },
     relationshipManagerId: { type: String, default: "" },
     relationshipManagerName: { type: String, default: "" },
+    paymentDetails:{type:String,default:""},
+    documents: [DocumentSchema],
     isActive: { type: Boolean, default: true }, // Add isActive field
   },
   { timestamps: true }

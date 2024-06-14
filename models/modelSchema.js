@@ -1,22 +1,18 @@
 import mongoose from 'mongoose';
 
-const productNamesSchema = new mongoose.Schema(
+const modelSchema = new mongoose.Schema(
   {
-    productName: {
+    makeId:{
+        type:String,
+    },
+    makeName: {
       type: String,
-      required: true,
     },
-    categoryId:{
-      type:String,
-      required:true,
-    },
-    categoryName:{
-      type:String,
-      required:true,
+    modelName:{
+        type:String,
     },
     createdBy: {
       type: String,
-      required: true,
     },
     updatedBy: {
       type: String,
@@ -37,6 +33,6 @@ const productNamesSchema = new mongoose.Schema(
   },
 );
 
-const ProductNamesModel = mongoose.model('Product', productNamesSchema);
+const Model = mongoose.model('Model', modelSchema);
 
-export default ProductNamesModel;
+export default Model;
