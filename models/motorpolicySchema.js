@@ -9,7 +9,6 @@ const MotorPolicySchema = new mongoose.Schema(
   {
     policyType: { type: String },
     caseType: { type: String },
-    policyCategory: { type: String },
     category: { type: String },
     subCategory: { type: String, default: "" },
     companyName: { type: String },
