@@ -13,7 +13,7 @@ const DataSchema = new mongoose.Schema({
     companyName: String,
     make: String,
     model: String,
-    age: String,
+    vehicleAge: String,
     od: Number,
     tp: Number,
     createdBy: {

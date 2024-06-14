@@ -22,6 +22,7 @@ import fuelType from './routes/fuelTypeRoutes.js';
 import make from './routes/makeRoutes.js';
 import model from './routes/modelRoutes.js';
 import branch from './routes/branchRoutes.js';
+import userProfile from './routes/userProfileRoutes.js';
 
 const app = express();
 const port = process.env.PORT;
@@ -43,6 +44,9 @@ app.use(fileUpload({
 
 // Load Routes
 app.use("/api/user", userRoutes);
+
+// userProfile
+app.use("/api/user-profile",userProfile);
 
 //assignee roles Routes
 app.use("/api/user-roles", assigneeRolesRouters);
@@ -94,6 +98,7 @@ app.use('/api/model',model);
 
 // Branch
 app.use('/api/branches',branch);
+
 
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);
