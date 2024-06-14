@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 const DataSchema = new mongoose.Schema({
-    vehicleType: String,
+    productType: String,
     subCategory: String,
     fuelType: String,
     engine: String,

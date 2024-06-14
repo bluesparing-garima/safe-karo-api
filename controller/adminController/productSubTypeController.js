@@ -3,10 +3,10 @@ import ProductSubTypeModel from "../../models/productSubTypeSchema.js";
 // Create a new product type
 const createProductType = async (req, res) => {
   try {
-    const { productId, productName, productType, createdBy, isActive } = req.body;
+    const { productId, productName, productSubType, createdBy, isActive } = req.body;
 
     // Check if all required fields are provided
-    if (!productType || !createdBy) {
+    if (!productSubType || !createdBy) {
       return res
         .status(400)
         .json({ status: "failed", message: "Required fields are missing" });
@@ -15,11 +15,11 @@ const createProductType = async (req, res) => {
     const newProductType = new ProductSubTypeModel({
       productId: productId || "",
       productName: productName || "",
-      productType,
+      productSubType,
       createdBy,
-      updatedBy: null, // Set updatedBy to null initially
-      updatedOn: null, // Set updatedOn to null initially
-      isActive: isActive !== undefined ? isActive : true, // Set isActive to true if not provided
+      updatedBy: null,
+      updatedOn: null, 
+      isActive: isActive !== undefined ? isActive : true,
     });
 
     await newProductType.save();

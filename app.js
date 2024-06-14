@@ -21,6 +21,7 @@ import category from './routes/categoryRoutes.js';
 import fuelType from './routes/fuelTypeRoutes.js';
 import make from './routes/makeRoutes.js';
 import model from './routes/modelRoutes.js';
+import branch from './routes/branchRoutes.js';
 
 const app = express();
 const port = process.env.PORT;
@@ -90,6 +91,9 @@ app.use('/api/make',make);
 
 // Model
 app.use('/api/model',model);
+
+// Branch
+app.use('/api/branches',branch);
 
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);

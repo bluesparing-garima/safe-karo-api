@@ -1,16 +1,8 @@
 import mongoose from 'mongoose';
 
-const productSubTypesSchema = new mongoose.Schema(
+const branchSchema = new mongoose.Schema(
   {
-    productId: {
-      type: String,
-      default: null,
-    },
-    productName: {
-      type: String,
-      default: null,
-    },
-    productSubType: {
+    branchName: {
       type: String,
       required: true,
     },
@@ -32,11 +24,11 @@ const productSubTypesSchema = new mongoose.Schema(
     },
     isActive: {
       type: Boolean,
-      default: true,
+      default: true,    
     },
   },
 );
 
-const ProductSubTypeModel = mongoose.model('ProductType', productSubTypesSchema);
+const BranchModel = mongoose.model('Branch', branchSchema);
 
-export default ProductSubTypeModel;
+export default BranchModel;
