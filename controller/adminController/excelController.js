@@ -27,7 +27,7 @@ const uploadExcel = async (req, res) => {
 
         // Extract data to match schema fields
         const extractedData = worksheet.map((row) => ({
-            vehicleType: row.vehicleType || row['Vehicle Type'],
+            productType: row.productType || row['Product Type'],
             subCategory: row.subCategory || row['SubCategory'] || row['subCategory'],
             fuelType: row.fuelType || row['Fuel Type'],
             engine: row.engine || row['Engine'],
@@ -39,7 +39,7 @@ const uploadExcel = async (req, res) => {
             companyName: row.companyName || row['Company Name'],
             make: row.make || row['Make'],
             model: row.model || row['Model'],
-            age: row.age || row['Age'],
+            vehicleAge: row.vehicleAge || row['vehicleAge'],
             od: row.od || row['OD'],
             tp: row.tp || row['TP'],
             createdBy: "admin",  // Assuming req.user contains the user info

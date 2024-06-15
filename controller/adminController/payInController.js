@@ -16,26 +16,21 @@ const calculateODandTP = async (req, res) => {
       make,
       model,
       vehicleAge,
-      od,
-      tp,
     } = req.query;
 
-    // Validate the input parameters
     if (
       !subCategory ||
       !engine ||
       !ncb ||
       !rto ||
-      !insuredType | !caseType ||
+      !insuredType || !caseType ||
       !make ||
       !model ||
       !companyName ||
       !fuelType ||
       !productType ||
       !vehicleAge ||
-      !policyType ||
-      !od ||
-      !tp
+      !policyType
     ) {
       return res
         .status(400)
@@ -60,8 +55,6 @@ const calculateODandTP = async (req, res) => {
       make: make,
       model: model,
       vechileAge: vehicleAge,
-      od: od,
-      tp: tp,
     };
 
     // Remove undefined/null fields from dbQuery
@@ -83,10 +76,12 @@ const calculateODandTP = async (req, res) => {
         });
     }
 
-    // Return all fields from the matched record
+    const { od, tp } = matchedRecord.toObject();
+    const filteredRecord = { od, tp };
+
     res.status(200).json({
       message: "Record found",
-      data: matchedRecord,
+      data: filteredRecord,
       status: "Success",
     });
   } catch (error) {
