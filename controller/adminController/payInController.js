@@ -1,6 +1,7 @@
 import ExcelDataModel from "../../models/excelDataSchema.js";
 
 const calculateODandTP = async (req, res) => {
+  console.log(req.query)
   try {
     const {
       fuelType,

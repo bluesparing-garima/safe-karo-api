@@ -43,6 +43,7 @@ const MotorPolicySchema = new mongoose.Schema(
     relationshipManagerId: { type: String, default: "" },
     relationshipManagerName: { type: String, default: "" },
     paymentDetails:{type:String,default:""},
+    product:{type:String,default:""},
     documents: [DocumentSchema],
     isActive: { type: Boolean, default: true }, // Add isActive field
   },
