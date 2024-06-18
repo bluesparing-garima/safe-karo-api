@@ -61,6 +61,35 @@ export const getUserProfileById = async (req, res) => {
     }
 };
 
+// Get User Profiles by Head RM (Generalized for specific headRM values)
+export const getUserProfilesByHeadRM = async (req, res) => {
+    try {
+        let headRM;
+        if (req.path.includes('/RM')) {
+            headRM = ['RM', 'relationManager'];
+        } else {
+            headRM = ['relationManager']; 
+        }
+
+        const users = await UserModel.find({ headRM: { $in: headRM } });
+
+        if (users.length === 0) {
+            return res.status(404).json({ status: "error", message: `No user profiles found for ${headRM}` });
+        }
+
+        res.status(200).json({
+            message: `User profiles with headRM ${headRM} retrieved successfully`,
+            data: users,
+            status: "success",
+        });
+    } catch (error) {
+        console.error("Error fetching user profiles by headRM:", error);
+        res.status(500).json({ status: "error", message: error.message });
+    }
+};
+
+
+
 // Get All Active User Profiles
 export const getAllActiveUserProfiles = async (req, res) => {
     try {
@@ -131,17 +160,18 @@ export const updateUserProfile = async (req, res) => {
 // Delete (Deactivate) User Profile by ID
 export const deleteUserProfile = async (req, res) => {
     try {
+        
         const user = await UserModel.findById(req.params.id);
         if (!user) {
             return res.status(404).json({ status: "error", message: "User profile not found" });
         }
 
-        user.isActive = false; // Soft delete by marking isActive as false
-        await user.save();
+        const savedUser = await user.save();
 
         res.status(200).json({
             message: `User profile with ID ${req.params.id} deactivated successfully`,
-            status: "success"
+            status: "success",
+            data: savedUser,
         });
     } catch (error) {
         console.error("Error deleting user profile:", error);
