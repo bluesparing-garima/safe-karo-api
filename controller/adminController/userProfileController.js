@@ -132,7 +132,7 @@ export const updateUserProfile = async (req, res) => {
             accountHolderName,
             accountNumber,
             salary,
-            document, // Update with new document array
+            document, 
             UpdatedBy,
             isActive,
             updatedOn: new Date() // Set the current date for updatedOn
@@ -162,18 +162,19 @@ export const updateUserProfile = async (req, res) => {
 // Delete (Deactivate) User Profile by ID
 export const deleteUserProfile = async (req, res) => {
     try {
-        
         const user = await UserModel.findById(req.params.id);
         if (!user) {
             return res.status(404).json({ status: "error", message: "User profile not found" });
         }
 
-        const savedUser = await user.save();
+        user.isActive = false; // Soft delete by marking isActive as false
+
+        const savedUser = await user.save(); // Save the updated user
 
         res.status(200).json({
             message: `User profile with ID ${req.params.id} deactivated successfully`,
+            data: savedUser, // Return the saved user data for verification
             status: "success",
-            data: savedUser,
         });
     } catch (error) {
         console.error("Error deleting user profile:", error);
