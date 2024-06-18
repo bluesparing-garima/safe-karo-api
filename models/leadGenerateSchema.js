@@ -32,7 +32,7 @@ const leadGenerateSchema = new mongoose.Schema({
     },
     comments:{
         type:String,
-        required:true
+        
     },
     documents: [DocumentSchema],
     comments:[],
