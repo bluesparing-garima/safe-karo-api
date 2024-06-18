@@ -1,9 +1,47 @@
 import ExcelDataModel from "../../models/excelDataSchema.js";
 
 const calculateODandTP = async (req, res) => {
-  console.log(req.query)
   try {
     const {
+      rto,
+      policyType,
+      caseType,
+      productType,
+      subCategory,
+      companyName,
+      insuredType,
+      make,
+      model,
+      fuelType,
+      engine,
+      ncb,
+      vehicleAge,
+    } = req.query;
+
+    if (
+      !rto ||
+      !policyType ||
+      !caseType ||
+      !productType ||
+      !subCategory ||
+      !companyName ||
+      !insuredType ||
+      !make ||
+      !model ||
+      !fuelType ||
+      !engine ||
+      !ncb ||
+      !vehicleAge
+    ) {
+      return res
+        .status(400)
+        .json({
+          message: "Missing required query parameters",
+          status: "Failed",
+        });
+    }
+
+    const dbQuery = {
       fuelType,
       productType,
       subCategory,
@@ -17,67 +55,23 @@ const calculateODandTP = async (req, res) => {
       make,
       model,
       vehicleAge,
-    } = req.query;
-
-    if (
-      !subCategory ||
-      !engine ||
-      !ncb ||
-      !rto ||
-      !insuredType || !caseType ||
-      !make ||
-      !model ||
-      !companyName ||
-      !fuelType ||
-      !productType ||
-      !vehicleAge ||
-      !policyType
-    ) {
-      return res
-        .status(400)
-        .json({
-          message: "Missing required query parameters",
-          status: "Failed",
-        });
-    }
-
-    // Build the query object based on provided parameters
-    const dbQuery = {
-      fuelType: fuelType,
-      productType: productType,
-      subCategory: subCategory,
-      engine: engine,
-      ncb: ncb,
-      policyType: policyType,
-      rto: rto,
-      insuredType: insuredType,
-      caseType: caseType,
-      companyName: companyName,
-      make: make,
-      model: model,
-      vechileAge: vehicleAge,
     };
 
-    // Remove undefined/null fields from dbQuery
     Object.keys(dbQuery).forEach((key) =>
-      dbQuery[key] === undefined || dbQuery[key] === null
-        ? delete dbQuery[key]
-        : {}
+      dbQuery[key] === undefined || dbQuery[key] === null ? delete dbQuery[key] : {}
     );
 
-    // Fetch the relevant record from the database
-    const matchedRecord = await ExcelDataModel.findOne(dbQuery).select("*");
+    const matchedRecord = await ExcelDataModel.findOne(dbQuery).select("od tp");
 
     if (!matchedRecord) {
-      return res
-        .status(404)
-        .json({
-          message: "No matching record found in the database",
-          status: "Failed",
-        });
+      return res.status(404).json({
+        message: "No matching record found in the database",
+        status: "Failed",
+      });
     }
 
     const { od, tp } = matchedRecord.toObject();
+
     const filteredRecord = { od, tp };
 
     res.status(200).json({
@@ -86,10 +80,7 @@ const calculateODandTP = async (req, res) => {
       status: "Success",
     });
   } catch (error) {
-    console.error("Error fetching data:", error);
-    res
-      .status(500)
-      .json({ message: "Error fetching data", error: error.message });
+    res.status(500).json({ message: "Error fetching data", error: error.message });
   }
 };
 
