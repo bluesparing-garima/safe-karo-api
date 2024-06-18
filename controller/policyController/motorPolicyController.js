@@ -44,7 +44,7 @@ export const createMotorPolicy = async (req, res) => {
       policyCreatedBy,
       documents,
       product,
-      isActive // Add isActive to capture from request body
+      isActive
     } = req.body;
 
     const newMotorPolicy = new MotorPolicyModel({
@@ -192,8 +192,8 @@ export const updateMotorPolicy = async (req, res) => {
     policyCreatedBy,
     documents,
     product,
-    isActive, // Add isActive to capture from request body
-    updatedBy, // Assume this is provided in the request
+    isActive,
+    updatedBy,
   } = req.body;
 
   const formData = {
