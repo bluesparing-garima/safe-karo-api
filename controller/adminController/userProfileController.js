@@ -61,29 +61,29 @@ export const getUserProfileById = async (req, res) => {
     }
 };
 
-// Get User Profiles by Head RM (Generalized for specific headRM values)
-export const getUserProfilesByHeadRM = async (req, res) => {
+// Get User Profiles by Role (Generalized for specific Role values)
+export const getUserProfilesByRole = async (req, res) => {
     try {
-        let headRM;
+        let role;
         if (req.path.includes('/RM')) {
-            headRM = ['RM', 'relationManager'];
+            role = ['RM', 'relationManager'];
         } else {
-            headRM = ['relationManager']; 
+            role = ['relationManager']; 
         }
 
-        const users = await UserModel.find({ headRM: { $in: headRM } });
+        const users = await UserModel.find({ role: { $in: role } });
 
         if (users.length === 0) {
-            return res.status(404).json({ status: "error", message: `No user profiles found for ${headRM}` });
+            return res.status(404).json({ status: "error", message: `No user profiles found for ${role}` });
         }
 
         res.status(200).json({
-            message: `User profiles with headRM ${headRM} retrieved successfully`,
+            message: `User profiles with role ${role} retrieved successfully`,
             data: users,
             status: "success",
         });
     } catch (error) {
-        console.error("Error fetching user profiles by headRM:", error);
+        console.error("Error fetching user profiles by role:", error);
         res.status(500).json({ status: "error", message: error.message });
     }
 };

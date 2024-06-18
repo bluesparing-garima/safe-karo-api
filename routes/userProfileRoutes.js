@@ -5,7 +5,7 @@ import {
     updateUserProfile,
     deleteUserProfile,
     getAllActiveUserProfiles,
-    getUserProfilesByHeadRM // Import the new function
+    getUserProfilesByRole 
 } from "../controller/adminController/userProfileController.js";
 
 const router = express.Router();
@@ -14,7 +14,7 @@ const router = express.Router();
 router.post("/", createUserProfile);
 
 // Route to get user profiles by headRM ( RM and relationManager)
-router.get("/RM", getUserProfilesByHeadRM); 
+router.get("/RM", getUserProfilesByRole); 
 
 // Route to get all active user profiles
 router.get("/", getAllActiveUserProfiles);
