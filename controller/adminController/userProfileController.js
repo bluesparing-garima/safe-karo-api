@@ -159,21 +159,16 @@ export const updateUserProfile = async (req, res) => {
     }
 };
 
-// Delete (Deactivate) User Profile by ID
 export const deleteUserProfile = async (req, res) => {
     try {
-        const user = await UserModel.findById(req.params.id);
-        if (!user) {
+        const deletedUser = await UserModel.findOneAndDelete({ _id: req.params.id });
+
+        if (!deletedUser) {
             return res.status(404).json({ status: "error", message: "User profile not found" });
         }
 
-        user.isActive = false; // Soft delete by marking isActive as false
-
-        const savedUser = await user.save(); // Save the updated user
-
         res.status(200).json({
-            message: `User profile with ID ${req.params.id} deactivated successfully`,
-            data: savedUser, // Return the saved user data for verification
+            message: `User profile with ID ${req.params.id} deleted successfully`,
             status: "success",
         });
     } catch (error) {
@@ -181,4 +176,6 @@ export const deleteUserProfile = async (req, res) => {
         res.status(500).json({ status: "error", message: error.message });
     }
 };
+
+
 
