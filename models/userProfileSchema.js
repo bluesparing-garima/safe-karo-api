@@ -10,7 +10,7 @@ const DocumentSchema = new mongoose.Schema({
   });
 
 const userProfileSchema = new mongoose.Schema({
-  headRM_Id:{type:String,trim:true},
+  headRM_Id:{type:String,required:true,trim:true},
     branch: { type: String, required: true, trim: true },
     role: { type: String, required: true, trim: true },
     headRM: { type: String, trim: true },

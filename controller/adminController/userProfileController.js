@@ -5,15 +5,15 @@ import UserModel from "../../models/userProfileSchema.js";
 export const createUserProfile = async (req, res) => {
     try {
         const {
-            branch, role, headRM_Id,headRM, fullName, mobileNumber, email, dateOfBirth, gender,
+            branch, role, headRM_Id, headRM, fullName, mobileNumber, email, dateOfBirth, gender,
             address, pincode, bankName, IFSC, accountHolderName, accountNumber,
-            salary, document, createdBy,isActive
+            salary, document, createdBy, isActive
         } = req.body;
 
         const newUser = new UserModel({
             branch,
             role,
-            headRM_Id,
+            headRM_Id, 
             headRM,
             fullName,
             mobileNumber,
@@ -27,7 +27,7 @@ export const createUserProfile = async (req, res) => {
             accountHolderName,
             accountNumber,
             salary,
-            document, 
+            document,
             createdBy,
             isActive
         });
@@ -89,8 +89,6 @@ export const getUserProfilesByRole = async (req, res) => {
     }
 };
 
-
-
 // Get All Active User Profiles
 export const getAllActiveUserProfiles = async (req, res) => {
     try {
@@ -106,13 +104,13 @@ export const getAllActiveUserProfiles = async (req, res) => {
     }
 };
 
-// Update User Profile by ID
+//Update User Profile
 export const updateUserProfile = async (req, res) => {
     try {
         const {
-            branch, role, headRM_Id,headRM, fullName, mobileNumber, email, dateOfBirth, gender,
+            branch, role, headRM_Id, headRM, fullName, mobileNumber, email, dateOfBirth, gender,
             address, pincode, bankName, IFSC, accountHolderName, accountNumber,
-            salary, document, UpdatedBy,isActive
+            salary, document, UpdatedBy, isActive
         } = req.body;
 
         const updatedData = {
@@ -132,10 +130,10 @@ export const updateUserProfile = async (req, res) => {
             accountHolderName,
             accountNumber,
             salary,
-            document, 
+            document,
             UpdatedBy,
             isActive,
-            updatedOn: new Date() // Set the current date for updatedOn
+            updatedOn: new Date() 
         };
 
         const updatedUser = await UserModel.findByIdAndUpdate(
@@ -158,6 +156,7 @@ export const updateUserProfile = async (req, res) => {
         res.status(500).json({ status: "error", message: error.message });
     }
 };
+
 
 export const deleteUserProfile = async (req, res) => {
     try {
