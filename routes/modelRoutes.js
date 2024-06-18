@@ -5,19 +5,19 @@ import {
 
 const router = express.Router();
 
-// Create a new broker name
+// Create a new model name
 router.post('/', createModel);
 
-// Get all broker names
+// Get all model names
 router.get('/', getAllModels);
 
-// Get broker name by ID
+// Get model  by ID
 router.get('/:id', getModelById);
 
-// Update a broker name by id
+// Update a model  by id
 router.put('/:id', updateModel);
 
-// Delete a broker name by id
+// Delete a model by id
 router.delete('/:id', deleteModel);
 
 export default router;

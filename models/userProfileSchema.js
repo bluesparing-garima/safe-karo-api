@@ -12,7 +12,7 @@ const DocumentSchema = new mongoose.Schema({
 const userProfileSchema = new mongoose.Schema({
     branch: { type: String, required: true, trim: true },
     role: { type: String, required: true, trim: true },
-    headRM: { type: String, required: true, trim: true },
+    headRM: { type: String, trim: true },
     fullName: { type: String, required: true, trim: true },
     mobileNumber: { type: String, required: true, trim: true },
     email: { type: String, required: true, trim: true, unique: true },

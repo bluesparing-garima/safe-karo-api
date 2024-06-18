@@ -5,19 +5,19 @@ import {
 
 const router = express.Router();
 
-// Create a new broker name
+// Create a new maker name
 router.post('/', createMake);
 
-// Get all broker names
+// Get all maker names
 router.get('/', getAllMakes);
 
-// Get broker name by ID
+// Get maker name by ID
 router.get('/:id', getMakeById);
 
-// Update a broker name by id
+// Update a maker name by id
 router.put('/:id', updateMake);
 
-// Delete a broker name by id
+// Delete a maker name by id
 router.delete('/:id', deleteMake);
 
 export default router;
