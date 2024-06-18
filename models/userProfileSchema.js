@@ -8,8 +8,10 @@ const DocumentSchema = new mongoose.Schema({
     qualification: { type: String, trim: true },
     bankProof: { type: String }, // base64 string
   });
+
 const userProfileSchema = new mongoose.Schema({
     branch: { type: String, required: true, trim: true },
+    role: { type: String, required: true, trim: true },
     headRM: { type: String, required: true, trim: true },
     fullName: { type: String, required: true, trim: true },
     mobileNumber: { type: String, required: true, trim: true },
@@ -24,7 +26,12 @@ const userProfileSchema = new mongoose.Schema({
     accountNumber: { type: String, trim: true },
     salary: { type: Number },
     isActive: { type: Boolean, default: true }, // Add isActive field
-    document:[DocumentSchema]
+    document:[DocumentSchema],
+    createdBy: { type: String, required: true, trim: true },
+    updatedBy: { type: String, default: null },
+    createdOn: { type: Date, default: Date.now },
+    updatedOn: { type: Date, default: null },
+    isActive: { type: Boolean, default: true }, 
 });
 
 const UserModel = mongoose.model("UserProfile", userProfileSchema);

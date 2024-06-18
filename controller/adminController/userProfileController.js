@@ -5,13 +5,14 @@ import UserModel from "../../models/userProfileSchema.js";
 export const createUserProfile = async (req, res) => {
     try {
         const {
-            branch, headRM, fullName, mobileNumber, email, dateOfBirth, gender,
+            branch, role, headRM, fullName, mobileNumber, email, dateOfBirth, gender,
             address, pincode, bankName, IFSC, accountHolderName, accountNumber,
-            salary, document
+            salary, document, createdBy
         } = req.body;
 
         const newUser = new UserModel({
             branch,
+            role,
             headRM,
             fullName,
             mobileNumber,
@@ -25,7 +26,8 @@ export const createUserProfile = async (req, res) => {
             accountHolderName,
             accountNumber,
             salary,
-            document // This should be an array of document objects
+            document, // This should be an array of document objects
+            createdBy,
         });
 
         const savedUser = await newUser.save();
@@ -77,13 +79,14 @@ export const getAllActiveUserProfiles = async (req, res) => {
 export const updateUserProfile = async (req, res) => {
     try {
         const {
-            branch, headRM, fullName, mobileNumber, email, dateOfBirth, gender,
+            branch, role, headRM, fullName, mobileNumber, email, dateOfBirth, gender,
             address, pincode, bankName, IFSC, accountHolderName, accountNumber,
-            salary, document
+            salary, document, UpdatedBy
         } = req.body;
 
         const updatedData = {
             branch,
+            role,
             headRM,
             fullName,
             mobileNumber,
@@ -98,6 +101,7 @@ export const updateUserProfile = async (req, res) => {
             accountNumber,
             salary,
             document, // Update with new document array
+            UpdatedBy,
             updatedOn: new Date() // Set the current date for updatedOn
         };
 

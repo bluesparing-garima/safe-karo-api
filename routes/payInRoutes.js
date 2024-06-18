@@ -4,6 +4,6 @@ import { calculateODandTP } from '../controller/adminController/payInController.
 const router = express.Router();
 
 // Endpoint for calculating OD and TP
-router.get('/', calculateODandTP);
+router.get('/pay-in', calculateODandTP);
 
 export default router;

@@ -43,6 +43,7 @@ export const createMotorPolicy = async (req, res) => {
       paymentMode,
       policyCreatedBy,
       documents,
+      product,
       isActive // Add isActive to capture from request body
     } = req.body;
 
@@ -84,6 +85,7 @@ export const createMotorPolicy = async (req, res) => {
       paymentMode,
       policyCreatedBy,
       documents,
+      product,
       isActive: isActive !== undefined ? isActive : true, // Set default to true if not provided
       updatedBy: null, // Explicitly set updatedBy to null
       updatedOn: null, // Explicitly set updatedOn to null
@@ -189,6 +191,7 @@ export const updateMotorPolicy = async (req, res) => {
     paymentMode,
     policyCreatedBy,
     documents,
+    product,
     isActive, // Add isActive to capture from request body
     updatedBy, // Assume this is provided in the request
   } = req.body;
@@ -226,6 +229,7 @@ export const updateMotorPolicy = async (req, res) => {
     paymentMode,
     policyCreatedBy,
     documents,
+    product,
     isActive: isActive !== undefined ? isActive : true, // Default to true if not provided
     updatedBy: updatedBy || "system", // Set to 'system' or user info if not provided
     updatedOn: new Date(), // Set the current date for updatedOn
