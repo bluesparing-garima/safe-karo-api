@@ -5,7 +5,7 @@ import UserModel from "../../models/userProfileSchema.js";
 export const createUserProfile = async (req, res) => {
     try {
         const {
-            branch, role, headRM, fullName, mobileNumber, email, dateOfBirth, gender,
+            branch, role, headRM_Id,headRM, fullName, mobileNumber, email, dateOfBirth, gender,
             address, pincode, bankName, IFSC, accountHolderName, accountNumber,
             salary, document, createdBy,isActive
         } = req.body;
@@ -13,6 +13,7 @@ export const createUserProfile = async (req, res) => {
         const newUser = new UserModel({
             branch,
             role,
+            headRM_Id,
             headRM,
             fullName,
             mobileNumber,
@@ -109,7 +110,7 @@ export const getAllActiveUserProfiles = async (req, res) => {
 export const updateUserProfile = async (req, res) => {
     try {
         const {
-            branch, role, headRM, fullName, mobileNumber, email, dateOfBirth, gender,
+            branch, role, headRM_Id,headRM, fullName, mobileNumber, email, dateOfBirth, gender,
             address, pincode, bankName, IFSC, accountHolderName, accountNumber,
             salary, document, UpdatedBy,isActive
         } = req.body;
@@ -117,6 +118,7 @@ export const updateUserProfile = async (req, res) => {
         const updatedData = {
             branch,
             role,
+            headRM_Id,
             headRM,
             fullName,
             mobileNumber,
