@@ -1,7 +1,6 @@
 import ExcelDataModel from "../../models/excelDataSchema.js";
 
 const calculateODandTP = async (req, res) => {
-  console.log('Received query parameters:', req.query);
   try {
     const {
       rto,
@@ -58,8 +57,6 @@ const calculateODandTP = async (req, res) => {
       vehicleAge,
     };
 
-    console.log('Database query object:', dbQuery);
-
     Object.keys(dbQuery).forEach((key) =>
       dbQuery[key] === undefined || dbQuery[key] === null ? delete dbQuery[key] : {}
     );
@@ -74,7 +71,6 @@ const calculateODandTP = async (req, res) => {
     }
 
     const { od, tp } = matchedRecord.toObject();
-    console.log('Extracted fields - od:', od, ', tp:', tp);
 
     const filteredRecord = { od, tp };
 
@@ -84,7 +80,6 @@ const calculateODandTP = async (req, res) => {
       status: "Success",
     });
   } catch (error) {
-    console.error("Error fetching data:", error);
     res.status(500).json({ message: "Error fetching data", error: error.message });
   }
 };

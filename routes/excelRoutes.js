@@ -7,6 +7,6 @@ const router = express.Router();
 router.post('/', uploadExcel);
 
 // Endpoint for fetching all data
-router.get('/data', getAllData);
+router.get('/', getAllData);
 
 export default router;
