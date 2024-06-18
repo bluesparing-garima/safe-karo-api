@@ -41,7 +41,7 @@ const createProductType = async (req, res) => {
 // Get all product types
 const getAllProductTypes = async (req, res) => {
   try {
-    const productTypes = await ProductSubTypeModel.find({ isActive: true });
+    const productTypes = await ProductSubTypeModel.find();
     res.status(200).json({
       status: "success",
       data: productTypes,
@@ -56,11 +56,12 @@ const getAllProductTypes = async (req, res) => {
   }
 };
 
+
 // Get product type by name
 const getProductTypeByName = async (req, res) => {
   try {
     const { productType } = req.params;
-    const product = await ProductSubTypeModel.findOne({ productType, isActive: true });
+    const product = await ProductSubTypeModel.findOne({ productType });
     if (!product) {
       return res
         .status(404)
@@ -80,6 +81,7 @@ const getProductTypeByName = async (req, res) => {
   }
 };
 
+
 // Get product type by ID
 const getProductTypeById = async (req, res) => {
   try {
@@ -87,7 +89,7 @@ const getProductTypeById = async (req, res) => {
 
     // Check if product type exists
     const product = await ProductSubTypeModel.findById(id);
-    if (!product || !product.isActive) {
+    if (!product) {
       return res
         .status(404)
         .json({ status: "failed", message: "Product type not found" });
@@ -105,6 +107,7 @@ const getProductTypeById = async (req, res) => {
     });
   }
 };
+
 
 // Update product type
 const updateProductType = async (req, res) => {
