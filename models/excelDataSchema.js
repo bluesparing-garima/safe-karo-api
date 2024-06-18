@@ -14,8 +14,8 @@ const DataSchema = new mongoose.Schema({
     make: String,
     model: String,
     vehicleAge: String,
-    od: Number,
-    tp: Number,
+    od: String,
+    tp: String,
     createdBy: {
         type: String,
     },
@@ -36,17 +36,17 @@ const DataSchema = new mongoose.Schema({
 // Middleware to update timestamps on save
 DataSchema.pre('save', function (next) {
     if (this.isNew) {
-        this.createdOn = Date.now(); // Set createdOn to the current date on document creation
-        this.updatedOn = null; // Ensure updatedOn is null on creation
+        this.createdOn = Date.now();
+        this.updatedOn = null;
     } else {
-        this.updatedOn = Date.now(); // Set updatedOn to the current date on document update
+        this.updatedOn = Date.now();
     }
     next();
 });
 
 // Middleware to handle updates specifically
 DataSchema.pre('findOneAndUpdate', function (next) {
-    this._update.updatedOn = Date.now(); // Set updatedOn to the current date on document update
+    this._update.updatedOn = Date.now(); 
     next();
 });
 
