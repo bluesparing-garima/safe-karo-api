@@ -7,7 +7,7 @@ export const createUserProfile = async (req, res) => {
         const {
             branch, role, headRM, fullName, mobileNumber, email, dateOfBirth, gender,
             address, pincode, bankName, IFSC, accountHolderName, accountNumber,
-            salary, document, createdBy
+            salary, document, createdBy,isActive
         } = req.body;
 
         const newUser = new UserModel({
@@ -26,8 +26,9 @@ export const createUserProfile = async (req, res) => {
             accountHolderName,
             accountNumber,
             salary,
-            document, // This should be an array of document objects
+            document, 
             createdBy,
+            isActive
         });
 
         const savedUser = await newUser.save();
@@ -63,7 +64,7 @@ export const getUserProfileById = async (req, res) => {
 // Get All Active User Profiles
 export const getAllActiveUserProfiles = async (req, res) => {
     try {
-        const users = await UserModel.find({ isActive: true });
+        const users = await UserModel.find();
         res.status(200).json({
             message: "All active user profiles retrieved successfully",
             data: users,
@@ -81,7 +82,7 @@ export const updateUserProfile = async (req, res) => {
         const {
             branch, role, headRM, fullName, mobileNumber, email, dateOfBirth, gender,
             address, pincode, bankName, IFSC, accountHolderName, accountNumber,
-            salary, document, UpdatedBy
+            salary, document, UpdatedBy,isActive
         } = req.body;
 
         const updatedData = {
@@ -102,6 +103,7 @@ export const updateUserProfile = async (req, res) => {
             salary,
             document, // Update with new document array
             UpdatedBy,
+            isActive,
             updatedOn: new Date() // Set the current date for updatedOn
         };
 
