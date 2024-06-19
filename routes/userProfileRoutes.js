@@ -4,28 +4,32 @@ import {
     getUserProfileById,
     updateUserProfile,
     deleteUserProfile,
-    getAllActiveUserProfiles,
+    getAllUserProfiles,
     getUserProfilesByRole 
 } from "../controller/adminController/userProfileController.js";
+import {
+    createPartner,
+    getAllPartners,
+    getPartnerById,
+    updatePartner,
+    deletePartner
+} from "../controller/adminController/partnerController.js";
 
 const router = express.Router();
 
-// Route to create a new user profile
+// User profile routes
 router.post("/", createUserProfile);
-
-// Route to get user profiles by headRM ( RM and relationManager)
-router.get("/RM", getUserProfilesByRole); 
-
-// Route to get all active user profiles
-router.get("/", getAllActiveUserProfiles);
-
-// Route to get a user profile by ID
+router.get("/role/:role", getUserProfilesByRole); 
+router.get("/", getAllUserProfiles);
 router.get("/:id", getUserProfileById);
-
-// Route to update a user profile by ID
 router.put("/:id", updateUserProfile);
-
-// Route to delete (deactivate) a user profile by ID
 router.delete("/:id", deleteUserProfile);
+
+// Partner routes
+router.post('/partners', createPartner);
+// router.get('/partners', getAllPartners);
+router.get('/partners/:id', getPartnerById);
+router.put('/partners/:id', updatePartner);
+router.delete('/partners/:id', deletePartner);
 
 export default router;

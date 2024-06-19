@@ -8,7 +8,7 @@ const userSchema = new mongoose.Schema({
   role: { type: String, required: true, trim: true }, 
   createdOn: { type: Date, default: Date.now },
   lastLogin: { type: Date, default: Date.now },
-  isActive: { type: Boolean, default: true }, // Add isActive field
+  isActive: { type: Boolean, default: true },
 });
 
 const UserModel = mongoose.model("appUser", userSchema);

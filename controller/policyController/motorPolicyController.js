@@ -1,4 +1,3 @@
-
 // controllers/motorPolicyController.js
 import MotorPolicyModel from "../../models/motorpolicySchema.js";
 
@@ -6,6 +5,8 @@ import MotorPolicyModel from "../../models/motorpolicySchema.js";
 export const createMotorPolicy = async (req, res) => {
   try {
     const {
+      tpPremium,
+      odPremium,
       policyStatus,
       partnerId,
       partnerName,
@@ -46,10 +47,12 @@ export const createMotorPolicy = async (req, res) => {
       policyCreatedBy,
       documents,
       productType,
-      isActive // Add isActive to capture from request body
+      isActive,
     } = req.body;
 
     const newMotorPolicy = new MotorPolicyModel({
+      tpPremium,
+      odPremium,
       policyStatus,
       partnerId: partnerId || "",
       partnerName: partnerName || "",
@@ -106,22 +109,24 @@ export const createMotorPolicy = async (req, res) => {
   }
 };
 
-// Get Motor Policies 
+// Get Motor Policies
 export const getMotorPolicies = async (req, res) => {
   // const page = parseInt(req.query.page) || 1;
   // const limit = parseInt(req.query.limit) || 20;
   // const skip = (page - 1) * limit;
 
   try {
-    const forms = await MotorPolicyModel.find() 
-      // .sort({ createdAt: -1 })
-      // .skip(skip)
-      // .limit(limit);
+    const forms = await MotorPolicyModel.find();
+    // .sort({ createdAt: -1 })
+    // .skip(skip)
+    // .limit(limit);
 
-     const totalCount = await MotorPolicyModel.countDocuments({ isActive: true });
+    const totalCount = await MotorPolicyModel.countDocuments({
+      isActive: true,
+    });
 
     res.status(200).json({
-      message:"All Motor Policy's.",
+      message: "All Motor Policy's.",
       data: forms,
       status: "success",
       // totalCount,
@@ -141,13 +146,15 @@ export const getMotorPolicyById = async (req, res) => {
     const policy = await MotorPolicyModel.findOne({ partnerId });
 
     if (!policy) {
-      return res.status(404).json({ status: "error", message: "Motor Policy not found" });
+      return res
+        .status(404)
+        .json({ status: "error", message: "Motor Policy not found" });
     }
 
     res.status(200).json({
       message: `Motor Policy with Partner ID ${partnerId} retrieved successfully`,
       data: policy,
-      status: "success"
+      status: "success",
     });
   } catch (error) {
     console.error("Error retrieving motor policy by partnerId:", error);
@@ -158,6 +165,8 @@ export const getMotorPolicyById = async (req, res) => {
 // Update Motor Policy by ID
 export const updateMotorPolicy = async (req, res) => {
   const {
+    tpPremium,
+    odPremium,
     policyStatus,
     partnerId,
     partnerName,
@@ -203,6 +212,8 @@ export const updateMotorPolicy = async (req, res) => {
   } = req.body;
 
   const formData = {
+    tpPremium,
+    odPremium,
     policyStatus,
     policyType,
     caseType,
@@ -259,13 +270,15 @@ export const updateMotorPolicy = async (req, res) => {
     );
 
     if (!updatedForm) {
-      return res.status(404).json({ status: "error", message: "Motor Policy not found" });
+      return res
+        .status(404)
+        .json({ status: "error", message: "Motor Policy not found" });
     }
 
     res.status(200).json({
       message: `Motor Policy with ID ${req.params.id} updated successfully`,
       data: updatedForm,
-      status: "success"
+      status: "success",
     });
   } catch (error) {
     console.error("Error updating motor policy:", error);
@@ -278,13 +291,20 @@ export const deleteMotorPolicy = async (req, res) => {
   try {
     const deletedForm = await MotorPolicyModel.findByIdAndDelete(req.params.id);
     if (!deletedForm) {
-      return res.status(404).json({ status: "error", message: "Motor Policy not found" });
+      return res
+        .status(404)
+        .json({ status: "error", message: "Motor Policy not found" });
     }
 
     deletedForm.isActive = false; // Soft delete by marking isActive as false
     await deletedForm.save();
 
-    res.status(200).json({ status: "success", message: "Motor Policy deleted successfully" });
+    res
+      .status(200)
+      .json({
+        status: "success",
+        message: "Motor Policy deleted successfully",
+      });
   } catch (error) {
     res.status(500).json({ status: "error", message: error.message });
   }
