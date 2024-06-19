@@ -8,7 +8,6 @@ const DataSchema = new mongoose.Schema({
     ncb:  {type:String,trim:true},
     policyType:  {type:String,trim:true},
     rto:  {type:String,trim:true},
-    insuredType:  {type:String,trim:true},
     caseType:  {type:String,trim:true},
     companyName:  {type:String,trim:true},
     make: {type:String,trim:true},

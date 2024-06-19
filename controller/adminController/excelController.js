@@ -31,7 +31,6 @@ const uploadExcel = async (req, res) => {
             ncb: row.ncb || row['NCB'],
             policyType: row.policyType || row['Policy Type'],
             rto: row.rto || row['RTO'],
-            insuredType: row.insuredType || row['Insured Type'],
             caseType: row.caseType || row['Case Type'],
             companyName: row.companyName || row['Company Name'],
             make: row.make || row['Make'],

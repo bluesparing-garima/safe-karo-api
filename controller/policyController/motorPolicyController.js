@@ -6,6 +6,7 @@ import MotorPolicyModel from "../../models/motorpolicySchema.js";
 export const createMotorPolicy = async (req, res) => {
   try {
     const {
+      policyStatus,
       partnerId,
       partnerName,
       relationshipManagerId,
@@ -23,6 +24,7 @@ export const createMotorPolicy = async (req, res) => {
       fuelType,
       rto,
       vehicleNumber,
+      engine,
       seatingCapacity,
       cc,
       ncb,
@@ -44,10 +46,11 @@ export const createMotorPolicy = async (req, res) => {
       policyCreatedBy,
       documents,
       productType,
-      isActive
+      isActive // Add isActive to capture from request body
     } = req.body;
 
     const newMotorPolicy = new MotorPolicyModel({
+      policyStatus,
       partnerId: partnerId || "",
       partnerName: partnerName || "",
       relationshipManagerId: relationshipManagerId || "",
@@ -66,6 +69,7 @@ export const createMotorPolicy = async (req, res) => {
       rto,
       vehicleNumber,
       seatingCapacity,
+      engine,
       cc,
       ncb,
       policyNumber,
@@ -154,6 +158,7 @@ export const getMotorPolicyById = async (req, res) => {
 // Update Motor Policy by ID
 export const updateMotorPolicy = async (req, res) => {
   const {
+    policyStatus,
     partnerId,
     partnerName,
     relationshipManagerId,
@@ -172,6 +177,7 @@ export const updateMotorPolicy = async (req, res) => {
     rto,
     vehicleNumber,
     seatingCapacity,
+    engine,
     cc,
     ncb,
     policyNumber,
@@ -192,11 +198,12 @@ export const updateMotorPolicy = async (req, res) => {
     policyCreatedBy,
     documents,
     productType,
-    isActive,
-    updatedBy,
+    isActive, // Add isActive to capture from request body
+    updatedBy, // Assume this is provided in the request
   } = req.body;
 
   const formData = {
+    policyStatus,
     policyType,
     caseType,
     category,
@@ -210,6 +217,7 @@ export const updateMotorPolicy = async (req, res) => {
     rto,
     vehicleNumber,
     seatingCapacity,
+    engine,
     cc,
     ncb,
     policyNumber,
@@ -268,7 +276,7 @@ export const updateMotorPolicy = async (req, res) => {
 // Delete Motor Policy by ID
 export const deleteMotorPolicy = async (req, res) => {
   try {
-    const deletedForm = await MotorPolicyModel.findById(req.params.id);
+    const deletedForm = await MotorPolicyModel.findByIdAndDelete(req.params.id);
     if (!deletedForm) {
       return res.status(404).json({ status: "error", message: "Motor Policy not found" });
     }
