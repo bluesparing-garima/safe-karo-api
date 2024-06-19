@@ -53,8 +53,8 @@ export const createUserProfile = async (req, res) => {
     if (
       !branchName ||
       !role ||
-      !headRMId ||
-      !headRM ||
+      headRMId ||
+      headRM ||
       !fullName ||
       !phoneNumber ||
       !email ||
@@ -69,7 +69,8 @@ export const createUserProfile = async (req, res) => {
       !salary ||
       !document ||
       !createdBy ||
-      !password
+      !password ||
+    !isActive
     ) {
       return res
         .status(400)
