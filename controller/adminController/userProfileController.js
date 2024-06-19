@@ -46,8 +46,8 @@ export const createUserProfile = async (req, res) => {
     if (
       !branchName ||
       !role ||
-      !headRMId ||
-      !headRM ||
+      headRMId ||
+      headRM ||
       !fullName ||
       !phoneNumber ||
       !email ||
@@ -90,7 +90,7 @@ export const createUserProfile = async (req, res) => {
       document,
       createdBy,
       password,
-      isActive,
+      isActive: isActive !== undefined ? isActive : true, // Set default value if isActive is not provided
       partnerId: await generatePartnerId(),
     };
 
