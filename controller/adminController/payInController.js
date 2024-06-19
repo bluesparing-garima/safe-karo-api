@@ -8,7 +8,6 @@ const calculateODandTP = async (req, res) => {
       caseType,
       productType,
       companyName,
-      insuredType,
       make,
       model,
       fuelType,
@@ -23,7 +22,6 @@ const calculateODandTP = async (req, res) => {
       !caseType ||
       !productType ||
       !companyName ||
-      !insuredType ||
       !make ||
       !model ||
       !fuelType ||
@@ -46,7 +44,6 @@ const calculateODandTP = async (req, res) => {
       ncb,
       policyType,
       rto,
-      insuredType,
       caseType,
       companyName,
       make,
