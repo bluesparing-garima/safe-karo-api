@@ -6,6 +6,12 @@ const DocumentSchema = new mongoose.Schema({
   });
 
 const leadGenerateSchema = new mongoose.Schema({
+    agentID:{
+        type: String,
+    },
+    leadID:{
+        type: String,
+    },
     policyType :{
         type:String,
         required: true,
@@ -30,20 +36,45 @@ const leadGenerateSchema = new mongoose.Schema({
         type:String,
         required:true
     },
-    comments:{
-        type:String,
-        
-    },
+
     documents: [DocumentSchema],
-    comments:[],
+
     remarks:{
         type:String,
     },
-    quotation:{
-        type:String,
-    }
+    createdBy: {
+        type: String,
+        required: true,
+      },
+      updatedBy: {
+        type: String,
+        default: null,
+      },
+      createdOn: {
+        type: Date,
+        default: Date.now,
+      },
+      updatedOn: {
+        type: Date,
+        default: Date.now,
+      },
 })
+// Middleware to update timestamps on save
+leadGenerateSchema.pre('save', function (next) {
+    if (this.isNew) {
+        this.createdOn = Date.now();
+        this.updatedOn = null;
+    } else {
+        this.updatedOn = Date.now();
+    }
+    next();
+});
 
+// Middleware to handle updates specifically
+leadGenerateSchema.pre('findOneAndUpdate', function (next) {
+    this._update.updatedOn = Date.now(); 
+    next();
+});
 const leadGenerateModel = mongoose.model('leadGenerate', leadGenerateSchema);
 
 export default leadGenerateModel;

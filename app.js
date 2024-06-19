@@ -23,7 +23,7 @@ import make from './routes/makeRoutes.js';
 import model from './routes/modelRoutes.js';
 import branch from './routes/branchRoutes.js';
 import userProfile from './routes/userProfileRoutes.js';
-import leadGenerate from  "./routes/leadGenerateRoutes.js";
+import leadGenerate from  "./routes/leadGenerateRoutes/leadGenerateRoutes.js";
 
 const app = express();
 const port = process.env.PORT;
