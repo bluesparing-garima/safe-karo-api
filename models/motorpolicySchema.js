@@ -35,6 +35,8 @@ const MotorPolicySchema = new mongoose.Schema(
     idv: { type: String, trim: true },
     od: { type: String, trim: true },
     tp: { type: String, trim: true },
+    odPremium:{type:String,trim:true},
+    tpPremium:{type:String,trim:true},
     policyStatus:{type:String, trim:true},
     netPremium: { type: String, trim: true },
     finalPremium: { type: String, trim: true },

@@ -13,7 +13,7 @@ import excelRoutes from './routes/excelRoutes.js';
 import fileUpload from "express-fileupload";
 import payInRoutes from './routes/payInRoutes.js';
 import vehicleType from './routes/productSubTypeRoutes.js';
-import partnerRoutes from './routes/partnerIdRoutes.js';
+// import partnerRoutes from './routes/partnerIdRoutes.js';
 import productName from './routes/productRoutes.js';
 import company from './routes/companyRoutes.js';
 import broker from './routes/brokerRoutes.js';
@@ -77,7 +77,7 @@ app.use('/api/product-type', vehicleType);
 app.use('/api/product',productName);
 
 // Use the partnerId routes
-app.use('/api/partner', partnerRoutes);
+// app.use('/api/partner', partnerRoutes);
 
 // Company Name's
 app.use('/api/company', company);

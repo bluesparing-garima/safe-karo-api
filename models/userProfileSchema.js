@@ -1,38 +1,45 @@
 import mongoose from "mongoose";
 
 const DocumentSchema = new mongoose.Schema({
-    image: { type: String }, // base64 string
-    adharCardFront: { type: String }, // base64 string
-    adharCardBack: { type: String }, // base64 string
-    panCard: { type: String }, // base64 string
-    qualification: { type: String, trim: true },
-    bankProof: { type: String }, // base64 string
-  });
+  image: { type: String }, // base64 string
+  adharCardFront: { type: String }, // base64 string
+  adharCardBack: { type: String }, // base64 string
+  panCard: { type: String }, // base64 string
+  qualification: { type: String, trim: true },
+  bankProof: { type: String }, // base64 string
+});
 
 const userProfileSchema = new mongoose.Schema({
-  headRM_Id:{type:String,required:true,trim:true},
-    branch: { type: String, required: true, trim: true },
-    role: { type: String, required: true, trim: true },
-    headRM: { type: String, trim: true },
-    fullName: { type: String, required: true, trim: true },
-    mobileNumber: { type: String, required: true, trim: true },
-    email: { type: String, required: true, trim: true, unique: true },
-    dateOfBirth: { type: Date },
-    gender: { type: String },
-    address: { type: String, trim: true },
-    pincode: { type: String, trim: true },
-    bankName: { type: String, trim: true },
-    IFSC: { type: String, trim: true },
-    accountHolderName: { type: String, trim: true },
-    accountNumber: { type: String, trim: true },
-    salary: { type: Number },
-    isActive: { type: Boolean, default: true }, // Add isActive field
-    document:[DocumentSchema],
-    createdBy: { type: String, required: true, trim: true },
-    updatedBy: { type: String, default: null },
-    createdOn: { type: Date, default: Date.now },
-    updatedOn: { type: Date, default: null },
-    isActive: { type: Boolean, default: true }, 
+  // fields which should be in userProfile.
+  branchName: { type: String, trim: true },
+  role: { type: String, trim: true },
+  headRMId: { type: String, trim: true },
+  headRM: { type: String, trim: true },
+  bankName: { type: String, trim: true },
+  IFSC: { type: String, trim: true },
+  accountHolderName: { type: String, trim: true },
+  accountNumber: { type: String, trim: true },
+  salary: { type: Number, trim: true },
+
+  // fields which are in partners
+  password: { type: String, trim: true },
+  wallet: { type: Number, trim: true, default: 0 },
+
+  // fields which are common.
+  partnerId: { type: String, unique: true },
+  fullName: { type: String, trim: true },
+  phoneNumber: { type: String, trim: true },
+  email: { type: String, trim: true, unique: true },
+  dateOfBirth: { type: Date, trim: true },
+  gender: { type: String, trim: true },
+  address: { type: String, trim: true },
+  pincode: { type: String, trim: true },
+  isActive: { type: Boolean, default: true },
+  document: [DocumentSchema],
+  createdBy: { type: String, trim: true },
+  updatedBy: { type: String, default: null },
+  createdOn: { type: Date, default: Date.now },
+  updatedOn: { type: Date, default: null },
 });
 
 const UserModel = mongoose.model("UserProfile", userProfileSchema);

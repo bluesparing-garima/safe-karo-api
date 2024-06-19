@@ -1,180 +1,222 @@
-// controllers/userProfileController.js
-import UserModel from "../../models/userProfileSchema.js";
+import UserProfileModel from "../../models/userProfileSchema.js";
+import UserModel from "../../models/userSchema.js";
 
-// Create User Profile
+// function to generate Partner ID
+const generatePartnerId = async () => {
+  const lastUser = await UserProfileModel.findOne({
+    partnerId: { $exists: true },
+  })
+    .sort({ createdOn: -1 })
+    .exec();
+  let newPartnerId = "SAFE001";
+
+  if (lastUser && lastUser.partnerId) {
+    const lastPartnerId = parseInt(lastUser.partnerId.replace("SAFE", ""), 10);
+    const newPartnerIdNumber = lastPartnerId + 1;
+    newPartnerId = `SAFE${String(newPartnerIdNumber).padStart(3, "0")}`;
+  }
+  return newPartnerId;
+};
+
+// Create a new user profile
 export const createUserProfile = async (req, res) => {
-    try {
-        const {
-            branch, role, headRM_Id, headRM, fullName, mobileNumber, email, dateOfBirth, gender,
-            address, pincode, bankName, IFSC, accountHolderName, accountNumber,
-            salary, document, createdBy, isActive
-        } = req.body;
-
-        const newUser = new UserModel({
-            branch,
-            role,
-            headRM_Id, 
-            headRM,
-            fullName,
-            mobileNumber,
-            email,
-            dateOfBirth,
-            gender,
-            address,
-            pincode,
-            bankName,
-            IFSC,
-            accountHolderName,
-            accountNumber,
-            salary,
-            document,
-            createdBy,
-            isActive
-        });
-
-        const savedUser = await newUser.save();
-        res.status(201).json({
-            message: "User profile created successfully",
-            data: savedUser,
-            status: "success",
-        });
-    } catch (error) {
-        console.error("Error creating user profile:", error);
-        res.status(500).json({ status: "error", message: error.message });
+  try {
+    const {
+      branchName,
+      role,
+      headRM,
+      headRMId,
+      fullName,
+      phoneNumber,
+      email,
+      dateOfBirth,
+      gender,
+      address,
+      pincode,
+      bankName,
+      IFSC,
+      accountHolderName,
+      accountNumber,
+      salary,
+      document,
+      createdBy,
+      password,
+      isActive,
+    } = req.body;
+    if (
+      !branchName ||
+      !role ||
+      !headRMId ||
+      !headRM ||
+      !fullName ||
+      !phoneNumber ||
+      !email ||
+      !dateOfBirth ||
+      !gender ||
+      !address ||
+      !pincode ||
+      !bankName ||
+      !IFSC ||
+      !accountHolderName ||
+      !accountNumber ||
+      !salary ||
+      !document ||
+      !createdBy ||
+      !password ||
+      !isActive
+    ) {
+      return res
+        .status(400)
+        .json({ message: "Missing required fields for user profile creation" });
     }
+
+    const newUser = {
+      branchName,
+      role,
+      headRM,
+      headRMId,
+      fullName,
+      phoneNumber,
+      email,
+      dateOfBirth,
+      gender,
+      address,
+      pincode,
+      bankName,
+      IFSC,
+      accountHolderName,
+      accountNumber,
+      salary,
+      document,
+      createdBy,
+      password,
+      isActive,
+      partnerId: await generatePartnerId(),
+    };
+
+    const userProfile = new UserProfileModel(newUser);
+    const newTeam = new UserModel({
+      name: fullName,
+      email,
+      password,
+      phoneNumber,
+      role,
+      isActive: isActive !== undefined ? isActive : true, // Set default value if isActive is not provided
+    });
+    await userProfile.save();
+    await newTeam.save();
+    res.status(201).json({
+      message: "User profile created successfully",
+      data: userProfile,
+      status: "success",
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error creating user profile", error: error.message });
+  }
 };
 
-// Get User Profile by ID
-export const getUserProfileById = async (req, res) => {
-    try {
-        const user = await UserModel.findById(req.params.id);
-        if (!user) {
-            return res.status(404).json({ status: "error", message: "User profile not found" });
-        }
-        res.status(200).json({
-            message: `User profile with ID ${req.params.id} retrieved successfully`,
-            data: user,
-            status: "success",
-        });
-    } catch (error) {
-        console.error("Error fetching user profile:", error);
-        res.status(500).json({ status: "error", message: error.message });
-    }
+// Get all user profiles
+export const getAllUserProfiles = async (req, res) => {
+  try {
+    const userProfiles = await UserProfileModel.find();
+    res.status(200).json({
+      message: "User profiles retrieved successfully",
+      data: userProfiles,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving user profiles",
+      error: error.message,
+    });
+  }
 };
 
-// Get User Profiles by Role (Generalized for specific Role values)
+// Get user profiles by role
 export const getUserProfilesByRole = async (req, res) => {
-    try {
-        let role;
-        if (req.path.includes('/RM')) {
-            role = ['RM', 'relationManager'];
-        } else {
-            role = ['relationManager']; 
-        }
-
-        const users = await UserModel.find({ role: { $in: role } });
-
-        if (users.length === 0) {
-            return res.status(404).json({ status: "error", message: `No user profiles found for ${role}` });
-        }
-
-        res.status(200).json({
-            message: `User profiles with role ${role} retrieved successfully`,
-            data: users,
-            status: "success",
-        });
-    } catch (error) {
-        console.error("Error fetching user profiles by role:", error);
-        res.status(500).json({ status: "error", message: error.message });
-    }
+  try {
+    const { role } = req.params;
+    const searchRoles =
+      role === "RM" || role === "relationShipManager"
+        ? ["RM", "relationShipManager"]
+        : [role];
+    const userProfiles = await UserProfileModel.find({
+      role: { $in: searchRoles },
+    });
+    res.status(200).json({
+      message: "User profiles retrieved successfully",
+      data: userProfiles,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving user profiles",
+      error: error.message,
+    });
+  }
 };
 
-// Get All Active User Profiles
-export const getAllActiveUserProfiles = async (req, res) => {
-    try {
-        const users = await UserModel.find();
-        res.status(200).json({
-            message: "All active user profiles retrieved successfully",
-            data: users,
-            status: "success"
-        });
-    } catch (error) {
-        console.error("Error fetching user profiles:", error);
-        res.status(500).json({ status: "error", message: error.message });
+// Get a user profile by ID
+export const getUserProfileById = async (req, res) => {
+  try {
+    const userProfile = await UserProfileModel.findById(req.params.id);
+    if (!userProfile) {
+      return res.status(404).json({ message: "User profile not found" });
     }
+    res.status(200).json({
+      message: "User profile retrieved successfully",
+      data: userProfile,
+      status: "success",
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error retrieving user profile", error: error.message });
+  }
 };
-
-//Update User Profile
+// Update a user profile by ID
 export const updateUserProfile = async (req, res) => {
-    try {
-        const {
-            branch, role, headRM_Id, headRM, fullName, mobileNumber, email, dateOfBirth, gender,
-            address, pincode, bankName, IFSC, accountHolderName, accountNumber,
-            salary, document, UpdatedBy, isActive
-        } = req.body;
-
-        const updatedData = {
-            branch,
-            role,
-            headRM_Id,
-            headRM,
-            fullName,
-            mobileNumber,
-            email,
-            dateOfBirth,
-            gender,
-            address,
-            pincode,
-            bankName,
-            IFSC,
-            accountHolderName,
-            accountNumber,
-            salary,
-            document,
-            UpdatedBy,
-            isActive,
-            updatedOn: new Date() 
-        };
-
-        const updatedUser = await UserModel.findByIdAndUpdate(
-            req.params.id,
-            updatedData,
-            { new: true, runValidators: true }
-        );
-
-        if (!updatedUser) {
-            return res.status(404).json({ status: "error", message: "User profile not found" });
-        }
-
-        res.status(200).json({
-            message: `User profile with ID ${req.params.id} updated successfully`,
-            data: updatedUser,
-            status: "success"
-        });
-    } catch (error) {
-        console.error("Error updating user profile:", error);
-        res.status(500).json({ status: "error", message: error.message });
+  try {
+    const updatedProfile = await UserProfileModel.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+    if (!updatedProfile) {
+      return res.status(404).json({ message: "User profile not found" });
     }
+    res.status(200).json({
+      message: "User profile updated successfully",
+      data: updatedProfile,
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Error updating user profile", error: error.message });
+  }
 };
 
-
+// Delete (deactivate) a user profile by ID
 export const deleteUserProfile = async (req, res) => {
-    try {
-        const deletedUser = await UserModel.findOneAndDelete({ _id: req.params.id });
-
-        if (!deletedUser) {
-            return res.status(404).json({ status: "error", message: "User profile not found" });
-        }
-
-        res.status(200).json({
-            message: `User profile with ID ${req.params.id} deleted successfully`,
-            status: "success",
-        });
-    } catch (error) {
-        console.error("Error deleting user profile:", error);
-        res.status(500).json({ status: "error", message: error.message });
+  try {
+    const deletedProfile = await UserProfileModel.findByIdAndUpdate(
+      req.params.id,
+      { isActive: false },
+      { new: true }
+    );
+    if (!deletedProfile) {
+      return res.status(404).json({ message: "User profile not found" });
     }
+    res.status(200).json({
+      message: "User profile deactivated successfully",
+      data: deletedProfile,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error deactivating user profile",
+      error: error.message,
+    });
+  }
 };
-
-
-
