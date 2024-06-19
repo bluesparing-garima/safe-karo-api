@@ -1,11 +1,11 @@
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import UserProfileModel from "../../models/userProfileSchema.js";
 import UserModel from "../../models/userSchema.js";
 
-// function to generate Partner ID
+// Function to generate Partner ID
 const generatePartnerId = async () => {
-  const lastUser = await UserProfileModel.findOne({
-    partnerId: { $exists: true },
-  })
+  const lastUser = await UserProfileModel.findOne({ partnerId: { $exists: true } })
     .sort({ createdOn: -1 })
     .exec();
   let newPartnerId = "SAFE001";
@@ -16,6 +16,12 @@ const generatePartnerId = async () => {
     newPartnerId = `SAFE${String(newPartnerIdNumber).padStart(3, "0")}`;
   }
   return newPartnerId;
+};
+
+// Function to hash passwords
+const hashPassword = async (password) => {
+  const salt = await bcrypt.genSalt(10);
+  return await bcrypt.hash(password, salt);
 };
 
 // Create a new user profile
@@ -43,11 +49,12 @@ export const createUserProfile = async (req, res) => {
       password,
       isActive,
     } = req.body;
+
     if (
       !branchName ||
       !role ||
-      headRMId ||
-      headRM ||
+      !headRMId ||
+      !headRM ||
       !fullName ||
       !phoneNumber ||
       !email ||
@@ -62,13 +69,14 @@ export const createUserProfile = async (req, res) => {
       !salary ||
       !document ||
       !createdBy ||
-      !password ||
-      !isActive
+      !password
     ) {
       return res
         .status(400)
         .json({ message: "Missing required fields for user profile creation" });
     }
+
+    const hashedPassword = await hashPassword(password);
 
     const newUser = {
       branchName,
@@ -89,7 +97,7 @@ export const createUserProfile = async (req, res) => {
       salary,
       document,
       createdBy,
-      password,
+      password: hashedPassword,
       isActive: isActive !== undefined ? isActive : true, // Set default value if isActive is not provided
       partnerId: await generatePartnerId(),
     };
@@ -98,13 +106,15 @@ export const createUserProfile = async (req, res) => {
     const newTeam = new UserModel({
       name: fullName,
       email,
-      password,
+      password: hashedPassword,
       phoneNumber,
       role,
-      isActive: isActive !== undefined ? isActive : true, // Set default value if isActive is not provided
+      isActive: isActive !== undefined ? isActive : true, // Set default value true if isActive is not provided
     });
+
     await userProfile.save();
     await newTeam.save();
+
     res.status(201).json({
       message: "User profile created successfully",
       data: userProfile,
@@ -175,14 +185,24 @@ export const getUserProfileById = async (req, res) => {
       .json({ message: "Error retrieving user profile", error: error.message });
   }
 };
+
 // Update a user profile by ID
 export const updateUserProfile = async (req, res) => {
   try {
+    const { password, ...rest } = req.body;
+    let updatedData = { ...rest };
+
+    if (password) {
+      const hashedPassword = await hashPassword(password);
+      updatedData.password = hashedPassword;
+    }
+
     const updatedProfile = await UserProfileModel.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updatedData,
       { new: true }
     );
+
     if (!updatedProfile) {
       return res.status(404).json({ message: "User profile not found" });
     }
@@ -200,7 +220,7 @@ export const updateUserProfile = async (req, res) => {
 // Delete (deactivate) a user profile by ID
 export const deleteUserProfile = async (req, res) => {
   try {
-    const deletedProfile = await UserProfileModel.findByIdAndUpdate(
+    const deletedProfile = await UserProfileModel.findByIdAndDelete(
       req.params.id,
       { isActive: false },
       { new: true }

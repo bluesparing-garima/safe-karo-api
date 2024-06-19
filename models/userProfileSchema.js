@@ -1,12 +1,8 @@
 import mongoose from "mongoose";
 
 const DocumentSchema = new mongoose.Schema({
-  image: { type: String }, // base64 string
-  adharCardFront: { type: String }, // base64 string
-  adharCardBack: { type: String }, // base64 string
-  panCard: { type: String }, // base64 string
-  qualification: { type: String, trim: true },
-  bankProof: { type: String }, // base64 string
+  docName: { type: String, required: true },
+  file: { type: String, required: true },
 });
 
 const userProfileSchema = new mongoose.Schema({
