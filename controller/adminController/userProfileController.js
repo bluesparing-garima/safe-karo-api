@@ -5,7 +5,9 @@ import UserModel from "../../models/userSchema.js";
 
 // Function to generate Partner ID
 const generatePartnerId = async () => {
-  const lastUser = await UserProfileModel.findOne({ partnerId: { $exists: true } })
+  const lastUser = await UserProfileModel.findOne({
+    partnerId: { $exists: true },
+  })
     .sort({ createdOn: -1 })
     .exec();
   let newPartnerId = "SAFE001";
@@ -52,31 +54,31 @@ export const createUserProfile = async (req, res) => {
 
     const missingFields = [];
 
-    if (!branchName) missingFields.push('branchName');
-    if (!role) missingFields.push('role');
+    if (!branchName) missingFields.push("branchName");
+    if (!role) missingFields.push("role");
     // if (!headRM) missingFields.push('headRM');
     // if (!headRMId) missingFields.push('headRMId');
-    if (!fullName) missingFields.push('fullName');
-    if (!phoneNumber) missingFields.push('phoneNumber');
-    if (!email) missingFields.push('email');
-    if (!dateOfBirth) missingFields.push('dateOfBirth');
-    if (!gender) missingFields.push('gender');
-    if (!address) missingFields.push('address');
-    if (!pincode) missingFields.push('pincode');
-    if (!bankName) missingFields.push('bankName');
-    if (!IFSC) missingFields.push('IFSC');
-    if (!accountHolderName) missingFields.push('accountHolderName');
-    if (!accountNumber) missingFields.push('accountNumber');
-    if (!salary) missingFields.push('salary');
+    if (!fullName) missingFields.push("fullName");
+    if (!phoneNumber) missingFields.push("phoneNumber");
+    if (!email) missingFields.push("email");
+    if (!dateOfBirth) missingFields.push("dateOfBirth");
+    if (!gender) missingFields.push("gender");
+    if (!address) missingFields.push("address");
+    if (!pincode) missingFields.push("pincode");
+    if (!bankName) missingFields.push("bankName");
+    if (!IFSC) missingFields.push("IFSC");
+    if (!accountHolderName) missingFields.push("accountHolderName");
+    if (!accountNumber) missingFields.push("accountNumber");
+    if (!salary) missingFields.push("salary");
     // if (!document) missingFields.push('document');
-    if (!createdBy) missingFields.push('createdBy');
-    if (!password) missingFields.push('password');
-    if (isActive === undefined) missingFields.push('isActive');
+    if (!createdBy) missingFields.push("createdBy");
+    if (!password) missingFields.push("password");
+    if (isActive === undefined) missingFields.push("isActive");
 
     if (missingFields.length > 0) {
       return res.status(400).json({
         message: "Missing required fields for user profile creation",
-        missingFields
+        missingFields,
       });
     }
 
@@ -101,7 +103,7 @@ export const createUserProfile = async (req, res) => {
       salary,
       document,
       createdBy,
-      password: hashedPassword,
+      password,
       isActive: isActive !== undefined ? isActive : true, // Set default value if isActive is not provided
       partnerId: await generatePartnerId(),
     };
@@ -125,18 +127,18 @@ export const createUserProfile = async (req, res) => {
       status: "success",
     });
   } catch (error) {
-    res.status(500).json({ 
-      message: "Error creating user profile", 
-      error: error.message 
+    res.status(500).json({
+      message: "Error creating user profile",
+      error: error.message,
     });
   }
 };
-
 
 // Get all user profiles
 export const getAllUserProfiles = async (req, res) => {
   try {
     const userProfiles = await UserProfileModel.find();
+
     res.status(200).json({
       message: "User profiles retrieved successfully",
       data: userProfiles,
@@ -153,7 +155,7 @@ export const getAllUserProfiles = async (req, res) => {
 // Get user profiles by role
 export const getUserProfilesByRole = async (req, res) => {
   try {
-    const { role } = req.query; 
+    const { role } = req.query;
     if (!role) {
       return res.status(400).json({ message: "Role parameter is required" });
     }
@@ -177,12 +179,11 @@ export const getUserProfilesByRole = async (req, res) => {
   }
 };
 
-
-
 // Get a user profile by ID
 export const getUserProfileById = async (req, res) => {
   try {
     const userProfile = await UserProfileModel.findById(req.params.id);
+
     if (!userProfile) {
       return res.status(404).json({ message: "User profile not found" });
     }
@@ -203,19 +204,25 @@ export const updateUserProfile = async (req, res) => {
   try {
     const { password, ...rest } = req.body;
     let updatedData = { ...rest };
-
-    if (password) {
-      const hashedPassword = await hashPassword(password);
-      updatedData.password = hashedPassword;
-    }
+    updatedData.password = password;
 
     const updatedProfile = await UserProfileModel.findByIdAndUpdate(
       req.params.id,
       updatedData,
       { new: true }
     );
+    if (password) {
+      const hashedPassword = await hashPassword(password);
+      updatedData.password = hashedPassword;
+    }
 
-    if (!updatedProfile) {
+    const updatedUser = await UserModel.findByIdAndUpdate(
+      req.params.id,
+      updatedData,
+      { new: true }
+    );
+
+    if (!updatedProfile && !updatedUser) {
       return res.status(404).json({ message: "User profile not found" });
     }
     res.status(200).json({
