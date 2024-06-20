@@ -161,11 +161,12 @@ export const getUserProfilesByRole = async (req, res) => {
     }
 
     const searchRoles =
-      role === "RM" || role === "relationShipManager"
-        ? ["RM", "relationShipManager"]
+      role === "RM" || role === "Relationship Manager"
+        ? ["RM", "Relationship Manager"]
         : [role];
     const userProfiles = await UserProfileModel.find({
       role: { $in: searchRoles },
+      
     });
     res.status(200).json({
       message: "User profiles retrieved successfully",
