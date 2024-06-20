@@ -2,18 +2,35 @@ import UserModel from '../../models/userProfileSchema.js';
 
 // Helper function to generate Partner ID
 const generatePartnerId = async () => {
-    const lastPartner = await UserModel.findOne({ partnerId: { $exists: true } }).sort({ createdOn: -1 }).exec();
-    let newPartnerId = 'SAFE001';
-
-    if (lastPartner && lastPartner.partnerId) {
-        const lastPartnerId = parseInt(lastPartner.partnerId.replace('SAFE', ''), 10);
-        const newPartnerIdNumber = lastPartnerId + 1;
-        newPartnerId = `SAFE${String(newPartnerIdNumber).padStart(3, '0')}`;
+    const lastUser = await UserProfileModel.findOne({
+      partnerId: { $exists: true },
+    })
+      .sort({ createdOn: -1 })
+      .exec();
+  
+    let newPartnerId = "8717A1";
+  
+    if (lastUser && lastUser.partnerId) {
+      const lastPartnerId = lastUser.partnerId;
+      const prefix = lastPartnerId.slice(0, 4); // "8717"
+      const suffix = lastPartnerId.slice(4); // "A1", "A2", ..., "A999", "B1", ...
+      const letter = suffix[0]; // "A", "B", ...
+      let number = parseInt(suffix.slice(1), 10); // 1, 2, ..., 999
+  
+      number++;
+      if (number > 999) {
+        number = 1;
+        newLetter = String.fromCharCode(letter.charCodeAt(0) + 1);
+      } else {
+        newLetter = letter;
+      }
+  
+      newPartnerId = `${prefix}${newLetter}${number}`;
     }
-
+  
     return newPartnerId;
-};
-
+  };
+  
 // Create a new partner
 export const createPartner = async (req, res) => {
     try {

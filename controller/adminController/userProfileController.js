@@ -10,15 +10,31 @@ const generatePartnerId = async () => {
   })
     .sort({ createdOn: -1 })
     .exec();
-  let newPartnerId = "SAFE001";
+
+  let newPartnerId = "8717A1";
 
   if (lastUser && lastUser.partnerId) {
-    const lastPartnerId = parseInt(lastUser.partnerId.replace("SAFE", ""), 10);
-    const newPartnerIdNumber = lastPartnerId + 1;
-    newPartnerId = `SAFE${String(newPartnerIdNumber).padStart(3, "0")}`;
+    const lastPartnerId = lastUser.partnerId;
+    const prefix = lastPartnerId.slice(0, 4); // "8717"
+    const suffix = lastPartnerId.slice(4); // "A1", "A2", ..., "A999", "B1", ...
+    const letter = suffix[0]; // "A", "B", ...
+    let number = parseInt(suffix.slice(1), 10); // 1, 2, ..., 999
+    let newLetter = letter;
+
+    number++;
+    if (number > 999) {
+      number = 1;
+      newLetter = String.fromCharCode(letter.charCodeAt(0) + 1);
+    } else {
+      newLetter = letter;
+    }
+
+    newPartnerId = `${prefix}${newLetter}${number}`;
   }
+
   return newPartnerId;
 };
+
 
 // Function to hash passwords
 const hashPassword = async (password) => {
