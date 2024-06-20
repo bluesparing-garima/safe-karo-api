@@ -148,7 +148,11 @@ export const getAllUserProfiles = async (req, res) => {
 // Get user profiles by role
 export const getUserProfilesByRole = async (req, res) => {
   try {
-    const { role } = req.params;
+    const { role } = req.query; 
+    if (!role) {
+      return res.status(400).json({ message: "Role parameter is required" });
+    }
+
     const searchRoles =
       role === "RM" || role === "relationShipManager"
         ? ["RM", "relationShipManager"]
@@ -167,6 +171,7 @@ export const getUserProfilesByRole = async (req, res) => {
     });
   }
 };
+
 
 
 // Get a user profile by ID
