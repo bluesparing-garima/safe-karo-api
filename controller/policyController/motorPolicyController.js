@@ -50,6 +50,15 @@ export const createMotorPolicy = async (req, res) => {
       isActive,
     } = req.body;
 
+    // Check if the policyNumber already exists
+    const existingPolicy = await MotorPolicyModel.findOne({ policyNumber });
+    if (existingPolicy) {
+      return res.status(200).json({
+        status: "error",
+        message: `Motor Policy with Policy Number ${policyNumber} already exists.`,
+      });
+    }
+
     const newMotorPolicy = new MotorPolicyModel({
       tpPremium,
       odPremium,
