@@ -19,7 +19,7 @@ const router = express.Router();
 
 // User profile routes
 router.post("/", createUserProfile);
-router.get("/", getUserProfilesByRole); 
+router.get("/byRole", getUserProfilesByRole); 
 router.get("/", getAllUserProfiles);
 router.get("/:id", getUserProfileById);
 router.put("/:id", updateUserProfile);
