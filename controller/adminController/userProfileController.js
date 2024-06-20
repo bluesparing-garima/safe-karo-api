@@ -67,7 +67,7 @@ export const createUserProfile = async (req, res) => {
       !accountHolderName ||
       !accountNumber ||
       !salary ||
-      !document ||
+      document ||
       !createdBy ||
       !password ||
     !isActive
@@ -167,6 +167,7 @@ export const getUserProfilesByRole = async (req, res) => {
     });
   }
 };
+
 
 // Get a user profile by ID
 export const getUserProfileById = async (req, res) => {

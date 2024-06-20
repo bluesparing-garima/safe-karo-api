@@ -29,12 +29,10 @@ const calculateODandTP = async (req, res) => {
       !ncb ||
       !vehicleAge
     ) {
-      return res
-        .status(400)
-        .json({
-          message: "Missing required query parameters",
-          status: "Failed",
-        });
+      return res.status(400).json({
+        message: "Missing required query parameters",
+        status: "Failed",
+      });
     }
 
     const dbQuery = {
@@ -52,15 +50,20 @@ const calculateODandTP = async (req, res) => {
     };
 
     Object.keys(dbQuery).forEach((key) =>
-      dbQuery[key] === undefined || dbQuery[key] === null ? delete dbQuery[key] : {}
+      dbQuery[key] === undefined || dbQuery[key] === null
+        ? delete dbQuery[key]
+        : {}
     );
 
     const matchedRecord = await ExcelDataModel.findOne(dbQuery).select("od tp");
 
+    const filteredNotMatchRecord = { od: 0, tp: 0 };
+
     if (!matchedRecord) {
-      return res.status(404).json({
+      return res.status(200).json({
         message: "No matching record found in the database",
-        status: "Failed",
+        data: filteredNotMatchRecord,
+        status: "Success",
       });
     }
 
@@ -74,7 +77,9 @@ const calculateODandTP = async (req, res) => {
       status: "Success",
     });
   } catch (error) {
-    res.status(500).json({ message: "Error fetching data", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Error fetching data", error: error.message });
   }
 };
 
