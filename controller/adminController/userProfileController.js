@@ -81,6 +81,16 @@ export const createUserProfile = async (req, res) => {
         missingFields,
       });
     }
+    const existingUserInUserModel = await UserModel.findOne({ email });
+    const existingUserInUserProfileModel = await UserProfileModel.findOne({
+      email,
+    });
+
+    if (existingUserInUserModel || existingUserInUserProfileModel) {
+      return res.status(400).json({
+        message: "Email already exists",
+      });
+    }
 
     const hashedPassword = await hashPassword(password);
 
@@ -104,7 +114,7 @@ export const createUserProfile = async (req, res) => {
       document,
       createdBy,
       password,
-      isActive: isActive !== undefined ? isActive : true, // Set default value if isActive is not provided
+      isActive: isActive !== undefined ? isActive : true, 
       partnerId: await generatePartnerId(),
     };
 
@@ -115,7 +125,7 @@ export const createUserProfile = async (req, res) => {
       password: hashedPassword,
       phoneNumber,
       role,
-      isActive: isActive !== undefined ? isActive : true, // Set default value true if isActive is not provided
+      isActive: isActive !== undefined ? isActive : true, 
     });
 
     await userProfile.save();
@@ -129,6 +139,39 @@ export const createUserProfile = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Error creating user profile",
+      error: error.message,
+    });
+  }
+};
+
+// check if an email exists
+export const checkEmailExists = async (req, res) => {
+  try {
+    const { email } = req.query;
+
+    if (!email) {
+      return res.status(400).json({ message: "Email parameter is required" });
+    }
+
+    const existingUserInUserModel = await UserModel.findOne({ email });
+    const existingUserInUserProfileModel = await UserProfileModel.findOne({
+      email,
+    });
+
+    if (existingUserInUserModel || existingUserInUserProfileModel) {
+      return res.status(200).json({
+        message: "Email already exists",
+        emailExists: true,
+      });
+    } else {
+      return res.status(200).json({
+        message: "Email does not exist",
+        emailExists: false,
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      message: "Error checking email",
       error: error.message,
     });
   }
@@ -166,7 +209,6 @@ export const getUserProfilesByRole = async (req, res) => {
         : [role];
     const userProfiles = await UserProfileModel.find({
       role: { $in: searchRoles },
-      
     });
     res.status(200).json({
       message: "User profiles retrieved successfully",
@@ -205,20 +247,19 @@ export const updateUserProfile = async (req, res) => {
   try {
     const { password, ...rest } = req.body;
     let updatedData = { ...rest };
-    updatedData.password = password;
+    if (password) {
+      const hashedPassword = await hashPassword(password);
+      updatedData.password = hashedPassword;
+    }
 
     const updatedProfile = await UserProfileModel.findByIdAndUpdate(
       req.params.id,
       updatedData,
       { new: true }
     );
-    if (password) {
-      const hashedPassword = await hashPassword(password);
-      updatedData.password = hashedPassword;
-    }
 
-    const updatedUser = await UserModel.findByIdAndUpdate(
-      req.params.id,
+    const updatedUser = await UserModel.findOneAndUpdate(
+      { email: updatedData.email },
       updatedData,
       { new: true }
     );

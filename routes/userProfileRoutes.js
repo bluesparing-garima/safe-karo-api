@@ -5,7 +5,8 @@ import {
     updateUserProfile,
     deleteUserProfile,
     getAllUserProfiles,
-    getUserProfilesByRole 
+    getUserProfilesByRole,
+    checkEmailExists
 } from "../controller/adminController/userProfileController.js";
 import {
     createPartner,
@@ -24,6 +25,7 @@ router.get("/", getAllUserProfiles);
 router.get("/:id", getUserProfileById);
 router.put("/:id", updateUserProfile);
 router.delete("/:id", deleteUserProfile);
+router.get('/check-email', checkEmailExists);
 
 // Partner routes
 router.post('/partners', createPartner);

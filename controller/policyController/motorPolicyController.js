@@ -53,7 +53,7 @@ export const createMotorPolicy = async (req, res) => {
     // Check if the policyNumber already exists
     const existingPolicy = await MotorPolicyModel.findOne({ policyNumber });
     if (existingPolicy) {
-      return res.status(200).json({
+      return res.status(404).json({
         status: "error",
         message: `Motor Policy with Policy Number ${policyNumber} already exists.`,
       });
@@ -147,29 +147,30 @@ export const getMotorPolicies = async (req, res) => {
   }
 };
 
-// Get Motor Policy by partnerId
-export const getMotorPolicyById = async (req, res) => {
-  try {
-    const { partnerId } = req.params; 
+// // Get Motor Policy by Number 
+// export const getMotorPolicyByNumber = async (req, res) => {
+//   try {
+//     const { policyNumber } = req.params; 
 
-    const policy = await MotorPolicyModel.findOne({ partnerId });
+//     const policy = await MotorPolicyModel.findOne({ policyNumber });
 
-    if (!policy) {
-      return res
-        .status(404)
-        .json({ status: "error", message: "Motor Policy not found" });
-    }
+//     if (!policy) {
+//       return res
+//         .status(200)
+//         .json({ message: `Motor Policy with Partner ID ${policyNumber} retrieved successfully`,status:"success" });
 
-    res.status(200).json({
-      message: `Motor Policy with Partner ID ${partnerId} retrieved successfully`,
-      data: policy,
-      status: "success",
-    });
-  } catch (error) {
-    console.error("Error retrieving motor policy by partnerId:", error);
-    res.status(500).json({ status: "error", message: error.message });
-  }
-};
+//     }
+
+//     res.status(200).json({
+//       message: `Motor Policy with policy ID ${policyNumber} retrieved successfully`,
+//       data: policy,
+//       status: "error",
+//     });
+//   } catch (error) {
+//     console.error("Error retrieving motor policy by partnerId:", error);
+//     res.status(500).json({ status: "error", message: error.message });
+//   }
+// };
 
 // Get Motor Policy by policyNumber
 export const getMotorPolicyByPolicyNumber = async (req, res) => {
@@ -180,13 +181,12 @@ export const getMotorPolicyByPolicyNumber = async (req, res) => {
 
     if (!policy) {
       return res
-        .status(404)
-        .json({ status: "error", message: "Motor Policy not found" });
+        .status(200)
+        .json({ message: "Motor Policy not exists ",data: policy, status: "success"});
     }
 
-    res.status(200).json({
-      message: `Motor Policy with Policy Number ${policyNumber} retrieved successfully`,
-      data: policy,
+    res.status(400).json({
+      message: `Motor Policy with Policy Number already exists.`,
       status: "success",
     });
   } catch (error) {
