@@ -141,7 +141,7 @@ export const getMotorPolicies = async (req, res) => {
 // Get Motor Policy by partnerId
 export const getMotorPolicyById = async (req, res) => {
   try {
-    const { partnerId } = req.params; // Extract the partnerId from the request parameters
+    const { partnerId } = req.params; 
 
     const policy = await MotorPolicyModel.findOne({ partnerId });
 
@@ -158,6 +158,30 @@ export const getMotorPolicyById = async (req, res) => {
     });
   } catch (error) {
     console.error("Error retrieving motor policy by partnerId:", error);
+    res.status(500).json({ status: "error", message: error.message });
+  }
+};
+
+// Get Motor Policy by policyNumber
+export const getMotorPolicyByPolicyNumber = async (req, res) => {
+  try {
+    const { policyNumber } = req.params; 
+
+    const policy = await MotorPolicyModel.findOne({ policyNumber });
+
+    if (!policy) {
+      return res
+        .status(404)
+        .json({ status: "error", message: "Motor Policy not found" });
+    }
+
+    res.status(200).json({
+      message: `Motor Policy with Policy Number ${policyNumber} retrieved successfully`,
+      data: policy,
+      status: "success",
+    });
+  } catch (error) {
+    console.error("Error retrieving motor policy by policyNumber:", error);
     res.status(500).json({ status: "error", message: error.message });
   }
 };

@@ -50,31 +50,34 @@ export const createUserProfile = async (req, res) => {
       isActive,
     } = req.body;
 
-    if (
-      !branchName ||
-      !role ||
-      headRMId ||
-      headRM ||
-      !fullName ||
-      !phoneNumber ||
-      !email ||
-      !dateOfBirth ||
-      !gender ||
-      !address ||
-      !pincode ||
-      !bankName ||
-      !IFSC ||
-      !accountHolderName ||
-      !accountNumber ||
-      !salary ||
-      document ||
-      !createdBy ||
-      !password ||
-    !isActive
-    ) {
-      return res
-        .status(400)
-        .json({ message: "Missing required fields for user profile creation" });
+    const missingFields = [];
+
+    if (!branchName) missingFields.push('branchName');
+    if (!role) missingFields.push('role');
+    // if (!headRM) missingFields.push('headRM');
+    // if (!headRMId) missingFields.push('headRMId');
+    if (!fullName) missingFields.push('fullName');
+    if (!phoneNumber) missingFields.push('phoneNumber');
+    if (!email) missingFields.push('email');
+    if (!dateOfBirth) missingFields.push('dateOfBirth');
+    if (!gender) missingFields.push('gender');
+    if (!address) missingFields.push('address');
+    if (!pincode) missingFields.push('pincode');
+    if (!bankName) missingFields.push('bankName');
+    if (!IFSC) missingFields.push('IFSC');
+    if (!accountHolderName) missingFields.push('accountHolderName');
+    if (!accountNumber) missingFields.push('accountNumber');
+    if (!salary) missingFields.push('salary');
+    // if (!document) missingFields.push('document');
+    if (!createdBy) missingFields.push('createdBy');
+    if (!password) missingFields.push('password');
+    if (isActive === undefined) missingFields.push('isActive');
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        message: "Missing required fields for user profile creation",
+        missingFields
+      });
     }
 
     const hashedPassword = await hashPassword(password);
@@ -122,11 +125,13 @@ export const createUserProfile = async (req, res) => {
       status: "success",
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error creating user profile", error: error.message });
+    res.status(500).json({ 
+      message: "Error creating user profile", 
+      error: error.message 
+    });
   }
 };
+
 
 // Get all user profiles
 export const getAllUserProfiles = async (req, res) => {
