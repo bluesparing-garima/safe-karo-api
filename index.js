@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 import express from "express";
+import helmet from "helmet";
 import cors from "cors";
 import connectDB from "./config/connectdb.js";
 import userRoutes from "./routes/userRoutes.js";
@@ -27,7 +28,8 @@ import leadGenerate from  "./routes/leadGenerateRoutes.js";
 import payOutRoute from './routes/payOutRoutes.js';
 import bookingRequestRoute from "./routes/bookingRequestRoutes.js";
 import adminDashboard from "./routes/adminDashboardRoute.js";
-const helmet = require('helmet');
+
+
 const app = express();
 const port = process.env.PORT;
 const DATABASE_URL = process.env.DATEBASE_URL;
@@ -36,6 +38,11 @@ const DATABASE_URL = process.env.DATEBASE_URL;
 app.use(helmet({
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
 }));
+
+// if deployed successfully
+app.get('/',(req,res)=>{
+  res.send("backend api deployed successfully!!!!!")
+})
 
 // Database Connection
 connectDB(DATABASE_URL);
