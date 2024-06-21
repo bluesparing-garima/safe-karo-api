@@ -24,6 +24,9 @@ import model from './routes/modelRoutes.js';
 import branch from './routes/branchRoutes.js';
 import userProfile from './routes/userProfileRoutes.js';
 import leadGenerate from  "./routes/leadGenerateRoutes.js";
+import payOutRoute from './routes/payOutRoutes.js';
+import bookingRequestRoute from "./routes/bookingRequestRoutes.js";
+import adminDashboard from "./routes/adminDashboardRoute.js";
 
 const app = express();
 const port = process.env.PORT;
@@ -70,6 +73,9 @@ app.use('/api/excel', excelRoutes);
 // PayIn Routes
 app.use("/api/calculate", payInRoutes);
 
+//PayOut Routes
+app.use('/api/calculate',payOutRoute);
+
 // product-type Routes
 app.use('/api/product-type', vehicleType);
 
@@ -99,10 +105,16 @@ app.use('/api/model',model);
 
 // Branch
 app.use('/api/branches',branch);
+
 // lead generate
 app.use('/api/lead-generate',leadGenerate)
 
+// Booking request
+app.use('/api/booking-request',bookingRequestRoute);
 
+// admin dashboard
+app.use('/api/dashboard',adminDashboard);
+  
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);
 });

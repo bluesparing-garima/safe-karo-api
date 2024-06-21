@@ -56,6 +56,7 @@ const calculateODandTP = async (req, res) => {
     );
 
     const matchedRecord = await ExcelDataModel.findOne(dbQuery).select("od tp");
+
     const filteredNotMatchRecord = { od: 0, tp: 0 };
 
     if (!matchedRecord) {
