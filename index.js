@@ -9,7 +9,7 @@ import motorPolicyRoutes from "./routes/motorPolicyRoutes.js";
 import policyTypeRoutes from "./routes/policyTypeRoutes.js";
 import caseTypeRoutes from "./routes/caseTypeRoutes.js";
 import addRolesRoutes from "./routes/rolesRoutes.js";
-import excelRoutes from './routes/excelRoutes.js';
+import excelRoutes from './routes/payInExcelRoutes.js';
 import fileUpload from "express-fileupload";
 import payInRoutes from './routes/payInRoutes.js';
 import vehicleType from './routes/productSubTypeRoutes.js';
@@ -67,8 +67,11 @@ app.use("/api/case-type", caseTypeRoutes);
 //add Roles
 app.use("/api/roles", addRolesRoutes);
 
-// upload excel
-app.use('/api/excel', excelRoutes);
+// upload payin excel
+app.use('/api/pay-in/excel', excelRoutes);
+
+//upload payout excel 
+app.use('/api/pay-out/excel', excelRoutes);
 
 // PayIn Routes
 app.use("/api/calculate", payInRoutes);

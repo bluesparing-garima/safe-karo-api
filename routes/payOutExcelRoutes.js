@@ -1,5 +1,5 @@
 import express from 'express';
-import { uploadExcel, getAllData } from '../controller/adminController/excelController.js';
+import { uploadExcel, getAllData } from '../controller/adminController/payOutExcelController.js';
 
 const router = express.Router();
 

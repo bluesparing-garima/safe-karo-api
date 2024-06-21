@@ -1,10 +1,11 @@
 import mongoose from 'mongoose';
 
-const DataSchema = new mongoose.Schema({
+const PayOutDataSchema = new mongoose.Schema({
     productType: {type:String,trim:true},
     subCategory:  {type:String,trim:true},
     fuelType:  {type:String,trim:true},
-    engine:  {type:String,trim:true},
+    engine:  {type:String,trim:true}, // value coming from CC from frontend.
+    weight:{type:Number,trim:true},
     ncb:  {type:String,trim:true},
     policyType:  {type:String,trim:true},
     rto:  {type:String,trim:true},
@@ -33,7 +34,7 @@ const DataSchema = new mongoose.Schema({
 });
 
 // Middleware to update timestamps on save
-DataSchema.pre('save', function (next) {
+PayOutDataSchema.pre('save', function (next) {
     if (this.isNew) {
         this.createdOn = Date.now();
         this.updatedOn = null;
@@ -44,11 +45,11 @@ DataSchema.pre('save', function (next) {
 });
 
 // Middleware to handle updates specifically
-DataSchema.pre('findOneAndUpdate', function (next) {
+PayOutDataSchema.pre('findOneAndUpdate', function (next) {
     this._update.updatedOn = Date.now(); 
     next();
 });
 
-const ExcelDataModel = mongoose.model('ExcelData', DataSchema);
+const PayOutExcelDataModel = mongoose.model('PayOutExcelData', PayOutDataSchema);
 
-export default ExcelDataModel;
+export default PayOutExcelDataModel;

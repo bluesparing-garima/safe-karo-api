@@ -25,7 +25,7 @@ export const createMotorPolicy = async (req, res) => {
       fuelType,
       rto,
       vehicleNumber,
-      engine,
+      weight,
       seatingCapacity,
       cc,
       ncb,
@@ -47,6 +47,7 @@ export const createMotorPolicy = async (req, res) => {
       policyCreatedBy,
       documents,
       productType,
+      createdBy, 
       isActive,
     } = req.body;
 
@@ -81,7 +82,7 @@ export const createMotorPolicy = async (req, res) => {
       rto,
       vehicleNumber,
       seatingCapacity,
-      engine,
+      weight,
       cc,
       ncb,
       policyNumber,
@@ -102,6 +103,7 @@ export const createMotorPolicy = async (req, res) => {
       policyCreatedBy,
       documents,
       productType,
+      createdBy,
       isActive: isActive !== undefined ? isActive : true, // Set default to true if not provided
       updatedBy: null, // Explicitly set updatedBy to null
       updatedOn: null, // Explicitly set updatedOn to null
@@ -218,7 +220,7 @@ export const updateMotorPolicy = async (req, res) => {
     rto,
     vehicleNumber,
     seatingCapacity,
-    engine,
+    weight,
     cc,
     ncb,
     policyNumber,
@@ -260,7 +262,7 @@ export const updateMotorPolicy = async (req, res) => {
     rto,
     vehicleNumber,
     seatingCapacity,
-    engine,
+    weight,
     cc,
     ncb,
     policyNumber,

@@ -38,7 +38,6 @@ export const createBooking = async (req, res) => {
       "caseType",
       "policyType",
       "productType",
-      "subCategory",
       "companyName",
     //   "policyPDF",
       "bookingStatus",

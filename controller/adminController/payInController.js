@@ -1,4 +1,4 @@
-import ExcelDataModel from "../../models/excelDataSchema.js";
+import PayInExcelDataModel from "../../models/payInExcelDataSchema.js";
 
 const calculateODandTP = async (req, res) => {
   try {
@@ -12,6 +12,7 @@ const calculateODandTP = async (req, res) => {
       model,
       fuelType,
       engine,
+      weight,
       ncb,
       vehicleAge,
     } = req.query;
@@ -26,6 +27,7 @@ const calculateODandTP = async (req, res) => {
       !model ||
       !fuelType ||
       !engine ||
+      weight||
       !ncb ||
       !vehicleAge
     ) {
@@ -39,6 +41,7 @@ const calculateODandTP = async (req, res) => {
       fuelType,
       productType,
       engine,
+      weight,
       ncb,
       policyType,
       rto,
@@ -55,7 +58,7 @@ const calculateODandTP = async (req, res) => {
         : {}
     );
 
-    const matchedRecord = await ExcelDataModel.findOne(dbQuery).select("od tp");
+    const matchedRecord = await PayInExcelDataModel.findOne(dbQuery).select("od tp");
     const filteredNotMatchRecord = { od: 0, tp: 0 };
 
     if (!matchedRecord) {

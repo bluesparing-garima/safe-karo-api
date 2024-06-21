@@ -20,8 +20,8 @@ const MotorPolicySchema = new mongoose.Schema(
     rto: { type: String, trim: true },
     vehicleNumber: { type: String, trim: true },
     seatingCapacity: { type: String, trim: true },
-    engine: { type: Number, trim: true },
-    cc: { type: String, trim: true },
+    weight: { type: Number, trim: true },
+    cc: { type: Number, trim: true },
     ncb: { type: String, trim: true },
     policyNumber: { type: String, default: "", trim: true },
     fullName: { type: String, trim: true },
@@ -49,9 +49,27 @@ const MotorPolicySchema = new mongoose.Schema(
     paymentDetails: { type: String, default: "", trim: true },
     productType: { type: String, default: "", trim: true },
     documents: [DocumentSchema],
-    isActive: { type: Boolean, default: true, trim: true }, // Add isActive field
-  },
-  { timestamps: true }
+     createdBy: {
+      type: String,
+      required: true,
+    },
+    updatedBy: {
+      type: String,
+      default: null,
+    },
+    createdOn: {
+      type: Date,
+      default: Date.now,
+    },
+    updatedOn: {
+      type: Date,
+      default: Date.now,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,    
+    },
+  }
 );
 
 export default mongoose.model("MotorPolicy", MotorPolicySchema);
