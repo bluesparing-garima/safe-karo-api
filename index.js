@@ -9,44 +9,38 @@ import motorPolicyRoutes from "./routes/motorPolicyRoutes.js";
 import policyTypeRoutes from "./routes/policyTypeRoutes.js";
 import caseTypeRoutes from "./routes/caseTypeRoutes.js";
 import addRolesRoutes from "./routes/rolesRoutes.js";
-import excelRoutes from "./routes/excelRoutes.js";
+import payInexcelRoutes from './routes/payInExcelRoutes.js';
+import payOutExcelRoutes from './routes/payOutExcelRoutes.js'
 import fileUpload from "express-fileupload";
-import payInRoutes from "./routes/payInRoutes.js";
-import vehicleType from "./routes/productSubTypeRoutes.js";
+import payInRoutes from './routes/payInRoutes.js';
+import vehicleType from './routes/productSubTypeRoutes.js';
 // import partnerRoutes from './routes/partnerIdRoutes.js';
-import productName from "./routes/productRoutes.js";
-import company from "./routes/companyRoutes.js";
-import broker from "./routes/brokerRoutes.js";
-import category from "./routes/categoryRoutes.js";
-import fuelType from "./routes/fuelTypeRoutes.js";
-import make from "./routes/makeRoutes.js";
-import model from "./routes/modelRoutes.js";
-import branch from "./routes/branchRoutes.js";
-import userProfile from "./routes/userProfileRoutes.js";
-import leadGenerate from "./routes/leadGenerateRoutes.js";
+import productName from './routes/productRoutes.js';
+import company from './routes/companyRoutes.js';
+import broker from './routes/brokerRoutes.js';
+import category from './routes/categoryRoutes.js';
+import fuelType from './routes/fuelTypeRoutes.js';
+import make from './routes/makeRoutes.js';
+import model from './routes/modelRoutes.js';
+import branch from './routes/branchRoutes.js';
+import userProfile from './routes/userProfileRoutes.js';
+import leadGenerate from  "./routes/leadGenerateRoutes.js";
+import payOutRoute from './routes/payOutRoutes.js';
+import bookingRequestRoute from "./routes/bookingRequestRoutes.js";
+import adminDashboard from "./routes/adminDashboardRoute.js";
 
 const app = express();
 const port = process.env.PORT;
 const DATABASE_URL = process.env.DATEBASE_URL;
 
 // CORS Policy
-// Configure CORS with a dynamic origin function
-// const corsOptions = {
-//   origin: function (origin, callback) {
-//     const allowedOrigins = ['http://example.com', 'http://another-example.com'];
-//     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-//       callback(null, true);
-//     } else {
-//       callback(new Error('Not allowed by CORS'));
-//     }
-//   },
-//   methods: ['GET', 'POST'],
-//   allowedHeaders: ['Content-Type', 'Authorization'],
-//   credentials: true,
-// };
-
-//app.use(cors(corsOptions));
 app.use(cors());
+
+// if deployed successfully
+app.get('/',(req,res)=>{
+  res.send("backend api deployed successfully!!!!!")
+})
+
 // Database Connection
 connectDB(DATABASE_URL);
 
@@ -54,17 +48,15 @@ connectDB(DATABASE_URL);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use(
-  fileUpload({
-    createParentPath: true, // Allow creating parent path if it doesn't exist
-  })
-);
+app.use(fileUpload({
+  createParentPath: true, // Allow creating parent path if it doesn't exist
+}));
 
 // Load Routes
 app.use("/api/user", userRoutes);
 
 // userProfile
-app.use("/api/user-profile", userProfile);
+app.use("/api/user-profile",userProfile);
 
 //assignee roles Routes
 app.use("/api/user-roles", assigneeRolesRouters);
@@ -81,44 +73,57 @@ app.use("/api/case-type", caseTypeRoutes);
 //add Roles
 app.use("/api/roles", addRolesRoutes);
 
-// upload excel
-app.use("/api/excel", excelRoutes);
+// upload payin excel
+app.use('/api/pay-in/excel', payInexcelRoutes);
+
+//upload payout excel 
+app.use('/api/pay-out/excel', payOutExcelRoutes);
 
 // PayIn Routes
 app.use("/api/calculate", payInRoutes);
 
+//PayOut Routes
+app.use('/api/calculate',payOutRoute);
+
 // product-type Routes
-app.use("/api/product-type", vehicleType);
+app.use('/api/product-type', vehicleType);
 
 // Product Name
-app.use("/api/product", productName);
+app.use('/api/product',productName);
 
 // Use the partnerId routes
 // app.use('/api/partner', partnerRoutes);
 
 // Company Name's
-app.use("/api/company", company);
+app.use('/api/company', company);
 
-// Broker
-app.use("/api/broker", broker);
+// Broker 
+app.use('/api/broker',broker);
 
 // Category
-app.use("/api/category", category);
+app.use('/api/category',category)
 
 // FuelType
-app.use("/api/fuel-type", fuelType);
+app.use('/api/fuel-type',fuelType)
 
 // Make
-app.use("/api/make", make);
+app.use('/api/make',make);
 
 // Model
-app.use("/api/model", model);
+app.use('/api/model',model);
 
 // Branch
-app.use("/api/branches", branch);
-// lead generate
-app.use("/api/lead-generate", leadGenerate);
+app.use('/api/branches',branch);
 
+// lead generate
+app.use('/api/lead-generate',leadGenerate)
+
+// Booking request
+app.use('/api/booking-request',bookingRequestRoute);
+
+// admin dashboard
+app.use('/api/dashboard',adminDashboard);
+  
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);
 });
