@@ -181,13 +181,8 @@ export const getMotorPolicyByPolicyNumber = async (req, res) => {
 
     const policy = await MotorPolicyModel.findOne({ policyNumber });
 
-    if (!policy) {
-      return res
-        .status(200)
-        .json({ message: "Motor Policy not exists ",data: policy, status: "success"});
-    }
-    res.status(400).json({
-      message: `Motor Policy with Policy Number already exists.`,
+    res.status(200).json({
+      message: `Policy Number already exists.`,
       status: "error",
     });
   } catch (error) {
