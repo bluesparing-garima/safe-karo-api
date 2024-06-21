@@ -15,8 +15,8 @@ const createBranchName = async (req, res) => {
     const newbranchName = new BranchModel({
       branchName,
       createdBy,
-      updatedBy: null, // Set updatedBy to null initially
-      updatedOn: null, // Set updatedOn to null initially
+      updatedBy: null,
+      updatedOn: null, 
       isActive: isActive !== undefined ? isActive : true, // Set default value to true if not provided
     });
 

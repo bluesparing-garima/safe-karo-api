@@ -4,8 +4,8 @@
   "description": "this api will manage the signup and login part",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon app",
-    "dev": "nodemon app"
+    "start": "nodemon index",
+    "dev": "nodemon index"
   },
   "author": "safekaro",
   "license": "ISC",

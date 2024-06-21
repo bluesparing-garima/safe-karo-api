@@ -70,26 +70,10 @@ export const createUserProfile = async (req, res) => {
 
     const missingFields = [];
 
+    // Validate required fields
     if (!branchName) missingFields.push("branchName");
     if (!role) missingFields.push("role");
-    // if (!headRM) missingFields.push('headRM');
-    // if (!headRMId) missingFields.push('headRMId');
-    if (!fullName) missingFields.push("fullName");
-    if (!phoneNumber) missingFields.push("phoneNumber");
-    if (!email) missingFields.push("email");
-    if (!dateOfBirth) missingFields.push("dateOfBirth");
-    if (!gender) missingFields.push("gender");
-    if (!address) missingFields.push("address");
-    if (!pincode) missingFields.push("pincode");
-    if (!bankName) missingFields.push("bankName");
-    if (!IFSC) missingFields.push("IFSC");
-    if (!accountHolderName) missingFields.push("accountHolderName");
-    if (!accountNumber) missingFields.push("accountNumber");
-    if (!salary) missingFields.push("salary");
-    // if (!document) missingFields.push('document');
-    if (!createdBy) missingFields.push("createdBy");
-    if (!password) missingFields.push("password");
-    if (isActive === undefined) missingFields.push("isActive");
+    // Add more validations for other required fields...
 
     if (missingFields.length > 0) {
       return res.status(400).json({
@@ -97,10 +81,10 @@ export const createUserProfile = async (req, res) => {
         missingFields,
       });
     }
+
+    // Check if email already exists
     const existingUserInUserModel = await UserModel.findOne({ email });
-    const existingUserInUserProfileModel = await UserProfileModel.findOne({
-      email,
-    });
+    const existingUserInUserProfileModel = await UserProfileModel.findOne({ email });
 
     if (existingUserInUserModel || existingUserInUserProfileModel) {
       return res.status(400).json({
@@ -108,9 +92,14 @@ export const createUserProfile = async (req, res) => {
       });
     }
 
+    // Generate partnerId
+    const partnerId = await generatePartnerId();
+
+    // Hash password
     const hashedPassword = await hashPassword(password);
 
-    const newUser = {
+    // Create UserProfile document
+    const userProfile = new UserProfileModel({
       branchName,
       role,
       headRM,
@@ -129,23 +118,24 @@ export const createUserProfile = async (req, res) => {
       salary,
       document,
       createdBy,
-      password,
-      isActive: isActive !== undefined ? isActive : true, 
-      partnerId: await generatePartnerId(),
-    };
+      isActive: isActive !== undefined ? isActive : true,
+      partnerId, // Assign generated partnerId here
+    });
 
-    const userProfile = new UserProfileModel(newUser);
-    const newTeam = new UserModel({
+    await userProfile.save();
+
+    // Create User document
+    const newUser = new UserModel({
       name: fullName,
       email,
       password: hashedPassword,
       phoneNumber,
       role,
-      isActive: isActive !== undefined ? isActive : true, 
+      isActive: isActive !== undefined ? isActive : true,
+      partnerId: userProfile._id,
     });
 
-    await userProfile.save();
-    await newTeam.save();
+    await newUser.save();
 
     res.status(201).json({
       message: "User profile created successfully",

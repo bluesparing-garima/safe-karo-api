@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
 import fs from 'fs';
 import path from 'path';
-import ExcelDataModel from '../../models/excelDataSchema.js';
+import PayInExcelDataModel from '../../models/payInExcelDataSchema.js';
 
 // Path to local JSON file for storing data
 const dataFilePath = path.join(process.cwd(), 'data', 'data.json');
@@ -27,7 +27,8 @@ const uploadExcel = async (req, res) => {
             productType: row.productType || row['Product Type'],
             subCategory: row.subCategory || row['SubCategory'] || row['subCategory'],
             fuelType: row.fuelType || row['Fuel Type'],
-            engine: row.engine || row['Engine'],
+            engine: row.engine || row['Engine'], // engine = cc
+            weight: row.weight || row['Weight'],
             ncb: row.ncb || row['NCB'],
             policyType: row.policyType || row['Policy Type'],
             rto: row.rto || row['RTO'],
@@ -44,7 +45,7 @@ const uploadExcel = async (req, res) => {
             updatedOn: null
         }));
 
-        await ExcelDataModel.insertMany(extractedData);
+        await PayInExcelDataModel.insertMany(extractedData);
 
         let existingData = [];
         if (fs.existsSync(dataFilePath)) {
@@ -69,7 +70,7 @@ const uploadExcel = async (req, res) => {
 const getAllData = async (req, res) => {
     try {
         // Fetch data only from MongoDB
-        const dataFromMongo = await ExcelDataModel.find();
+        const dataFromMongo = await PayInExcelDataModel.find();
         res.status(200).json({
             message: 'File uploaded and data processed successfully.',
             data: dataFromMongo,
