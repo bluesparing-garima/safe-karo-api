@@ -35,6 +35,11 @@ const DATABASE_URL = process.env.DATEBASE_URL;
 // CORS Policy
 app.use(cors());
 
+// if deployed successfully
+app.get('/',(req,res)=>{
+  res.send("backend api deployed successfully!!!!!")
+})
+
 // Database Connection
 connectDB(DATABASE_URL);
 
