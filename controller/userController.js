@@ -3,7 +3,8 @@ import jwt from "jsonwebtoken";
 import UserModel from "../models/userSchema.js";
 
 const userRegistration = async (req, res) => {
-  const { name, email, password, phoneNumber, role, isActive } = req.body; // Include isActive in req.body if sent
+  const { name, email, password, partnerId, phoneNumber, role, isActive } =
+    req.body; // Include isActive in req.body if sent
   try {
     const user = await UserModel.findOne({ email: email });
     if (user) {
@@ -12,7 +13,7 @@ const userRegistration = async (req, res) => {
         .json({ status: "failed", message: "Email already exists" });
     }
 
-    if (!name || !email || !password || !phoneNumber || !role) {
+    if (!name || !email || !password || !partnerId || !phoneNumber || !role) {
       return res
         .status(400)
         .json({ status: "failed", message: "All fields are required" });
