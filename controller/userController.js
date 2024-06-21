@@ -27,6 +27,7 @@ const userRegistration = async (req, res) => {
       password: hashPassword,
       phoneNumber,
       role,
+      partnerId,
       isActive: isActive !== undefined ? isActive : true, // Set default value if isActive is not provided
     });
 
