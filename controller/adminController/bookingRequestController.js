@@ -23,9 +23,7 @@ export const createBooking = async (req, res) => {
       productType,
       subCategory,
       companyName,
-    //   policyPDF,
       documents,
-      bookingStatus,
       createdBy,
       isActive,
     } = req.body;
@@ -39,8 +37,6 @@ export const createBooking = async (req, res) => {
       "policyType",
       "productType",
       "companyName",
-    //   "policyPDF",
-      "bookingStatus",
       "createdBy",
     ];
 
@@ -63,9 +59,8 @@ export const createBooking = async (req, res) => {
       productType,
       subCategory,
       companyName,
-    //   policyPDF,
       documents,
-      bookingStatus,
+      bookingStatus: "requested",
       createdBy,
       isActive: isActive !== undefined ? isActive : true,
     });
@@ -84,6 +79,7 @@ export const createBooking = async (req, res) => {
       .json({ message: "Error creating booking", error: error.message });
   }
 };
+
 
 // Get all bookings
 export const getAllBookings = async (req, res) => {

@@ -35,7 +35,6 @@ const generatePartnerId = async () => {
   return newPartnerId;
 };
 
-
 // Function to hash passwords
 const hashPassword = async (password) => {
   const salt = await bcrypt.genSalt(10);
@@ -53,6 +52,7 @@ export const createUserProfile = async (req, res) => {
       fullName,
       phoneNumber,
       email,
+      password,
       dateOfBirth,
       gender,
       address,
@@ -64,16 +64,13 @@ export const createUserProfile = async (req, res) => {
       salary,
       document,
       createdBy,
-      password,
       isActive,
     } = req.body;
 
     const missingFields = [];
 
-    // Validate required fields
     if (!branchName) missingFields.push("branchName");
     if (!role) missingFields.push("role");
-    // Add more validations for other required fields...
 
     if (missingFields.length > 0) {
       return res.status(400).json({
@@ -82,7 +79,6 @@ export const createUserProfile = async (req, res) => {
       });
     }
 
-    // Check if email already exists
     const existingUserInUserModel = await UserModel.findOne({ email });
     const existingUserInUserProfileModel = await UserProfileModel.findOne({ email });
 
@@ -92,13 +88,10 @@ export const createUserProfile = async (req, res) => {
       });
     }
 
-    // Generate partnerId
     const partnerId = await generatePartnerId();
 
-    // Hash password
     const hashedPassword = await hashPassword(password);
 
-    // Create UserProfile document
     const userProfile = new UserProfileModel({
       branchName,
       role,
@@ -107,6 +100,7 @@ export const createUserProfile = async (req, res) => {
       fullName,
       phoneNumber,
       email,
+      password: hashedPassword, 
       dateOfBirth,
       gender,
       address,
@@ -119,28 +113,28 @@ export const createUserProfile = async (req, res) => {
       document,
       createdBy,
       isActive: isActive !== undefined ? isActive : true,
-      partnerId, // Assign generated partnerId here
+      partnerId, 
     });
 
-    await userProfile.save();
-
-    // Create User document
     const newUser = new UserModel({
       name: fullName,
       email,
-      password: hashedPassword,
+      password: hashedPassword, 
       phoneNumber,
       role,
       isActive: isActive !== undefined ? isActive : true,
       partnerId: userProfile._id,
     });
 
+   
+    await userProfile.save();
     await newUser.save();
 
     res.status(201).json({
       message: "User profile created successfully",
       data: userProfile,
       status: "success",
+    
     });
   } catch (error) {
     res.status(500).json({
@@ -149,7 +143,8 @@ export const createUserProfile = async (req, res) => {
     });
   }
 };
-//check email exist or not.
+
+// Check email existence
 export const checkEmailExists = async (req, res) => {
   try {
     const { email } = req.query;
@@ -184,11 +179,10 @@ export const checkEmailExists = async (req, res) => {
 // Get all user profiles
 export const getAllUserProfiles = async (req, res) => {
   try {
-    const userProfiles = await UserProfileModel.find();
-
+    const userProfile = await UserProfileModel.find();
     res.status(200).json({
       message: "User profiles retrieved successfully",
-      data: userProfiles,
+      data: userProfile,
       status: "success",
     });
   } catch (error) {
@@ -211,12 +205,12 @@ export const getUserProfilesByRole = async (req, res) => {
       role === "RM" || role === "Relationship Manager"
         ? ["RM", "Relationship Manager"]
         : [role];
-    const userProfiles = await UserProfileModel.find({
+    const userProfile = await UserProfileModel.find({
       role: { $in: searchRoles },
     });
     res.status(200).json({
       message: "User profiles retrieved successfully",
-      data: userProfiles,
+      data: userProfile,
     });
   } catch (error) {
     res.status(500).json({
@@ -240,9 +234,10 @@ export const getUserProfileById = async (req, res) => {
       status: "success",
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error retrieving user profile", error: error.message });
+    res.status(500).json({
+      message: "Error retrieving user profile",
+      error: error.message,
+    });
   }
 };
 
@@ -276,9 +271,10 @@ export const updateUserProfile = async (req, res) => {
       data: updatedProfile,
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error updating user profile", error: error.message });
+    res.status(500).json({ 
+      message: "Error updating user profile", 
+      error: error.message 
+    });
   }
 };
 
