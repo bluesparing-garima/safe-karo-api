@@ -149,8 +149,7 @@ export const createUserProfile = async (req, res) => {
     });
   }
 };
-
-// check if an email exists
+//check email exist or not.
 export const checkEmailExists = async (req, res) => {
   try {
     const { email } = req.query;
@@ -160,14 +159,13 @@ export const checkEmailExists = async (req, res) => {
     }
 
     const existingUserInUserModel = await UserModel.findOne({ email });
-    const existingUserInUserProfileModel = await UserProfileModel.findOne({
-      email,
-    });
+    const existingUserInUserProfileModel = await UserProfileModel.findOne({ email });
 
     if (existingUserInUserModel || existingUserInUserProfileModel) {
       return res.status(200).json({
         message: "Email already exists",
         emailExists: true,
+        status: "success"
       });
     } else {
       return res.status(200).json({

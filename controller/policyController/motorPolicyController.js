@@ -183,7 +183,7 @@ export const getMotorPolicyByPolicyNumber = async (req, res) => {
 
     res.status(200).json({
       message: `Policy Number already exists.`,
-      status: "error",
+      status: "success",
     });
   } catch (error) {
     console.error("Error retrieving motor policy by policyNumber:", error);
