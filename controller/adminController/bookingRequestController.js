@@ -100,7 +100,7 @@ export const checkPolicyNumberExists = async (req, res) => {
 };
 
 // Get all bookings
-export const getAllBookings = async (req, res) => {
+export const getAllBookingsRequest = async (req, res) => {
   try {
     const bookings = await BookingRequestModel.find();
     res.status(200).json({
@@ -117,7 +117,7 @@ export const getAllBookings = async (req, res) => {
 };
 
 // Update a booking by ID
-export const updateBooking = async (req, res) => {
+export const updateBookingRequest = async (req, res) => {
   try {
     const updatedBooking = await BookingRequestModel.findByIdAndUpdate(
       req.params.id,
