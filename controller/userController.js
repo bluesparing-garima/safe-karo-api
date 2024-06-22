@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import UserModel from "../models/userSchema.js";
 
 const userRegistration = async (req, res) => {
-  const { name, email, password, phoneNumber, role, isActive } = req.body; // Include isActive in req.body if sent
+  const { name, email, password, phoneNumber,partnerId, role, isActive } = req.body; 
   try {
     const user = await UserModel.findOne({ email: email });
     if (user) {
@@ -27,7 +27,8 @@ const userRegistration = async (req, res) => {
       password: hashPassword,
       phoneNumber,
       role,
-      isActive: isActive !== undefined ? isActive : true, // Set default value if isActive is not provided
+      partnerId,
+      isActive: isActive !== undefined ? isActive : true,
     });
 
     await newUser.save();

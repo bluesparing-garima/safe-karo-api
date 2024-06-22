@@ -20,12 +20,12 @@ const router = express.Router();
 
 // User profile routes
 router.post("/", createUserProfile);
-router.get("/byRole", getUserProfilesByRole); 
+router.get("/byRole", getUserProfilesByRole);
 router.get("/", getAllUserProfiles);
+router.get('/check-email', checkEmailExists); 
 router.get("/:id", getUserProfileById);
 router.put("/:id", updateUserProfile);
 router.delete("/:id", deleteUserProfile);
-router.get('/check-email', checkEmailExists);
 
 // Partner routes
 router.post('/partners', createPartner);

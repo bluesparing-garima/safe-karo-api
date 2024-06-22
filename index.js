@@ -28,6 +28,7 @@ import leadGenerate from  "./routes/leadGenerateRoutes.js";
 import payOutRoute from './routes/payOutRoutes.js';
 import bookingRequestRoute from "./routes/bookingRequestRoutes.js";
 import adminDashboard from "./routes/adminDashboardRoute.js";
+import agentDashboardRoutes from './routes/agentDashboardRoutes.js';
 
 const app = express();
 const port = process.env.PORT;
@@ -123,6 +124,9 @@ app.use('/api/booking-request',bookingRequestRoute);
 
 // admin dashboard
 app.use('/api/dashboard',adminDashboard);
+
+// agent dashboard
+app.use('/api/agent-dashboard', agentDashboardRoutes);
   
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);
