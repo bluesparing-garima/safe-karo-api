@@ -126,7 +126,7 @@ app.use('/api/booking-request',bookingRequestRoute);
 app.use('/api/dashboard',adminDashboard);
 
 // agent dashboard
-app.use('/api/agent-dashboard', agentDashboardRoutes);
+app.use('/api/dashboard', agentDashboardRoutes);
   
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);

@@ -1,5 +1,5 @@
-// controllers/motorPolicyController.js
 import MotorPolicyModel from "../../models/motorpolicySchema.js";
+import BookingRequestModel from "../../models/bookingRequestSchema.js";
 
 // Create Motor Policy
 export const createMotorPolicy = async (req, res) => {
@@ -47,18 +47,39 @@ export const createMotorPolicy = async (req, res) => {
       policyCreatedBy,
       documents,
       productType,
-      createdBy, 
+      createdBy,
       isActive,
     } = req.body;
 
-    // Check if the policyNumber already exists
-    const existingPolicy = await MotorPolicyModel.findOne({ policyNumber });
-    if (existingPolicy) {
-      return res.status(404).json({
-        status: "error",
-        message: `Motor Policy with Policy Number ${policyNumber} already exists.`,
-      });
+    // Check if the policyNumber already exists in MotorPolicy
+    // const existingMotorPolicy = await MotorPolicyModel.findOne({ policyNumber });
+    // if (existingMotorPolicy) {
+    //   return res.status(400).json({
+    //     status: "error",
+    //     message: `Motor Policy with Policy Number ${policyNumber} already exists.`,
+    //   });
+    // }
+    const existingBookingRequest = await BookingRequestModel.findOne({ policyNumber });
+    if (existingBookingRequest) {
+      if (existingBookingRequest.bookingStatus === "requested") {
+
+        existingBookingRequest.bookingStatus = "booked";
+        await existingBookingRequest.save();
+
+        return res.status(200).json({
+          status: "success",
+          message: `Booking Request with Policy Number ${policyNumber} already exists and has been updated to booked.`,
+          bookingStatus: existingBookingRequest.bookingStatus,
+        });
+      } else {
+        return res.status(400).json({
+          status: "error",
+          message: `Booking Request with Policy Number ${policyNumber} already exists and is not in 'requested' status.`,
+          bookingStatus: existingBookingRequest.bookingStatus,
+        });
+      }
     }
+
 
     const newMotorPolicy = new MotorPolicyModel({
       tpPremium,
@@ -148,31 +169,6 @@ export const getMotorPolicies = async (req, res) => {
     res.status(500).json({ status: "error", message: error.message });
   }
 };
-
-// // Get Motor Policy by Number 
-// export const getMotorPolicyByNumber = async (req, res) => {
-//   try {
-//     const { policyNumber } = req.params; 
-
-//     const policy = await MotorPolicyModel.findOne({ policyNumber });
-
-//     if (!policy) {
-//       return res
-//         .status(200)
-//         .json({ message: `Motor Policy with Partner ID ${policyNumber} retrieved successfully`,status:"success" });
-
-//     }
-
-//     res.status(200).json({
-//       message: `Motor Policy with policy ID ${policyNumber} retrieved successfully`,
-//       data: policy,
-//       status: "error",
-//     });
-//   } catch (error) {
-//     console.error("Error retrieving motor policy by partnerId:", error);
-//     res.status(500).json({ status: "error", message: error.message });
-//   }
-// };
 
 // Get Motor Policy by policyNumber
 export const getMotorPolicyByPolicyNumber = async (req, res) => {
