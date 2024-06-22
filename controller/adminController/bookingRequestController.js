@@ -9,9 +9,8 @@ const getMissingFields = (fields, requiredFields) => {
       fields[field] === null
   );
 };
-
 // Create a new bookingRequest
-export const createBooking = async (req, res) => {
+export const createBookingRequest = async (req, res) => {
   try {
     const {
       partnerId,
@@ -81,8 +80,27 @@ export const createBooking = async (req, res) => {
 };
 
 
+// Check PolicyNumber exist.
+export const checkPolicyNumberExists = async (req, res) => {
+  try {
+    const { policyNumber } = req.params;
+    const existingBooking = await BookingRequestModel.findOne({ policyNumber });
+    if (existingBooking) {
+      return res.status(200).json({
+        message: `Policy number already exists`,
+        status: "success",
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      message: "Error checking policy number",
+      error: error.message,
+    });
+  }
+};
+
 // Get all bookings
-export const getAllBookings = async (req, res) => {
+export const getAllBookingRequests = async (req, res) => {
   try {
     const bookings = await BookingRequestModel.find();
     res.status(200).json({
@@ -99,7 +117,7 @@ export const getAllBookings = async (req, res) => {
 };
 
 // Update a booking by ID
-export const updateBooking = async (req, res) => {
+export const updateBookingRequest = async (req, res) => {
   try {
     const updatedBooking = await BookingRequestModel.findByIdAndUpdate(
       req.params.id,
