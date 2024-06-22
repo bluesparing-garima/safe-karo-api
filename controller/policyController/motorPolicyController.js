@@ -106,7 +106,7 @@ export const createMotorPolicy = async (req, res) => {
     if (existingMotorPolicy) {
       return res.status(400).json({
         status: "error",
-        message: `Motor Policy with Policy Number ${policyNumber} already exists.`,
+        message: `Motor Policy with ${policyNumber} already exists.`,
       });
     } else {
       const savedMotorPolicy = await newMotorPolicy.save();
@@ -121,13 +121,13 @@ export const createMotorPolicy = async (req, res) => {
           return res.status(200).json({
             status: "success",
             //Booking Request with Policy Number ${policyNumber} already exists and has been updated to booked.
-            message: `Policy Number ${policyNumber}booked sucessfully`,
+            message: `Policy Number ${policyNumber} booked sucessfully`,
           });
         } else {
           return res.status(200).json({
             status: "success",
             //Booking Request with Policy Number ${policyNumber} already exists and is not in 'requested' status.
-            message: `Policy Number ${policyNumber}booked sucessfully`,
+            message: `Policy Number created sucessfully`,
             data: savedMotorPolicy,
           });
         }
@@ -172,6 +172,33 @@ export const getMotorPolicies = async (req, res) => {
     res.status(500).json({ status: "error", message: error.message });
   }
 };
+
+// Get MotorPolicy by partnerId
+export const getMotorPolicyByPartnerId = async (req, res) => {
+  try {
+    const { partnerId } = req.params;
+    const policies = await MotorPolicyModel.find({ partnerId });
+    
+    if (policies.length === 0) {
+      return res.status(404).json({
+        message: `No Motor Policy for partnerId ${partnerId}`,
+        status: "success",
+      });
+    }
+
+    res.status(200).json({
+      message: "Motor Policies retrieved successfully.",
+      data: policies,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving motor policies",
+      error: error.message,
+    });
+  }
+};
+
 
 // Get Motor Policy by policyNumber
 export const getMotorPolicyByPolicyNumber = async (req, res) => {

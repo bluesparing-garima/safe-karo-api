@@ -38,7 +38,6 @@ export const createBookingRequest = async (req, res) => {
       "companyName",
       "createdBy",
     ];
-
     const missingFields = getMissingFields(req.body, requiredFields);
     if (missingFields.length > 0) {
       return res
@@ -113,6 +112,32 @@ export const getAllBookingRequests = async (req, res) => {
     res
       .status(500)
       .json({ message: "Error retrieving bookings", error: error.message });
+  }
+};
+
+// Get booking requests by partnerId
+export const getBookingRequestsByPartnerId = async (req, res) => {
+  try {
+    const { partnerId } = req.params;
+    const bookings = await BookingRequestModel.find({ partnerId });
+    
+    if (bookings.length === 0) {
+      return res.status(404).json({
+        message: `No bookings found for partnerId: ${partnerId}`,
+        status: "success",
+      });
+    }
+
+    res.status(200).json({
+      message: "Bookings retrieved successfully.",
+      data: bookings,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving bookings",
+      error: error.message,
+    });
   }
 };
 
