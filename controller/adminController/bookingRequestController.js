@@ -1,5 +1,6 @@
 import BookingRequestModel from "../../models/bookingRequestSchema.js";
 
+// Helper function to check for missing fields
 const getMissingFields = (fields, requiredFields) => {
   return requiredFields.filter(
     (field) =>
@@ -9,7 +10,7 @@ const getMissingFields = (fields, requiredFields) => {
   );
 };
 // Create a new bookingRequest
-export const createBooking = async (req, res) => {
+export const createBookingRequest = async (req, res) => {
   try {
     const {
       partnerId,
@@ -47,17 +48,6 @@ export const createBooking = async (req, res) => {
         });
     }
 
-    // Check if policyNumber already exists
-    const existingBooking = await BookingRequestModel.findOne({ policyNumber });
-    if (existingBooking) {
-      return res
-        .status(400)
-        .json({
-          message: `Policy number ${policyNumber} already exists`,
-          status: "error",
-        });
-    }else{
-
     const newBooking = new BookingRequestModel({
       partnerId,
       partnerName,
@@ -82,7 +72,6 @@ export const createBooking = async (req, res) => {
         data: newBooking,
         status: "success",
       });
-    }
   } catch (error) {
     res
       .status(500)
@@ -91,6 +80,29 @@ export const createBooking = async (req, res) => {
 };
 
 
+// Check PolicyNumber exist.
+export const checkPolicyNumberExists = async (req, res) => {
+  try {
+    const { policyNumber } = req.params;
+
+    if (!policyNumber) {
+      return res.status(400).json({ message: "Policy number parameter is required" });
+    }
+
+    const existingBooking = await BookingRequestModel.findOne({ policyNumber });
+    if (existingBooking) {
+      return res.status(400).json({
+        message: `Policy number ${policyNumber} already exists`,
+        status: "error",
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      message: "Error checking policy number",
+      error: error.message,
+    });
+  }
+};
 
 // Get all bookings
 export const getAllBookings = async (req, res) => {

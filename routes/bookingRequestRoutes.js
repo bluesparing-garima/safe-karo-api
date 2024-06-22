@@ -1,10 +1,10 @@
 import express from 'express';
-import { createBooking, getAllBookings, updateBooking} from '../controller/adminController/bookingRequestController.js';
+import { createBookingRequest, getAllBookings, updateBooking,checkPolicyNumberExists} from '../controller/adminController/bookingRequestController.js';
 
 const router = express.Router();
 
-router.post('/', createBooking);
+router.post('/', createBookingRequest);
 router.get('/', getAllBookings);
 router.put('/:id', updateBooking);
-
+router.get('/:policyNumber', checkPolicyNumberExists);
 export default router;
