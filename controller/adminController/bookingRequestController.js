@@ -87,7 +87,7 @@ export const checkPolicyNumberExists = async (req, res) => {
     const existingBooking = await BookingRequestModel.findOne({ policyNumber });
     if (existingBooking) {
       return res.status(200).json({
-        message: `Policy number ${policyNumber} already exists`,
+        message: `Policy number already exists`,
         status: "success",
       });
     }
