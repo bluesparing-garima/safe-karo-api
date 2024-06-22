@@ -1,6 +1,5 @@
 import BookingRequestModel from "../../models/bookingRequestSchema.js";
 
-// Helper function to check for missing fields
 const getMissingFields = (fields, requiredFields) => {
   return requiredFields.filter(
     (field) =>
@@ -9,7 +8,6 @@ const getMissingFields = (fields, requiredFields) => {
       fields[field] === null
   );
 };
-
 // Create a new bookingRequest
 export const createBooking = async (req, res) => {
   try {
@@ -49,6 +47,17 @@ export const createBooking = async (req, res) => {
         });
     }
 
+    // Check if policyNumber already exists
+    const existingBooking = await BookingRequestModel.findOne({ policyNumber });
+    if (existingBooking) {
+      return res
+        .status(400)
+        .json({
+          message: `Policy number ${policyNumber} already exists`,
+          status: "error",
+        });
+    }else{
+
     const newBooking = new BookingRequestModel({
       partnerId,
       partnerName,
@@ -73,12 +82,14 @@ export const createBooking = async (req, res) => {
         data: newBooking,
         status: "success",
       });
+    }
   } catch (error) {
     res
       .status(500)
       .json({ message: "Error creating booking", error: error.message });
   }
 };
+
 
 
 // Get all bookings
