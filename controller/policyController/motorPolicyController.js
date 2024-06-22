@@ -51,36 +51,6 @@ export const createMotorPolicy = async (req, res) => {
       isActive,
     } = req.body;
 
-    // Check if the policyNumber already exists in MotorPolicy
-    // const existingMotorPolicy = await MotorPolicyModel.findOne({ policyNumber });
-    // if (existingMotorPolicy) {
-    //   return res.status(400).json({
-    //     status: "error",
-    //     message: `Motor Policy with Policy Number ${policyNumber} already exists.`,
-    //   });
-    // }
-    const existingBookingRequest = await BookingRequestModel.findOne({ policyNumber });
-    if (existingBookingRequest) {
-      if (existingBookingRequest.bookingStatus === "requested") {
-
-        existingBookingRequest.bookingStatus = "booked";
-        await existingBookingRequest.save();
-
-        return res.status(200).json({
-          status: "success",
-          message: `Booking Request with Policy Number ${policyNumber} already exists and has been updated to booked.`,
-          bookingStatus: existingBookingRequest.bookingStatus,
-        });
-      } else {
-        return res.status(400).json({
-          status: "error",
-          message: `Booking Request with Policy Number ${policyNumber} already exists and is not in 'requested' status.`,
-          bookingStatus: existingBookingRequest.bookingStatus,
-        });
-      }
-    }
-
-
     const newMotorPolicy = new MotorPolicyModel({
       tpPremium,
       odPremium,
@@ -129,13 +99,46 @@ export const createMotorPolicy = async (req, res) => {
       updatedBy: null, // Explicitly set updatedBy to null
       updatedOn: null, // Explicitly set updatedOn to null
     });
-
-    const savedMotorPolicy = await newMotorPolicy.save();
-    res.status(201).json({
-      message: "Motor Policy created successfully",
-      data: savedMotorPolicy,
-      status: "success",
+    // Check if the policyNumber already exists in MotorPolicy
+    const existingMotorPolicy = await MotorPolicyModel.findOne({
+      policyNumber,
     });
+    if (existingMotorPolicy) {
+      return res.status(400).json({
+        status: "error",
+        message: `Motor Policy with Policy Number ${policyNumber} already exists.`,
+      });
+    } else {
+      const savedMotorPolicy = await newMotorPolicy.save();
+      if (savedMotorPolicy) {
+        const existingBookingRequest = await BookingRequestModel.findOne({
+          policyNumber,
+        });
+        if (existingBookingRequest) {
+          existingBookingRequest.bookingStatus = "booked";
+          await existingBookingRequest.save();
+
+          return res.status(200).json({
+            status: "success",
+            //Booking Request with Policy Number ${policyNumber} already exists and has been updated to booked.
+            message: `Policy Number ${policyNumber}booked sucessfully`,
+          });
+        } else {
+          return res.status(200).json({
+            status: "success",
+            //Booking Request with Policy Number ${policyNumber} already exists and is not in 'requested' status.
+            message: `Policy Number ${policyNumber}booked sucessfully`,
+            data: savedMotorPolicy,
+          });
+        }
+      } else {
+        return res.status(400).json({
+          status: "error",
+          //Booking Request with Policy Number ${policyNumber} already exists and is not in 'requested' status.
+          message: `Somthing went goes wrong`,
+        });
+      }
+    }
   } catch (error) {
     res.status(500).json({ status: "error", message: error.message });
   }
@@ -173,14 +176,16 @@ export const getMotorPolicies = async (req, res) => {
 // Get Motor Policy by policyNumber
 export const getMotorPolicyByPolicyNumber = async (req, res) => {
   try {
-    const { policyNumber } = req.params; 
+    const { policyNumber } = req.params;
 
     const policy = await MotorPolicyModel.findOne({ policyNumber });
 
-    res.status(200).json({
-      message: `Policy Number already exists.`,
-      status: "success",
-    });
+    if (policy) {
+      res.status(200).json({
+        message: `Policy Number already exists.`,
+        status: "success",
+      });
+    }
   } catch (error) {
     console.error("Error retrieving motor policy by policyNumber:", error);
     res.status(500).json({ status: "error", message: error.message });
@@ -274,6 +279,9 @@ export const updateMotorPolicy = async (req, res) => {
     policyCreatedBy,
     documents,
     productType,
+    relationshipManagerId,
+    relationshipManagerName,
+    paymentDetails,
     isActive: isActive !== undefined ? isActive : true, // Default to true if not provided
     updatedBy: updatedBy || "system", // Set to 'system' or user info if not provided
     updatedOn: new Date(), // Set the current date for updatedOn
@@ -324,12 +332,10 @@ export const deleteMotorPolicy = async (req, res) => {
     deletedForm.isActive = false; // Soft delete by marking isActive as false
     await deletedForm.save();
 
-    res
-      .status(200)
-      .json({
-        status: "success",
-        message: "Motor Policy deleted successfully",
-      });
+    res.status(200).json({
+      status: "success",
+      message: "Motor Policy deleted successfully",
+    });
   } catch (error) {
     res.status(500).json({ status: "error", message: error.message });
   }

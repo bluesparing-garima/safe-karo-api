@@ -30,7 +30,6 @@ const userRegistration = async (req, res) => {
       phoneNumber,
       role,
       partnerId,
-
       isActive: isActive !== undefined ? isActive : true,
 
     });
@@ -88,7 +87,7 @@ const userLogin = async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
-      partnerID:user.partnerId,
+      partnerId:user.partnerId,
       phoneNumber: user.phoneNumber,
     });
   } catch (error) {
