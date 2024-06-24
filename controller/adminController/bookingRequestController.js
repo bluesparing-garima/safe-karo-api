@@ -9,6 +9,13 @@ const getMissingFields = (fields, requiredFields) => {
       fields[field] === null
   );
 };
+
+// Check if a policy number already exists
+const checkPolicyNumberExist = async (policyNumber) => {
+  const existingBooking = await BookingRequestModel.findOne({ policyNumber });
+  return existingBooking !== null;
+};
+
 // Create a new bookingRequest
 export const createBookingRequest = async (req, res) => {
   try {
@@ -47,6 +54,16 @@ export const createBookingRequest = async (req, res) => {
         });
     }
 
+    // Check if policy number already exists
+    const policyExists = await checkPolicyNumberExist(policyNumber);
+    if (policyExists) {
+      return res.status(400).json({
+        message: `Policy number '${policyNumber}' already exists`,
+        status: "failure",
+      });
+    }
+
+    // Create new booking if policy number doesn't exist
     const newBooking = new BookingRequestModel({
       partnerId,
       partnerName,

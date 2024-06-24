@@ -17,22 +17,26 @@ const calculateODandTP = async (req, res) => {
       vehicleAge,
     } = req.query;
 
-    if (
-      !rto ||
-      !policyType ||
-      !caseType ||
-      !productType ||
-      !companyName ||
-      !make ||
-      !model ||
-      !fuelType ||
-      !engine ||
-      weight ||
-      !ncb ||
-      !vehicleAge
-    ) {
+    // Collect missing parameters
+    const missingFields = [];
+    if (!rto) missingFields.push("rto");
+    if (!policyType) missingFields.push("policyType");
+    if (!caseType) missingFields.push("caseType");
+    if (!productType) missingFields.push("productType");
+    if (!companyName) missingFields.push("companyName");
+    if (!make) missingFields.push("make");
+    if (!model) missingFields.push("model");
+    if (!fuelType) missingFields.push("fuelType");
+    if (!engine) missingFields.push("engine");
+    if (!weight) missingFields.push("weight");
+    if (!ncb) missingFields.push("ncb");
+    if (!vehicleAge) missingFields.push("vehicleAge");
+
+    // If there are missing fields, return a 400 response
+    if (missingFields.length > 0) {
       return res.status(400).json({
         message: "Missing required query parameters",
+        missingFields,
         status: "Failed",
       });
     }
@@ -52,10 +56,9 @@ const calculateODandTP = async (req, res) => {
       vehicleAge,
     };
 
+    // Remove undefined or null fields from the query
     Object.keys(dbQuery).forEach((key) =>
-      dbQuery[key] === undefined || dbQuery[key] === null
-        ? delete dbQuery[key]
-        : {}
+      dbQuery[key] === undefined || dbQuery[key] === null ? delete dbQuery[key] : {}
     );
 
     const matchedRecord = await PayOutExcelDataModel.findOne(dbQuery).select("od tp");
@@ -80,9 +83,10 @@ const calculateODandTP = async (req, res) => {
       status: "Success",
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error fetching data", error: error.message });
+    res.status(500).json({
+      message: "Error fetching data",
+      error: error.message,
+    });
   }
 };
 
