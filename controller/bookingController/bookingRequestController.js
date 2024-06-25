@@ -95,15 +95,19 @@ export const createBookingRequest = async (req, res) => {
   }
 };
 
-
 // Check PolicyNumber exist.
 export const validatePolicyNumber = async (req, res) => {
   try {
     const { policyNumber } = req.query;
-    const existingBooking = await BookingRequestModel.findOne({ policyNumber });
-    if (existingBooking) {
+    const policyExists = await BookingRequestModel.exists({ policyNumber });
+    if (policyExists) {
       return res.status(200).json({
         message: `Policy number already exists`,
+        status: "success",
+      });
+    } else {
+      return res.status(200).json({
+        message: `Policy number does not exist`,
         status: "success",
       });
     }
@@ -114,6 +118,7 @@ export const validatePolicyNumber = async (req, res) => {
     });
   }
 };
+
 
 // Get all bookings
 export const getAllBookingRequests = async (req, res) => {
