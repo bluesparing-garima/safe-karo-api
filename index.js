@@ -29,7 +29,7 @@ import payOutRoute from './routes/payOutRoutes.js';
 import bookingRequestRoute from "./routes/bookingRequestRoutes.js";
 import adminDashboard from "./routes/adminDashboardRoute.js";
 import agentDashboardRoutes from './routes/agentDashboardRoutes.js';
-import policyTimerManageRoutes from './routes/policyTimerManageRoute.js';
+// import policyTimerManageRoutes from './routes/policyTimerManageRoute.js';
 import activityLogRoutes from './routes/activityLogRoutes.js';
 
 const app = express();
@@ -131,7 +131,7 @@ app.use('/api/dashboard',adminDashboard);
 app.use('/api/dashboard', agentDashboardRoutes);
   
 // timeManager
-app.use('/api/policyTimerManage',policyTimerManageRoutes);
+// app.use('/api/policyTimerManage',policyTimerManageRoutes);
 
 // activity logs
 app.use('/api/activityLog', activityLogRoutes);
