@@ -2,12 +2,12 @@
 import MotorPolicyModel from '../../models/motorpolicySchema.js';
 
 // Controller function to count policies by partnerId and category
-export const countPoliciesByPartnerIdAndCategory = async (req, res) => {
+export const getAgentDashboardCount = async (req, res) => {
   const { partnerId } = req.params;
 
   if (!partnerId) {
     return res.status(400).json({
-      message: 'Partner ID is required',
+      message: 'Partner Id is required',
       status: 'error',
     });
   }

@@ -28,7 +28,7 @@ const uploadExcel = async (req, res) => {
             subCategory: (row.subCategory || row['SubCategory'] || row['subCategory'] || '').toLowerCase(),
             fuelType: (row.fuelType || row['Fuel Type'] || '').toLowerCase(),
             engine: (row.engine || row['Engine'] || ''), // engine = cc
-            weight: (row.weight || row['Weight'] || ''),
+            weight: (row.weight || row['Weight'] || '0'),
             ncb: (row.ncb || row['NCB'] || '').toLowerCase(),
             policyType: (row.policyType || row['Policy Type'] || '').toLowerCase(),
             rto: (row.rto || row['RTO'] || '').toLowerCase(),

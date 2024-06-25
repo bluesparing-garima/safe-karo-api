@@ -1,8 +1,8 @@
 import express from 'express';
-import { countPoliciesByPartnerIdAndCategory } from '../controller/adminController/agentDashboardController.js';
+import { getAgentDashboardCount } from '../controller/dashboard/agentDashboardController.js';
 
 const router = express.Router();
 
-router.get('/:partnerId', countPoliciesByPartnerIdAndCategory);
+router.get('/:partnerId', getAgentDashboardCount);
 
 export default router;

@@ -2,7 +2,7 @@ import UserProfileModel from '../../models/userProfileSchema.js';
 import MotorPolicyModel from '../../models/motorpolicySchema.js';
 
 // Controller function to count users by role
-export const countUsersByRole = async (req, res) => {
+export const getDashboardCount = async (req, res) => {
   try {
     const roleCounts = await UserProfileModel.aggregate([
       {
@@ -35,7 +35,7 @@ export const countUsersByRole = async (req, res) => {
     });
 
     const data = {
-      "message": "User counts by role and policy counts by category retrieved successfully",
+      "message": "Dashboard Count retrieved successfully",
       "data": {
         ...formattedRoleCounts,
         ...formattedPolicyCounts
@@ -46,7 +46,7 @@ export const countUsersByRole = async (req, res) => {
     res.status(200).json(data);
   } catch (error) {
     res.status(500).json({
-      message: 'Error counting users by role and policies',
+      message: 'Something went goes wrong',
       error: error.message,
     });
   }
