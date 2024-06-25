@@ -103,11 +103,13 @@ export const validatePolicyNumber = async (req, res) => {
     if (policyExists) {
       return res.status(200).json({
         message: `Policy number already exists`,
+        exist: true,
         status: "success",
       });
     } else {
       return res.status(200).json({
         message: `Policy number does not exist`,
+        exist: false,
         status: "success",
       });
     }
