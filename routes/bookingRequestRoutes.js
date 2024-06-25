@@ -3,15 +3,15 @@ import {
   createBookingRequest,
   getAllBookingRequests,
   updateBookingRequest,
-  checkPolicyNumberExists,
+  validatePolicyNumber,
   getBookingRequestsByPartnerId,
-} from "../controller/adminController/bookingRequestController.js";
+} from "../controller/bookingController/bookingRequestController.js";
 
 const router = express.Router();
 
 router.post("/", createBookingRequest);
 router.get("/", getAllBookingRequests);
+router.get("/policyNumber", validatePolicyNumber);
 router.get("/:partnerId", getBookingRequestsByPartnerId);
-router.get("/:policyNumber", checkPolicyNumberExists);
 router.put("/:id", updateBookingRequest);
 export default router;
