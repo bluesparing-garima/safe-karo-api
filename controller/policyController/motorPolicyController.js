@@ -199,7 +199,6 @@ export const getMotorPolicyByPartnerId = async (req, res) => {
   }
 };
 
-
 // Check PolicyNumber exist.
 export const validatePolicyNumber = async (req, res) => {
   try {
