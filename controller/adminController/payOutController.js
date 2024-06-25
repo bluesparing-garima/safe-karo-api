@@ -41,19 +41,20 @@ const calculateODandTP = async (req, res) => {
       });
     }
 
+    // Convert all fields to lowercase
     const dbQuery = {
-      fuelType,
-      productType,
-      engine,
-      weight,
-      ncb,
-      policyType,
-      rto,
-      caseType,
-      companyName,
-      make,
-      model,
-      vehicleAge,
+      fuelType: fuelType.toLowerCase(),
+      productType: productType.toLowerCase(),
+      engine: engine,
+      weight: weight,
+      ncb: ncb.toLowerCase(),
+      policyType: policyType.toLowerCase(),
+      rto: rto.toLowerCase(),
+      caseType: caseType.toLowerCase(),
+      companyName: companyName.toLowerCase(),
+      make: make.toLowerCase(),
+      model: model.toLowerCase(),
+      vehicleAge: vehicleAge.toLowerCase(),
     };
 
     // Remove undefined or null fields from the query

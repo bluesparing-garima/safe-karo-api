@@ -41,25 +41,28 @@ const calculateODandTP = async (req, res) => {
       });
     }
 
+    // Convert all fields to lowercase
     const dbQuery = {
-      fuelType,
-      productType,
-      engine,
-      weight,
-      ncb,
-      policyType,
-      rto,
-      caseType,
-      companyName,
-      make,
-      model,
-      vehicleAge,
+      fuelType: fuelType.toLowerCase(),
+      productType: productType.toLowerCase(),
+      engine: engine,
+      weight: weight,
+      ncb: ncb.toLowerCase(),
+      policyType: policyType.toLowerCase(),
+      rto: rto.toLowerCase(),
+      caseType: caseType.toLowerCase(),
+      companyName: companyName.toLowerCase(),
+      make: make.toLowerCase(),
+      model: model.toLowerCase(),
+      vehicleAge: vehicleAge.toLowerCase(),
     };
 
     // Remove undefined or null fields from the query
-    Object.keys(dbQuery).forEach((key) =>
-      dbQuery[key] === undefined || dbQuery[key] === null ? delete dbQuery[key] : {}
-    );
+    Object.keys(dbQuery).forEach((key) => {
+      if (dbQuery[key] === undefined || dbQuery[key] === null) {
+        delete dbQuery[key];
+      }
+    });
 
     const matchedRecord = await PayInExcelDataModel.findOne(dbQuery).select("od tp");
     const filteredNotMatchRecord = { od: 0, tp: 0 };
@@ -73,7 +76,6 @@ const calculateODandTP = async (req, res) => {
     }
 
     const { od, tp } = matchedRecord.toObject();
-
     const filteredRecord = { od, tp };
 
     res.status(200).json({

@@ -27,8 +27,8 @@ const uploadExcel = async (req, res) => {
             productType: (row.productType || row['Product Type'] || '').toLowerCase(),
             subCategory: (row.subCategory || row['SubCategory'] || row['subCategory'] || '').toLowerCase(),
             fuelType: (row.fuelType || row['Fuel Type'] || '').toLowerCase(),
-            engine: (row.engine || row['Engine'] || '').toLowerCase(), // engine = cc
-            weight: (row.weight || row['Weight'] || '').toLowerCase(),
+            engine: (row.engine || row['Engine'] || ''), // engine = cc
+            weight: (row.weight || row['Weight'] || ''),
             ncb: (row.ncb || row['NCB'] || '').toLowerCase(),
             policyType: (row.policyType || row['Policy Type'] || '').toLowerCase(),
             rto: (row.rto || row['RTO'] || '').toLowerCase(),
@@ -37,8 +37,8 @@ const uploadExcel = async (req, res) => {
             make: (row.make || row['Make'] || '').toLowerCase(),
             model: (row.model || row['Model'] || '').toLowerCase(),
             vehicleAge: (row.vehicleAge || row['vehicleAge'] || '').toLowerCase(),
-            od: (row.od || row['OD'] || '').toLowerCase(),
-            tp: (row.tp || row['TP'] || '').toLowerCase(),
+            od: (row.od || row['OD'] || ''),
+            tp: (row.tp || row['TP'] || ''),
             createdBy: "admin",
             createdOn: new Date(),
             updatedBy: null,
