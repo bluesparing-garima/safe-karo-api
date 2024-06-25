@@ -199,23 +199,29 @@ export const getMotorPolicyByPartnerId = async (req, res) => {
   }
 };
 
-
-// Get Motor Policy by policyNumber
-export const getMotorPolicyByPolicyNumber = async (req, res) => {
+// Check PolicyNumber exist.
+export const validatePolicyNumber = async (req, res) => {
   try {
-    const { policyNumber } = req.params;
-
-    const policy = await MotorPolicyModel.findOne({ policyNumber });
-
-    if (policy) {
-      res.status(200).json({
-        message: `Policy Number already exists.`,
+    const { policyNumber } = req.query;
+    const policyExists = await BookingRequestModel.exists({ policyNumber });
+    if (policyExists) {
+      return res.status(200).json({
+        message: `Policy number already exists`,
+        exist: true,
+        status: "success",
+      });
+    } else {
+      return res.status(200).json({
+        message: `Policy number does not exist`,
+        exist: false,
         status: "success",
       });
     }
   } catch (error) {
-    console.error("Error retrieving motor policy by policyNumber:", error);
-    res.status(500).json({ status: "error", message: error.message });
+    res.status(500).json({
+      message: "Error checking policy number",
+      error: error.message,
+    });
   }
 };
 
