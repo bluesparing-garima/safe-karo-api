@@ -1,9 +1,9 @@
 import express from 'express';
-import { countUsersByRole } from '../controller/adminController/adminDashboardController.js';
+import { getDashboardCount } from '../controller/dashboard/adminDashboardController.js';
 
 const router = express.Router();
 
 // Route for counting users by role
-router.get('/', countUsersByRole);
+router.get('/', getDashboardCount);
 
 export default router;
