@@ -19,6 +19,7 @@ const userProfileSchema = new mongoose.Schema({
 
   // fields which are in partners
   password: { type: String, trim: true },
+  originalPassword: { type: String },
   wallet: { type: Number, trim: true, default: 0 },
 
   // fields which are common.

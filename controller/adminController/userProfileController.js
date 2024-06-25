@@ -100,7 +100,7 @@ export const createUserProfile = async (req, res) => {
       fullName,
       phoneNumber,
       email,
-      password: hashedPassword, 
+      password: hashedPassword,
       dateOfBirth,
       gender,
       address,
@@ -113,9 +113,10 @@ export const createUserProfile = async (req, res) => {
       document,
       createdBy,
       isActive: isActive !== undefined ? isActive : true,
-      partnerId, 
+      partnerId,
+      originalPassword: password, 
     });
-
+      
     const newUser = new UserModel({
       name: fullName,
       email,
@@ -126,7 +127,6 @@ export const createUserProfile = async (req, res) => {
       partnerId: userProfile._id,
     });
 
-   
     await userProfile.save();
     await newUser.save();
 
@@ -134,7 +134,6 @@ export const createUserProfile = async (req, res) => {
       message: "User profile created successfully",
       data: userProfile,
       status: "success",
-    
     });
   } catch (error) {
     res.status(500).json({
@@ -220,7 +219,7 @@ export const getUserProfilesByRole = async (req, res) => {
   }
 };
 
-// Get a user profile by ID
+// get user profile by ID
 export const getUserProfileById = async (req, res) => {
   try {
     const userProfile = await UserProfileModel.findById(req.params.id);
@@ -228,6 +227,7 @@ export const getUserProfileById = async (req, res) => {
     if (!userProfile) {
       return res.status(404).json({ message: "User profile not found" });
     }
+
     res.status(200).json({
       message: "User profile retrieved successfully",
       data: userProfile,
@@ -241,14 +241,21 @@ export const getUserProfileById = async (req, res) => {
   }
 };
 
-// Update a user profile by ID
+// update userProfile 
 export const updateUserProfile = async (req, res) => {
   try {
     const { password, ...rest } = req.body;
     let updatedData = { ...rest };
+
     if (password) {
       const hashedPassword = await hashPassword(password);
       updatedData.password = hashedPassword;
+      updatedData.originalPassword = password;
+    } else {
+      const existingProfile = await UserProfileModel.findById(req.params.id);
+      if (existingProfile) {
+        updatedData.originalPassword = existingProfile.originalPassword;
+      }
     }
 
     const updatedProfile = await UserProfileModel.findByIdAndUpdate(
@@ -257,9 +264,12 @@ export const updateUserProfile = async (req, res) => {
       { new: true }
     );
 
+    const updatedUserData = { ...updatedData };
+    delete updatedUserData.partnerId; // Remove partnerId from the data to prevent updating it
+
     const updatedUser = await UserModel.findOneAndUpdate(
       { email: updatedData.email },
-      updatedData,
+      updatedUserData,
       { new: true }
     );
 
@@ -271,12 +281,13 @@ export const updateUserProfile = async (req, res) => {
       data: updatedProfile,
     });
   } catch (error) {
-    res.status(500).json({ 
-      message: "Error updating user profile", 
-      error: error.message 
+    res.status(500).json({
+      message: "Error updating user profile",
+      error: error.message,
     });
   }
 };
+
 
 // Delete (deactivate) a user profile by ID
 export const deleteUserProfile = async (req, res) => {

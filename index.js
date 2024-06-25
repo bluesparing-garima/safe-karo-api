@@ -29,6 +29,8 @@ import payOutRoute from './routes/payOutRoutes.js';
 import bookingRequestRoute from "./routes/bookingRequestRoutes.js";
 import adminDashboard from "./routes/adminDashboardRoute.js";
 import agentDashboardRoutes from './routes/agentDashboardRoutes.js';
+// import policyTimerManageRoutes from './routes/policyTimerManageRoute.js';
+import activityLogRoutes from './routes/activityLogRoutes.js';
 
 const app = express();
 const port = process.env.PORT;
@@ -128,6 +130,12 @@ app.use('/api/dashboard',adminDashboard);
 // agent dashboard
 app.use('/api/dashboard', agentDashboardRoutes);
   
+// timeManager
+// app.use('/api/policyTimerManage',policyTimerManageRoutes);
+
+// activity logs
+app.use('/api/activityLog', activityLogRoutes);
+
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);
 });

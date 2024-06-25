@@ -97,9 +97,9 @@ export const createBookingRequest = async (req, res) => {
 
 
 // Check PolicyNumber exist.
-export const checkPolicyNumberExists = async (req, res) => {
+export const validatePolicyNumber = async (req, res) => {
   try {
-    const { policyNumber } = req.params;
+    const { policyNumber } = req.query;
     const existingBooking = await BookingRequestModel.findOne({ policyNumber });
     if (existingBooking) {
       return res.status(200).json({

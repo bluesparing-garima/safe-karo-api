@@ -181,7 +181,7 @@ export const getMotorPolicyByPartnerId = async (req, res) => {
     
     if (policies.length === 0) {
       return res.status(404).json({
-        message: `No Motor Policy for partnerId ${partnerId}`,
+        message: `No Motor Policy for policy Number ${partnerId}`,
         status: "success",
       });
     }
