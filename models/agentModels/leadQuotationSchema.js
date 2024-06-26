@@ -1,5 +1,11 @@
 import mongoose from "mongoose";
-// import leadGenerateModel from "./leadGenerateSchema.js";
+
+// const DocumentSchema = new mongoose.Schema({
+//     docName: { type: String, trim: true },
+//     file: { type: String, trim: true },
+//   });
+//
+//   quotationImage: [DocumentSchema],
 
 const leadQuotationSchema = new mongoose.Schema({
   leadId: {
@@ -9,7 +15,6 @@ const leadQuotationSchema = new mongoose.Schema({
   },
   quotationImage: {
     type: String,
-    required: true,
     trim: true,
   },
   comments: {

@@ -29,6 +29,21 @@ const createNewQuotation = async (req, res) => {
     });
 
     await newQuotation.save();
+
+    // Update lead status
+    const updatedLead = await leadGenerateModel.findByIdAndUpdate(
+      leadId,
+      { status },
+      { new: true }
+    );
+
+    if (!updatedLead) {
+      return res.status(404).json({
+        status: "failed",
+        message: "Related lead not found",
+      });
+    }
+
     res.status(200).json({
       message: "New Quotation created successfully",
       data: newQuotation,
