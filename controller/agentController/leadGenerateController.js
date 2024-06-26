@@ -6,8 +6,7 @@ const createNewLead = async (req, res) => {
   const {
     policyType,
     category,
-    subCategory,
-    company,
+    companyName,
     caseType,
     status,
     documents,
@@ -22,8 +21,7 @@ const createNewLead = async (req, res) => {
   if (
     !policyType ||
     !category ||
-    !subCategory ||
-    !company ||
+    !companyName ||
     !caseType ||
     !status ||
     !partnerId ||
@@ -49,8 +47,7 @@ const createNewLead = async (req, res) => {
     const newLead = new leadGenerateModel({
       policyType,
       category,
-      subCategory,
-      company,
+      companyName,
       caseType,
       status,
       documents,
