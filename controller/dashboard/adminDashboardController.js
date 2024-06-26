@@ -1,5 +1,5 @@
 import UserProfileModel from '../../models/userProfileSchema.js';
-import MotorPolicyModel from '../../models/motorpolicySchema.js';
+import MotorPolicyModel from '../../models/policyModel/motorpolicySchema.js';
 
 // Controller function to count users by role
 export const getDashboardCount = async (req, res) => {

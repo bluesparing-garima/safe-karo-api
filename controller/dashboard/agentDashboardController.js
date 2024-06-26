@@ -1,5 +1,5 @@
 // controllers/agentDashboardController.js
-import MotorPolicyModel from '../../models/motorpolicySchema.js';
+import MotorPolicyModel from '../../models/policyModel/motorpolicySchema.js';
 
 // Controller function to count policies by partnerId and category
 export const getAgentDashboardCount = async (req, res) => {

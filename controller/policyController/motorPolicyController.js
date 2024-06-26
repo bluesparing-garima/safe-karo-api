@@ -1,5 +1,5 @@
-import MotorPolicyModel from "../../models/motorpolicySchema.js";
-import BookingRequestModel from "../../models/bookingRequestSchema.js";
+import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
+import BookingRequestModel from "../../models/bookingModels/bookingRequestSchema.js";
 
 // Create Motor Policy
 export const createMotorPolicy = async (req, res) => {
