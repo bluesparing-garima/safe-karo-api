@@ -3,6 +3,7 @@ import {
   createNewQuotation,
   getAllQuotation,
   getQuotationById,
+  getQuotationsByLeadId,
   updateQuotation,
   deleteQuotation,
 } from "../../controller/agentController/leadQuotationController.js";
@@ -14,6 +15,9 @@ router.post("/", createNewQuotation);
 
 // Get all quotations
 router.get("/", getAllQuotation);
+
+// Get quotations by leadId
+router.get("/leadId", getQuotationsByLeadId); 
 
 // Get quotation by ID
 router.get("/:id", getQuotationById);

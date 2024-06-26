@@ -7,7 +7,7 @@ const ActivityLogSchema = new mongoose.Schema({
   response: { type: String, trim: true },
   partnerId: { type: String, required: true, trim: true },
   isActive: { type: Boolean, default: true },
-  createdBy: { type: String, required: true, trim: true },
+  createdBy: { type: String, trim: true },
   createdOn: { type: Date, default: Date.now },
   updatedBy: { type: String, default: null, trim: true },
   updatedOn: { type: Date, default: Date.now }

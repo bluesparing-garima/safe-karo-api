@@ -96,6 +96,39 @@ const getQuotationById = async (req, res) => {
   }
 };
 
+// Get quotations by leadId
+const getQuotationsByLeadId = async (req, res) => {
+  try {
+    const { leadId } = req.query;
+    if (!leadId) {
+      return res.status(400).json({
+        status: "failed",
+        message: "leadId query parameter is required",
+      });
+    }
+
+    const quotations = await leadQuotationModel.find({ leadId });
+    if (quotations.length === 0) {
+      return res.status(404).json({
+        status: "failed",
+        message: "No quotations found for the provided leadId",
+      });
+    }
+
+    res.status(200).json({
+      message: "Success! Here are the quotations",
+      data: quotations,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "failed",
+      message: "Unable to retrieve quotations",
+      error: error.message,
+    });
+  }
+};
+
 // Update quotation by ID
 const updateQuotation = async (req, res) => {
   try {
@@ -170,6 +203,7 @@ const deleteQuotation = async (req, res) => {
 export {
   createNewQuotation,
   getAllQuotation,
+  getQuotationsByLeadId,
   getQuotationById,
   updateQuotation,
   deleteQuotation,
