@@ -1,4 +1,4 @@
-import CaseTypeModel from "../../models/caseTypeSchema.js";
+import CaseTypeModel from "../../models/adminModels/caseTypeSchema.js";
 
 // Create CaseType
 const createCaseType = async (req, res) => {

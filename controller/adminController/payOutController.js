@@ -1,4 +1,4 @@
-import PayOutExcelDataModel from "../../models/payOutExcelDataSchema.js";
+import PayOutExcelDataModel from "../../models/adminModels/payOutExcelDataSchema.js";
 
 const calculateODandTP = async (req, res) => {
   try {

@@ -1,7 +1,7 @@
 import cron from 'node-cron';
 import mongoose from 'mongoose';
 import MotorPolicyModel from '../../models/motorpolicySchema.js';
-import PolicyTimerManageModel from '../../models/policyTimeManagerSchema.js';
+import PolicyTimerManageModel from '../../models/adminModels/policyTimeManagerSchema.js';
 
 const calculateTimeDifference = (createdDate) => {
   const now = new Date();

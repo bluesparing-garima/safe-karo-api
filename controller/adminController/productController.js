@@ -1,4 +1,4 @@
-import ProductModel from "../../models/productSchema.js";
+import ProductModel from "../../models/adminModels/productSchema.js";
 
 // Create a new product name
 const createProductName = async (req, res) => {

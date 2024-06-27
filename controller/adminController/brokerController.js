@@ -1,4 +1,4 @@
-import BrokerModel from "../../models/brokerSchema.js";
+import BrokerModel from "../../models/adminModels/brokerSchema.js";
 
 // Create a new broker name
 const createBrokerName = async (req, res) => {

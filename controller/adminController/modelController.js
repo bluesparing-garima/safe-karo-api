@@ -1,4 +1,4 @@
-import Model from "../../models/modelSchema.js";
+import Model from "../../models/adminModels/modelSchema.js";
 
 // Create a new model
 const createModel = async (req, res) => {

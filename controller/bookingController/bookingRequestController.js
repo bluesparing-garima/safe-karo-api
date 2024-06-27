@@ -1,4 +1,4 @@
-import BookingRequestModel from "../../models/bookingModels/bookingRequestSchema.js";
+import BookingRequestModel from "../../models/bookingModel/bookingRequestSchema.js";
 
 // Helper function to check for missing fields
 const getMissingFields = (fields, requiredFields) => {

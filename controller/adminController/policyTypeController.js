@@ -1,4 +1,4 @@
-import PolicyTypeModel from "../../models/policyTypeSchema.js";
+import PolicyTypeModel from "../../models/adminModels/policyTypeSchema.js";
 
 const createPolicyType = async (req, res) => {
   try {

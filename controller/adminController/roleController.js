@@ -1,4 +1,4 @@
-import CreateRoleModel from "../../models/roleSchema.js";
+import CreateRoleModel from "../../models/adminModels/roleSchema.js";
 
 // Create a new role
 const createNewRole = async (req, res) => {

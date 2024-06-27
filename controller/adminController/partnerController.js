@@ -1,4 +1,4 @@
-import UserModel from '../../models/userProfileSchema.js';
+import UserModel from '../../models/adminModels/userProfileSchema.js';
 
 // Helper function to generate Partner ID
 const generatePartnerId = async () => {

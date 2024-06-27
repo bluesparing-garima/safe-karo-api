@@ -1,4 +1,4 @@
-import BranchModel from "../../models/branchSchema.js";
+import BranchModel from "../../models/adminModels/branchSchema.js";
 
 // Create a new branch name
 const createBranchName = async (req, res) => {

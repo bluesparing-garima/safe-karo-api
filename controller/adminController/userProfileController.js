@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import UserProfileModel from "../../models/userProfileSchema.js";
+import UserProfileModel from "../../models/adminModels/userProfileSchema.js";
 import UserModel from "../../models/userSchema.js";
 
 // Function to generate Partner ID
