@@ -3,15 +3,17 @@ import {
   createBookingRequest,
   getAllBookingRequests, 
   updateBookingRequest,
+  validatePolicyNumber,
   getBookingRequestsByPartnerId,
   getBookingRequestsByCreatedBy
  
-} from "../controller/adminController/bookingRequestController.js";
+} from "../controller/bookingController/bookingRequestController.js";
 
 const router = express.Router();
 
 router.post("/", createBookingRequest);
 router.get("/", getAllBookingRequests);
+router.get('/validatePolicyNumber',validatePolicyNumber);
 router.get("/created-by/:bookingCreatedBy", getBookingRequestsByCreatedBy); 
 router.get("/partner/:partnerId", getBookingRequestsByPartnerId);
 router.put("/:id", updateBookingRequest);

@@ -138,6 +138,31 @@ export const getAllBookingRequests = async (req, res) => {
       .json({ message: "Error retrieving bookings", error: error.message });
   }
 };
+// Get booking requests by bookingCreatedBy
+export const getBookingRequestsByCreatedBy = async (req, res) => {
+  try {
+    const { bookingCreatedBy } = req.params;
+    const bookings = await BookingRequestModel.find({ bookingCreatedBy });
+    
+    if (bookings.length === 0) {
+      return res.status(404).json({
+        message: `No bookings found for bookingCreatedBy: ${bookingCreatedBy}`,
+        status: "success",
+      });
+    }
+
+    res.status(200).json({
+      message: "Bookings retrieved successfully.",
+      data: bookings,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving bookings",
+      error: error.message,
+    });
+  }
+};
 
 // Get booking requests by partnerId
 export const getBookingRequestsByPartnerId = async (req, res) => {

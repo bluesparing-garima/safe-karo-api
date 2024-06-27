@@ -104,8 +104,8 @@ export const createMotorPolicy = async (req, res) => {
       policyNumber,
     });
     if (existingMotorPolicy) {
-      return res.status(200).json({
-        status: "success",
+      return res.status(400).json({
+        status: "error",
         message: `Motor Policy with ${policyNumber} already exists.`,
       });
     } else {
@@ -181,7 +181,7 @@ export const getMotorPolicyByPartnerId = async (req, res) => {
     
     if (policies.length === 0) {
       return res.status(404).json({
-        message: `No Motor Policy for policy Number ${partnerId}`,
+        message: `No Motor Policy for partnerId ${partnerId}`,
         status: "success",
       });
     }
