@@ -10,6 +10,8 @@ const leadGenerateSchema = new mongoose.Schema({
   partnerName: { type: String, default: "", trim: true },
   relationshipManagerId: { type: String, default: "", trim: true },
   relationshipManagerName: { type: String, default: "", trim: true },
+  leadCreatedBy:{type:String,trim:true},
+  // leadAcceptedBy:{type:String,trim:true},
   policyType: { type: String, trim: true },
   caseType: { type: String, trim: true },
   category: { type: String, trim: true },

@@ -5,6 +5,7 @@ import {
   getLeadById,
   updateLead,
   deleteLead,
+  getleadsByCreatedBy,
 } from "../../controller/agentController/leadGenerateController.js";
 const router = express.Router();
 
@@ -13,6 +14,9 @@ router.post("/", createNewLead);
 
 // Get all Leads
 router.get("/", getAllLeads);
+
+// Get all leads by CreateBy
+router.get("/created-by/:leadCreatedBy",getleadsByCreatedBy);
 
 // Get Lead by id
 router.get("/:id", getLeadById);

@@ -15,6 +15,7 @@ const createNewLead = async (req, res) => {
     partnerName,
     relationshipManagerId,
     relationshipManagerName,
+    leadCreatedBy,
     createdBy
   } = req.body;
 
@@ -59,6 +60,7 @@ const createNewLead = async (req, res) => {
       partnerName: partnerName || "",
       relationshipManagerId: relationshipManagerId || "",
       relationshipManagerName: relationshipManagerName || "",
+      leadCreatedBy,
       createdBy: createdBy,
       createdOn: new Date(),
       isActive: true,
@@ -144,6 +146,31 @@ const getAllLeads = async (req, res) => {
   }
 };
 
+// Get leads requests by leadCreatedBy
+export const getleadsByCreatedBy = async (req, res) => {
+  try {
+    const { leadCreatedBy } = req.params;
+    const leads = await leadGenerateModel.find({ leadCreatedBy });
+    
+    if (leads.length === 0) {
+      return res.status(404).json({
+        message: `No lead found for leadCreatedBy: ${leadCreatedBy}`,
+        status: "success",
+      });
+    }
+    res.status(200).json({
+      message: "lead retrieved successfully.",
+      data: leads,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving leads",
+      error: error.message,
+    });
+  }
+};
+
 // Get lead by ID
 const getLeadById = async (req, res) => {
   const logData = {
@@ -214,6 +241,7 @@ const updateLead = async (req, res) => {
     isActive: true,
     createdBy: req.body.createdBy || "",
     updatedBy: req.body.updatedBy || "",
+    leadCreatedBy:req.body.leadCreatedBy || "",
     createdOn: new Date(),
     updatedOn: new Date(),
   };
