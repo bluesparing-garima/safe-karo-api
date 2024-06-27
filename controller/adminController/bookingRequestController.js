@@ -143,6 +143,7 @@ export const getBookingRequestsByCreatedBy = async (req, res) => {
     });
   }
 };
+
 // Get all bookings
 export const getAllBookingRequests = async (req, res) => {
   try {
@@ -185,7 +186,6 @@ export const getBookingRequestsByPartnerId = async (req, res) => {
     });
   }
 };
-
 
 // Update a booking by ID
 export const updateBookingRequest = async (req, res) => {

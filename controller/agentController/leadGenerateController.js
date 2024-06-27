@@ -171,6 +171,31 @@ export const getleadsByCreatedBy = async (req, res) => {
   }
 };
 
+// Get lead by partnerID
+export const getLeadsByPartnerId = async (req, res) => {
+  try {
+    const { partnerId } = req.params;
+    const leads = await leadGenerateModel.find({ partnerId });
+    
+    if (leads.length === 0) {
+      return res.status(404).json({
+        message: `No leads found for partnerId: ${partnerId}`,
+        status: "success",
+      });
+    }
+    res.status(200).json({
+      message: "Leads retrieved successfully.",
+      data: leads,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving leads",
+      error: error.message,
+    });
+  }
+};
+
 // Get lead by ID
 const getLeadById = async (req, res) => {
   const logData = {
