@@ -18,6 +18,18 @@ const createNewLead = async (req, res) => {
     createdBy
   } = req.body;
 
+  let statusCode;
+  const logData = {
+    endpoint: req.originalUrl,
+    statusCode: null,
+    request: JSON.stringify(req.body),
+    response: null,
+    partnerId: partnerId || "",
+    isActive: true,
+    createdBy: createdBy || "",
+    createdOn: new Date(),
+  };
+
   if (
     !policyType ||
     !category ||
@@ -27,20 +39,11 @@ const createNewLead = async (req, res) => {
     !partnerId ||
     !createdBy
   ) {
-    const logData = {
-      endpoint: req.originalUrl,
-      statusCode: 400,
-      request: JSON.stringify(req.body),
-      response: JSON.stringify({ status: "failed", message: "Required fields are missing" }),
-      partnerId: partnerId,
-      isActive: true,
-      createdBy: createdBy,
-      createdOn: new Date(),
-    };
+    statusCode = 400;
+    logData.statusCode = statusCode;
+    logData.response = JSON.stringify({ status: "failed", message: "Required fields are missing" });
     await createActivityLog(logData);
-    return res
-      .status(400)
-      .json({ status: "failed", message: "Required fields are missing" });
+    return res.status(statusCode).json({ status: "failed", message: "Required fields are missing" });
   }
 
   try {
@@ -63,38 +66,30 @@ const createNewLead = async (req, res) => {
 
     const savedLead = await newLead.save();
     
-    const logData = {
-      endpoint: req.originalUrl,
-      statusCode: 200,
-      request: JSON.stringify(req.body),
-      response: JSON.stringify({ message: "New Lead created successfully", data: savedLead, status: "success" }),
-      partnerId: partnerId,
-      isActive: true,
-      createdBy: createdBy,
-      createdOn: new Date(),
-    };
+    statusCode = 200;
+    logData.statusCode = statusCode;
+    logData.response = JSON.stringify({
+      message: "New Lead created successfully",
+      data: savedLead,
+      status: "success"
+    });
     await createActivityLog(logData);
 
-    res.status(200).json({
+    res.status(statusCode).json({
       message: "New Lead created successfully",
       data: savedLead,
       status: "success",
     });
   } catch (error) {
-    // Log the error
-    const logData = {
-      endpoint: req.originalUrl,
-      statusCode: 500,
-      request: JSON.stringify(req.body),
-      response: JSON.stringify({ status: "failed", message: `Unable to create new lead: ${error.message}` }),
-      partnerId: partnerId,
-      isActive: true,
-      createdBy: createdBy,
-      createdOn: new Date(),
-    };
+    statusCode = 500;
+    logData.statusCode = statusCode;
+    logData.response = JSON.stringify({
+      status: "failed",
+      message: `Unable to create new lead: ${error.message}`
+    });
     await createActivityLog(logData);
 
-    res.status(500).json({
+    res.status(statusCode).json({
       status: "failed",
       message: "Unable to create new lead",
       error: error.message,
@@ -104,46 +99,125 @@ const createNewLead = async (req, res) => {
 
 // Get all leads
 const getAllLeads = async (req, res) => {
+  const logData = {
+    endpoint: req.originalUrl,
+    statusCode: null,
+    request: JSON.stringify(req.query),
+    response: null,
+    partnerId: req.query.partnerId || "",
+    isActive: true,
+    createdBy: req.query.createdBy || "",
+    createdOn: new Date(),
+  };
+
   try {
     const leads = await leadGenerateModel.find();
-    res.status(200).json({
+    const statusCode = 200;
+    logData.statusCode = statusCode;
+    logData.response = JSON.stringify({
+      message: "Success! Here are all the leads",
+      data: leads,
+      status: "success",
+    });
+    await createActivityLog(logData);
+
+    res.status(statusCode).json({
       message: "Success! Here are all the leads",
       data: leads,
       status: "success",
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ status: "failed", message: "Unable to retrieve leads" });
+    const statusCode = 500;
+    logData.statusCode = statusCode;
+    logData.response = JSON.stringify({
+      status: "failed",
+      message: "Unable to retrieve leads",
+      error: error.message,
+    });
+    await createActivityLog(logData);
+
+    res.status(statusCode).json({
+      status: "failed",
+      message: "Unable to retrieve leads",
+      error: error.message,
+    });
   }
 };
 
 // Get lead by ID
 const getLeadById = async (req, res) => {
+  const logData = {
+    endpoint: req.originalUrl,
+    statusCode: null,
+    request: JSON.stringify(req.params),
+    response: null,
+    partnerId: req.query.partnerId || "",
+    isActive: true,
+    createdBy: req.query.createdBy || "",
+    createdOn: new Date(),
+  };
+
   try {
     const { id } = req.params;
 
     // Check if lead exists
     const existingLead = await leadGenerateModel.findById(id);
     if (!existingLead) {
-      return res
-        .status(404)
-        .json({ status: "failed", message: "Lead not found" });
+      const statusCode = 404;
+      logData.statusCode = statusCode;
+      logData.response = JSON.stringify({ status: "failed", message: "Lead not found" });
+      await createActivityLog(logData);
+
+      return res.status(statusCode).json({ status: "failed", message: "Lead not found" });
     }
-    res.status(200).json({
+
+    const statusCode = 200;
+    logData.statusCode = statusCode;
+    logData.response = JSON.stringify({
+      message: "Success! Here is the lead with ID",
+      data: existingLead,
+      status: "success",
+    });
+    await createActivityLog(logData);
+
+    res.status(statusCode).json({
       message: "Success! Here is the lead with ID",
       data: existingLead,
       status: "success",
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ status: "failed", message: "Unable to retrieve Lead" });
+    const statusCode = 500;
+    logData.statusCode = statusCode;
+    logData.response = JSON.stringify({
+      status: "failed",
+      message: "Unable to retrieve Lead",
+      error: error.message,
+    });
+    await createActivityLog(logData);
+
+    res.status(statusCode).json({
+      status: "failed",
+      message: "Unable to retrieve Lead",
+      error: error.message,
+    });
   }
 };
 
 // Update Lead
 const updateLead = async (req, res) => {
+  const logData = {
+    endpoint: req.originalUrl,
+    statusCode: null,
+    request: JSON.stringify(req.body),
+    response: null,
+    partnerId: req.body.partnerId || "",
+    isActive: true,
+    createdBy: req.body.createdBy || "",
+    updatedBy: req.body.updatedBy || "",
+    createdOn: new Date(),
+    updatedOn: new Date(),
+  };
+
   try {
     const { id } = req.params;
     const updateData = req.body;
@@ -156,47 +230,103 @@ const updateLead = async (req, res) => {
     );
 
     if (!updatedLead) {
-      return res
-        .status(404)
-        .json({ status: "failed", message: "Lead not found" });
+      const statusCode = 404;
+      logData.statusCode = statusCode;
+      logData.response = JSON.stringify({ status: "failed", message: "Lead not found" });
+      await createActivityLog(logData);
+
+      return res.status(statusCode).json({ status: "failed", message: "Lead not found" });
     }
 
-    res.status(200).json({
+    const statusCode = 200;
+    logData.statusCode = statusCode;
+    logData.response = JSON.stringify({
+      message: "Lead updated successfully",
+      data: updatedLead,
+      status: "success",
+    });
+    await createActivityLog(logData);
+
+    res.status(statusCode).json({
       message: "Lead updated successfully",
       data: updatedLead,
       status: "success",
     });
   } catch (error) {
-    res.status(500).json({
+    const statusCode = 500;
+    logData.statusCode = statusCode;
+    logData.response = JSON.stringify({
       status: "failed",
       message: "Unable to update Lead",
+      error: error.message,
+    });
+    await createActivityLog(logData);
+
+    res.status(statusCode).json({
+      status: "failed",
+      message: "Unable to update Lead",
+      error: error.message,
     });
   }
 };
 
 // Delete Lead
 const deleteLead = async (req, res) => {
+  const logData = {
+    endpoint: req.originalUrl,
+    statusCode: null,
+    request: JSON.stringify(req.params),
+    response: null,
+    partnerId: req.body.partnerId || "",
+    isActive: true,
+    createdBy: req.body.createdBy || "",
+    createdOn: new Date(),
+  };
+
   try {
     const { id } = req.params;
 
     // Check if Lead exists
     const existingLead = await leadGenerateModel.findById(id);
     if (!existingLead) {
-      return res
-        .status(404)
-        .json({ status: "failed", message: "Lead not found" });
+      const statusCode = 404;
+      logData.statusCode = statusCode;
+      logData.response = JSON.stringify({ status: "failed", message: "Lead not found" });
+      await createActivityLog(logData);
+
+      return res.status(statusCode).json({ status: "failed", message: "Lead not found" });
     }
 
     // Delete the lead
     await leadGenerateModel.findByIdAndDelete(id);
-    res.status(200).json({
+
+    const statusCode = 200;
+    logData.statusCode = statusCode;
+    logData.response = JSON.stringify({
+      status: "success",
+      message: "Lead deleted successfully",
+    });
+    await createActivityLog(logData);
+
+    res.status(statusCode).json({
       status: "success",
       message: "Lead deleted successfully",
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ status: "failed", message: "Unable to delete the lead" });
+    const statusCode = 500;
+    logData.statusCode = statusCode;
+    logData.response = JSON.stringify({
+      status: "failed",
+      message: "Unable to delete the lead",
+      error: error.message,
+    });
+    await createActivityLog(logData);
+
+    res.status(statusCode).json({
+      status: "failed",
+      message: "Unable to delete the lead",
+      error: error.message,
+    });
   }
 };
 

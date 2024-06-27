@@ -1,4 +1,4 @@
-import BookingRequestModel from "../../models/bookingRequestSchema.js";
+import BookingRequestModel from "../../models/bookingModels/bookingRequestSchema.js";
 
 // Helper function to check for missing fields
 const getMissingFields = (fields, requiredFields) => {
@@ -22,6 +22,7 @@ export const createBookingRequest = async (req, res) => {
     const {
       partnerId,
       partnerName,
+      bookingCreatedBy,
       policyNumber,
       category,
       caseType,
@@ -37,6 +38,7 @@ export const createBookingRequest = async (req, res) => {
     const requiredFields = [
       "partnerId",
       "partnerName",
+      "bookingCreatedBy",
       "policyNumber",
       "category",
       "caseType",
@@ -67,6 +69,7 @@ export const createBookingRequest = async (req, res) => {
     const newBooking = new BookingRequestModel({
       partnerId,
       partnerName,
+      bookingCreatedBy,
       policyNumber,
       category,
       caseType,
@@ -115,6 +118,31 @@ export const checkPolicyNumberExists = async (req, res) => {
   }
 };
 
+// Get booking requests by bookingCreatedBy
+export const getBookingRequestsByCreatedBy = async (req, res) => {
+  try {
+    const { bookingCreatedBy } = req.params;
+    const bookings = await BookingRequestModel.find({ bookingCreatedBy });
+    
+    if (bookings.length === 0) {
+      return res.status(404).json({
+        message: `No bookings found for bookingCreatedBy: ${bookingCreatedBy}`,
+        status: "success",
+      });
+    }
+
+    res.status(200).json({
+      message: "Bookings retrieved successfully.",
+      data: bookings,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving bookings",
+      error: error.message,
+    });
+  }
+};
 // Get all bookings
 export const getAllBookingRequests = async (req, res) => {
   try {
@@ -157,6 +185,7 @@ export const getBookingRequestsByPartnerId = async (req, res) => {
     });
   }
 };
+
 
 // Update a booking by ID
 export const updateBookingRequest = async (req, res) => {

@@ -9,7 +9,7 @@ const leadPaymentSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  paymentStatus: {
+  status: {
     type: String,
     required: true,
   },

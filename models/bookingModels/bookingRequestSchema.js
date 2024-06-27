@@ -10,6 +10,7 @@ const DocumentSchema = new mongoose.Schema({
 const bookingRequestSchema = new mongoose.Schema({
     partnerId:{type:String,trim:true},
     partnerName:{type:String,trim:true},
+    bookingCreatedBy:{type:String, trim:true},
     policyNumber: { type: String, trim: true },
     category: { type: String, trim: true },
     caseType: { type: String, trim: true },

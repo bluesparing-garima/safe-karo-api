@@ -4,6 +4,8 @@ import express from "express";
 import cors from "cors";
 import connectDB from "./config/connectdb.js";
 import userRoutes from "./routes/userRoutes.js";
+// middleware
+import { requestLogger, handleInvalidRoutes } from './middlewares/requestLogger.js';
 import assigneeRolesRouters from "./routes/userRolesRoutes.js";
 import motorPolicyRoutes from "./routes/motorPolicyRoutes.js";
 import policyTypeRoutes from "./routes/policyTypeRoutes.js";
@@ -42,6 +44,7 @@ const DATABASE_URL = process.env.DATEBASE_URL;
 
 // CORS Policy
 app.use(cors());
+
 
 // if deployed successfully
 app.get("/", (req, res) => {
@@ -151,6 +154,9 @@ app.use("/api/lead-quotation", leadQuotation);
 
 // lead payment.
 app.use("/api/lead-payment", leadPayment);
+
+// Handle invalid routes
+app.use(handleInvalidRoutes);
 
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);
