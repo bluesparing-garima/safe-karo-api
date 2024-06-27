@@ -12,7 +12,7 @@ const router = express.Router();
 
 router.post("/", createBookingRequest);
 router.get("/", getAllBookingRequests);
-router.get("/created-by/:created-by", getBookingRequestsByCreatedBy); 
+router.get("/created-by/:bookingCreatedBy", getBookingRequestsByCreatedBy); 
 router.get("/partner/:partnerId", getBookingRequestsByPartnerId);
 router.put("/:id", updateBookingRequest);
 
