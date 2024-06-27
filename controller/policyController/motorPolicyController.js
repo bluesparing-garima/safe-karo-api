@@ -1,5 +1,5 @@
-import MotorPolicyModel from "../../models/motorpolicySchema.js";
-import BookingRequestModel from "../../models/bookingRequestSchema.js";
+import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
+import BookingRequestModel from "../../models/bookingModels/bookingRequestSchema.js";
 
 // Create Motor Policy
 export const createMotorPolicy = async (req, res) => {
@@ -181,7 +181,7 @@ export const getMotorPolicyByPartnerId = async (req, res) => {
     
     if (policies.length === 0) {
       return res.status(404).json({
-        message: `No Motor Policy for policy Number ${partnerId}`,
+        message: `No Motor Policy for partnerId ${partnerId}`,
         status: "success",
       });
     }

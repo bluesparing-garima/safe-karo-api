@@ -1,4 +1,4 @@
-import BookingRequestModel from "../../models/bookingRequestSchema.js";
+import BookingRequestModel from "../../models/bookingModels/bookingRequestSchema.js";
 
 // Helper function to check for missing fields
 const getMissingFields = (fields, requiredFields) => {
@@ -57,9 +57,9 @@ export const createBookingRequest = async (req, res) => {
     // Check if policy number already exists
     const policyExists = await checkPolicyNumberExist(policyNumber);
     if (policyExists) {
-      return res.status(400).json({
+      return res.status(200).json({
         message: `Policy number '${policyNumber}' already exists`,
-        status: "failure",
+        status: "success",
       });
     }
 
@@ -136,6 +136,31 @@ export const getAllBookingRequests = async (req, res) => {
     res
       .status(500)
       .json({ message: "Error retrieving bookings", error: error.message });
+  }
+};
+// Get booking requests by bookingCreatedBy
+export const getBookingRequestsByCreatedBy = async (req, res) => {
+  try {
+    const { bookingCreatedBy } = req.params;
+    const bookings = await BookingRequestModel.find({ bookingCreatedBy });
+    
+    if (bookings.length === 0) {
+      return res.status(404).json({
+        message: `No bookings found for bookingCreatedBy: ${bookingCreatedBy}`,
+        status: "success",
+      });
+    }
+
+    res.status(200).json({
+      message: "Bookings retrieved successfully.",
+      data: bookings,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving bookings",
+      error: error.message,
+    });
   }
 };
 
