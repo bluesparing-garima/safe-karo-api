@@ -57,9 +57,9 @@ export const createBookingRequest = async (req, res) => {
     // Check if policy number already exists
     const policyExists = await checkPolicyNumberExist(policyNumber);
     if (policyExists) {
-      return res.status(400).json({
+      return res.status(200).json({
         message: `Policy number '${policyNumber}' already exists`,
-        status: "failure",
+        status: "success",
       });
     }
 
