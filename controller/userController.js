@@ -89,6 +89,7 @@ const userLogin = async (req, res) => {
       role: user.role,
       partnerId:user.partnerId,
       phoneNumber: user.phoneNumber,
+      id:user._id,
     });
   } catch (error) {
     console.error(error);
