@@ -22,6 +22,8 @@ export const createBookingRequest = async (req, res) => {
     const {
       partnerId,
       partnerName,
+      relationshipManagerId,
+      relationshipManagerName,
       policyNumber,
       category,
       caseType,
@@ -67,6 +69,8 @@ export const createBookingRequest = async (req, res) => {
     const newBooking = new BookingRequestModel({
       partnerId,
       partnerName,
+      relationshipManagerId,
+      relationshipManagerName,
       policyNumber,
       category,
       caseType,
