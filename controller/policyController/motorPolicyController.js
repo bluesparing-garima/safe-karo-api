@@ -5,8 +5,10 @@ import BookingRequestModel from "../../models/bookingModel/bookingRequestSchema.
 export const createMotorPolicy = async (req, res) => {
   try {
     const {
-      tpPremium,
-      odPremium,
+      tpPercentage,
+      odPercentage,
+      odPayoutAmount,
+      tpPayoutAmount,
       policyStatus,
       partnerId,
       partnerName,
@@ -52,8 +54,10 @@ export const createMotorPolicy = async (req, res) => {
     } = req.body;
 
     const newMotorPolicy = new MotorPolicyModel({
-      tpPremium,
-      odPremium,
+      tpPercentage,
+      odPercentage,
+      odPayoutAmount,
+      tpPayoutAmount,
       policyStatus,
       partnerId: partnerId || "",
       partnerName: partnerName || "",
@@ -220,8 +224,10 @@ export const validatePolicyNumber = async (req, res) => {
 // Update Motor Policy by ID
 export const updateMotorPolicy = async (req, res) => {
   const {
-    tpPremium,
-    odPremium,
+    tpPercentage,
+      odPercentage,
+      odPayoutAmount,
+      tpPayoutAmount,
     policyStatus,
     partnerId,
     partnerName,
@@ -267,8 +273,10 @@ export const updateMotorPolicy = async (req, res) => {
   } = req.body;
 
   const formData = {
-    tpPremium,
-    odPremium,
+    tpPercentage,
+      odPercentage,
+      odPayoutAmount,
+      tpPayoutAmount,
     policyStatus,
     policyType,
     caseType,
