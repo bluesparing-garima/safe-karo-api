@@ -225,7 +225,7 @@ export const validatePolicyNumber = async (req, res) => {
 export const updateMotorPolicy = async (req, res) => {
   const {
     tpPercentage,
-      odPercentage,
+    odPercentage,
       odPayoutAmount,
       tpPayoutAmount,
     policyStatus,
@@ -274,7 +274,7 @@ export const updateMotorPolicy = async (req, res) => {
 
   const formData = {
     tpPercentage,
-      odPercentage,
+    odPercentage,
       odPayoutAmount,
       tpPayoutAmount,
     policyStatus,
