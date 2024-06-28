@@ -34,6 +34,7 @@ export const createBookingRequest = async (req, res) => {
       documents,
       createdBy,
       isActive,
+      bookingCreatedBy,
     } = req.body;
 
     const requiredFields = [
@@ -79,6 +80,7 @@ export const createBookingRequest = async (req, res) => {
       subCategory,
       companyName,
       documents,
+      bookingCreatedBy,
       bookingStatus: "requested",
       createdBy,
       isActive: isActive !== undefined ? isActive : true,
