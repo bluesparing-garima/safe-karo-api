@@ -1,4 +1,4 @@
-import ActivityLogModel from '../../models/activityLogSchema.js';
+import ActivityLogModel from '../../models/adminModels/activityLogSchema.js';
 
 // Create a new activity log
 export const createActivityLog = async (logData) => {

@@ -1,4 +1,4 @@
-import ProductSubTypeModel from "../../models/productSubTypeSchema.js";
+import ProductSubTypeModel from "../../models/adminModels/productSubTypeSchema.js";
 
 // Create a new product type
 const createProductType = async (req, res) => {

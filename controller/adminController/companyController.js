@@ -1,4 +1,4 @@
-import CompanyModel from "../../models/companySchema.js";
+import CompanyModel from "../../models/adminModels/companySchema.js";
 
 // Create a new company name
 const createCompanyName = async (req, res) => {

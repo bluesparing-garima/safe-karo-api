@@ -1,4 +1,4 @@
-import UserProfileModel from '../../models/userProfileSchema.js';
+import UserProfileModel from '../../models/adminModels/userProfileSchema.js';
 import MotorPolicyModel from '../../models/policyModel/motorpolicySchema.js';
 
 // Controller function to count users by role

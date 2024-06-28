@@ -1,4 +1,4 @@
-import MakeModel from "../../models/makeSchema.js";
+import MakeModel from "../../models/adminModels/makeSchema.js";
 
 // Create a new make
 const createMake = async (req, res) => {

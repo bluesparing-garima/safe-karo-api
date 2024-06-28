@@ -1,4 +1,4 @@
-import FuelTypeModel from "../../models/fuelTypeSchema.js";
+import FuelTypeModel from "../../models/adminModels/fuelTypeSchema.js";
 
 // Create a new fuel type
 const createFuelType = async (req, res) => {
