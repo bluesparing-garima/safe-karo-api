@@ -28,7 +28,7 @@ const uploadExcel = async (req, res) => {
             subCategory: (row.subCategory || row['SubCategory'] || row['subCategory'] || '').toLowerCase(),
             fuelType: (row.fuelType || row['Fuel Type'] || '').toLowerCase(),
             engine: (row.engine || row['Engine'] || ''), // engine = cc
-            weight: (row.weight || row['Weight'] || ''),
+            weight: (row.weight || row['Weight'] || '0'),
             ncb: (row.ncb || row['NCB'] || '').toLowerCase(),
             policyType: (row.policyType || row['Policy Type'] || '').toLowerCase(),
             rto: (row.rto || row['RTO'] || '').toLowerCase(),
@@ -45,7 +45,42 @@ const uploadExcel = async (req, res) => {
             updatedOn: null
         }));
 
-        await PayOutExcelDataModel.insertMany(extractedData);
+        let newRecords = [];
+        let updatedRecords = [];
+
+        for (const record of extractedData) {
+            const existingRecord = await PayOutExcelDataModel.findOne({
+                productType: record.productType,
+                subCategory: record.subCategory,
+                fuelType: record.fuelType,
+                engine: record.engine,
+                weight: record.weight,
+                ncb: record.ncb,
+                policyType: record.policyType,
+                rto: record.rto,
+                caseType: record.caseType,
+                companyName: record.companyName,
+                make: record.make,
+                model: record.model,
+                vehicleAge: record.vehicleAge
+            });
+
+            if (existingRecord) {
+                // Update od and tp fields only
+                existingRecord.od = record.od;
+                existingRecord.tp = record.tp;
+                existingRecord.updatedBy = "admin";
+                existingRecord.updatedOn = new Date();
+                await existingRecord.save();
+                updatedRecords.push(existingRecord);
+            } else {
+                newRecords.push(record);
+            }
+        }
+
+        if (newRecords.length > 0) {
+            await PayOutExcelDataModel.insertMany(newRecords);
+        }
 
         let existingData = [];
         if (fs.existsSync(dataFilePath)) {
@@ -53,12 +88,13 @@ const uploadExcel = async (req, res) => {
             existingData = JSON.parse(rawData);
         }
 
-        existingData.push(...extractedData);
+        existingData.push(...newRecords);
         fs.writeFileSync(dataFilePath, JSON.stringify(existingData, null, 2));
 
         res.status(200).json({
             message: 'File uploaded and data processed successfully.',
-            data: extractedData,
+            newRecords,
+            updatedRecords,
             status: "Success"
         });
     } catch (error) {

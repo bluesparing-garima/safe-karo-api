@@ -1,15 +1,22 @@
 import * as XLSX from 'xlsx';
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import PayInExcelDataModel from '../../models/adminModels/payInExcelDataSchema.js';
 
 // Path to local JSON file for storing data
 const dataFilePath = path.join(process.cwd(), 'data', 'data.json');
+const hashFilePath = path.join(process.cwd(), 'data', 'hashes.json');
 
 // Ensure the data directory exists
 if (!fs.existsSync(path.join(process.cwd(), 'data'))) {
     fs.mkdirSync(path.join(process.cwd(), 'data'));
 }
+
+// Function to compute hash of file data
+const computeHash = (data) => {
+    return crypto.createHash('md5').update(data).digest('hex');
+};
 
 const uploadExcel = async (req, res) => {
     try {
@@ -18,6 +25,18 @@ const uploadExcel = async (req, res) => {
         }
 
         const file = req.files.excel;
+        const fileHash = computeHash(file.data);
+
+        let storedHashes = [];
+        if (fs.existsSync(hashFilePath)) {
+            const rawHashData = fs.readFileSync(hashFilePath);
+            storedHashes = JSON.parse(rawHashData);
+        }
+
+        // Check if the file has already been uploaded
+        if (storedHashes.includes(fileHash)) {
+            return res.status(400).json({ message: 'File has already been uploaded.' });
+        }
 
         const workbook = XLSX.read(file.data, { type: 'buffer' });
         const sheetName = workbook.SheetNames[0];
@@ -45,7 +64,35 @@ const uploadExcel = async (req, res) => {
             updatedOn: null
         }));
 
-        await PayInExcelDataModel.insertMany(extractedData);
+        for (const data of extractedData) {
+            const query = {
+                productType: data.productType,
+                subCategory: data.subCategory,
+                fuelType: data.fuelType,
+                engine: data.engine,
+                weight: data.weight,
+                ncb: data.ncb,
+                policyType: data.policyType,
+                rto: data.rto,
+                caseType: data.caseType,
+                companyName: data.companyName,
+                make: data.make,
+                model: data.model,
+                vehicleAge: data.vehicleAge
+            };
+
+            const existingRecord = await PayInExcelDataModel.findOne(query);
+
+            if (existingRecord) {
+                existingRecord.od = data.od;
+                existingRecord.tp = data.tp;
+                existingRecord.updatedBy = "admin";
+                existingRecord.updatedOn = new Date();
+                await existingRecord.save();
+            } else {
+                await PayInExcelDataModel.create(data);
+            }
+        }
 
         let existingData = [];
         if (fs.existsSync(dataFilePath)) {
@@ -53,8 +100,53 @@ const uploadExcel = async (req, res) => {
             existingData = JSON.parse(rawData);
         }
 
-        existingData.push(...extractedData);
-        fs.writeFileSync(dataFilePath, JSON.stringify(existingData, null, 2));
+        const updatedData = existingData.map(existing => {
+            const match = extractedData.find(newData =>
+                newData.productType === existing.productType &&
+                newData.subCategory === existing.subCategory &&
+                newData.fuelType === existing.fuelType &&
+                newData.engine === existing.engine &&
+                newData.weight === existing.weight &&
+                newData.ncb === existing.ncb &&
+                newData.policyType === existing.policyType &&
+                newData.rto === existing.rto &&
+                newData.caseType === existing.caseType &&
+                newData.companyName === existing.companyName &&
+                newData.make === existing.make &&
+                newData.model === existing.model &&
+                newData.vehicleAge === existing.vehicleAge
+            );
+            if (match) {
+                existing.od = match.od;
+                existing.tp = match.tp;
+            }
+            return existing;
+        });
+
+        const newEntries = extractedData.filter(newData => 
+            !existingData.some(existing => 
+                newData.productType === existing.productType &&
+                newData.subCategory === existing.subCategory &&
+                newData.fuelType === existing.fuelType &&
+                newData.engine === existing.engine &&
+                newData.weight === existing.weight &&
+                newData.ncb === existing.ncb &&
+                newData.policyType === existing.policyType &&
+                newData.rto === existing.rto &&
+                newData.caseType === existing.caseType &&
+                newData.companyName === existing.companyName &&
+                newData.make === existing.make &&
+                newData.model === existing.model &&
+                newData.vehicleAge === existing.vehicleAge
+            )
+        );
+
+        updatedData.push(...newEntries);
+        fs.writeFileSync(dataFilePath, JSON.stringify(updatedData, null, 2));
+
+        // Store the hash of the newly uploaded file
+        storedHashes.push(fileHash);
+        fs.writeFileSync(hashFilePath, JSON.stringify(storedHashes, null, 2));
 
         res.status(200).json({
             message: 'File uploaded and data processed successfully.',
@@ -72,7 +164,7 @@ const getAllData = async (req, res) => {
         // Fetch data only from MongoDB
         const dataFromMongo = await PayInExcelDataModel.find();
         res.status(200).json({
-            message: 'File uploaded and data processed successfully.',
+            message: 'Data retrieved successfully.',
             data: dataFromMongo,
             status: "Success"
         });
