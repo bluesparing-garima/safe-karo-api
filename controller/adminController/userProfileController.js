@@ -2,6 +2,18 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import UserProfileModel from "../../models/adminModels/userProfileSchema.js";
 import UserModel from "../../models/userSchema.js";
+import crypto from "crypto";
+
+const algorithm = "aes-256-ctr";
+const secretKey = crypto.randomBytes(32);
+const iv = crypto.randomBytes(16);
+
+const encrypt = (text) => {
+  const cipher = crypto.createCipheriv(algorithm, secretKey, iv);
+  const encrypted = Buffer.concat([cipher.update(text), cipher.final()]);
+  return `${iv.toString("hex")}:${encrypted.toString("hex")}`;
+};
+
 
 // Function to generate Partner ID
 const generatePartnerId = async () => {
@@ -80,7 +92,9 @@ export const createUserProfile = async (req, res) => {
     }
 
     const existingUserInUserModel = await UserModel.findOne({ email });
-    const existingUserInUserProfileModel = await UserProfileModel.findOne({ email });
+    const existingUserInUserProfileModel = await UserProfileModel.findOne({
+      email,
+    });
 
     if (existingUserInUserModel || existingUserInUserProfileModel) {
       return res.status(400).json({
@@ -91,6 +105,7 @@ export const createUserProfile = async (req, res) => {
     const partnerId = await generatePartnerId();
 
     const hashedPassword = await hashPassword(password);
+    const encryptedPassword = encrypt(password);
 
     const userProfile = new UserProfileModel({
       branchName,
@@ -114,13 +129,13 @@ export const createUserProfile = async (req, res) => {
       createdBy,
       isActive: isActive !== undefined ? isActive : true,
       partnerId,
-      originalPassword: password, 
+      originalPassword: password,
     });
-      
+
     const newUser = new UserModel({
       name: fullName,
       email,
-      password: hashedPassword, 
+      password: hashedPassword,
       phoneNumber,
       role,
       isActive: isActive !== undefined ? isActive : true,
@@ -153,13 +168,15 @@ export const checkEmailExists = async (req, res) => {
     }
 
     const existingUserInUserModel = await UserModel.findOne({ email });
-    const existingUserInUserProfileModel = await UserProfileModel.findOne({ email });
+    const existingUserInUserProfileModel = await UserProfileModel.findOne({
+      email,
+    });
 
     if (existingUserInUserModel || existingUserInUserProfileModel) {
       return res.status(200).json({
         message: "Email already exists",
         emailExists: true,
-        status: "success"
+        status: "success",
       });
     } else {
       return res.status(200).json({
@@ -228,6 +245,8 @@ export const getUserProfileById = async (req, res) => {
       return res.status(404).json({ message: "User profile not found" });
     }
 
+    console.log("Original Password:", userProfile.originalPassword);
+
     res.status(200).json({
       message: "User profile retrieved successfully",
       data: userProfile,
@@ -241,7 +260,8 @@ export const getUserProfileById = async (req, res) => {
   }
 };
 
-// update userProfile 
+
+// update
 export const updateUserProfile = async (req, res) => {
   try {
     const { password, ...rest } = req.body;
@@ -250,7 +270,7 @@ export const updateUserProfile = async (req, res) => {
     if (password) {
       const hashedPassword = await hashPassword(password);
       updatedData.password = hashedPassword;
-      updatedData.originalPassword = password;
+      updatedData.originalPassword = password; // Store the original password directly
     } else {
       const existingProfile = await UserProfileModel.findById(req.params.id);
       if (existingProfile) {
@@ -265,7 +285,7 @@ export const updateUserProfile = async (req, res) => {
     );
 
     const updatedUserData = { ...updatedData };
-    delete updatedUserData.partnerId; // Remove partnerId from the data to prevent updating it
+    delete updatedUserData.partnerId;
 
     const updatedUser = await UserModel.findOneAndUpdate(
       { email: updatedData.email },
@@ -279,6 +299,7 @@ export const updateUserProfile = async (req, res) => {
     res.status(200).json({
       message: "User profile updated successfully",
       data: updatedProfile,
+      originalPassword: updatedProfile.originalPassword,
     });
   } catch (error) {
     res.status(500).json({
@@ -287,7 +308,6 @@ export const updateUserProfile = async (req, res) => {
     });
   }
 };
-
 
 // Delete (deactivate) a user profile by ID
 export const deleteUserProfile = async (req, res) => {
