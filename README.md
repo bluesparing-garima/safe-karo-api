@@ -9,6 +9,7 @@
 DATEBASE_URL = "mongodb://127.0.0.1:27017"
 //for cloud db
 DATEBASE_URL = "mongodb+srv://nikhilbluesparing:safekaro123@cluster0.afvzzxw.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+Server URL="mongodb+srv://garimabathlabluespraing:Safekaro@24@cluster0.d2qm5l9.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 JWT_SECRET_KEY= your-secret-key -->
 
 ## Run the Application
