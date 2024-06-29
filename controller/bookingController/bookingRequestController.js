@@ -35,6 +35,7 @@ export const createBookingRequest = async (req, res) => {
       createdBy,
       isActive,
       bookingCreatedBy,
+      bookingAcceptedBy,
     } = req.body;
 
     const requiredFields = [
@@ -81,7 +82,8 @@ export const createBookingRequest = async (req, res) => {
       companyName,
       documents,
       bookingCreatedBy,
-      bookingStatus: "requested",
+      bookingAcceptedBy,
+      bookingStatus:"requested",
       createdBy,
       isActive: isActive !== undefined ? isActive : true,
     });
@@ -153,6 +155,32 @@ export const getBookingRequestsByCreatedBy = async (req, res) => {
     if (bookings.length === 0) {
       return res.status(404).json({
         message: `No bookings found for bookingCreatedBy: ${bookingCreatedBy}`,
+        status: "success",
+      });
+    }
+
+    res.status(200).json({
+      message: "Bookings retrieved successfully.",
+      data: bookings,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving bookings",
+      error: error.message,
+    });
+  }
+};
+
+// Get booking requests by bookingAcceptedy
+export const getBookingRequestsByAcceptedBy = async (req, res) => {
+  try {
+    const { bookingAcceptedBy } = req.params;
+    const bookings = await BookingRequestModel.find({ bookingAcceptedBy });
+    
+    if (bookings.length === 0) {
+      return res.status(404).json({
+        message: `No bookings found for bookingAcceptedeBy: ${bookingAcceptedBy}`,
         status: "success",
       });
     }

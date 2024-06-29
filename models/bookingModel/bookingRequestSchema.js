@@ -32,6 +32,7 @@ const bookingRequestSchema = new mongoose.Schema({
     // policyPDF:{type:String,trim:true},
     documents:[DocumentSchema],
     bookingStatus:{type:String,trim:true},
+    bookingAcceptedBy:{type:String,trim:true},
     createdBy: { type: String, trim: true },
     createdOn: { type: Date, default: Date.now },
     updatedBy: { type: String, default: null },
