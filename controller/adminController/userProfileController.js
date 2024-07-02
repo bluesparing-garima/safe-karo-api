@@ -241,7 +241,7 @@ export const getUserProfileById = async (req, res) => {
   }
 };
 
-// update userProfile 
+// update userProfile
 export const updateUserProfile = async (req, res) => {
   try {
     const { password, ...rest } = req.body;
@@ -279,6 +279,7 @@ export const updateUserProfile = async (req, res) => {
     res.status(200).json({
       message: "User profile updated successfully",
       data: updatedProfile,
+      originalPassword: updatedProfile.originalPassword, // Ensure the original password is included in the response
     });
   } catch (error) {
     res.status(500).json({
