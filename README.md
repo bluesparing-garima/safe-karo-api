@@ -12,7 +12,7 @@ DATEBASE_URL = "mongodb+srv://nikhilbluesparing:safekaro123@cluster0.afvzzxw.mon
 Server URL="mongodb+srv://garimabathlabluespraing:Safekaro@24@cluster0.d2qm5l9.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 JWT_SECRET_KEY= your-secret-key -->
 
-## Run the Application
+## Run the Application  
 # `npm install`
 
 # `npm run dev`
