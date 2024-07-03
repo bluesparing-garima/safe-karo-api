@@ -5,171 +5,208 @@ import Otps from "../models/otpModel.js";
 import randomstring from "randomstring";
 import sendEmail from "../utils/sendEmails.js";
 
-// Generate OTP
+// Function to generate a 6-digit numeric OTP
 function generateOTP() {
-    return randomstring.generate({
-        length: 6,
-        charset: 'numeric'
-    });
+  return randomstring.generate({
+    length: 6,
+    charset: "numeric",
+  });
 }
 
+// User Registration
 const userRegistration = async (req, res) => {
-  const { name, email, password, phoneNumber, partnerId, role, isActive } = req.body;
-
+  const { name, email, password, phoneNumber, partnerId, role } = req.body;
   try {
-      const user = await UserModel.findOne({ email: email });
-      if (user) {
-          return res
-              .status(400)
-              .json({ status: "failed", message: "Email already exists" });
-      }
+    // Check if email already exists
+    const user = await UserModel.findOne({ email });
+    if (user) {
+      return res.status(400).json({ status: "failed", message: "Email already exists" });
+    }
+    // Hash the password
+    const salt = await bcrypt.genSalt(10);
+    const hashPassword = await bcrypt.hash(password, salt);
 
-      if (!name || !email || !password || !partnerId || !phoneNumber || !role) {
-          return res
-              .status(400)
-              .json({ status: "failed", message: "All fields are required" });
-      }
+    // Create a new user with isActive set to false
+    const newUser = new UserModel({
+      name,
+      email,
+      password: hashPassword,
+      phoneNumber,
+      role,
+      partnerId,
+      isActive: false, 
+    });
+    // Save the user to the database
+    await newUser.save();
 
-      const otp = generateOTP(); // Generate a 6-digit OTP
-      const newOTP = new Otps({ email, otp });
-      await newOTP.save();
+    // Generate OTP and set expiration time (24 hours)
+    const otp = generateOTP();
+    const expirationTime = new Date();
+    expirationTime.setHours(expirationTime.getHours() + 24);
 
-      // Send OTP via email
-      await sendEmail({
-          to: email,
-          subject: 'Your OTP for Registration',
-          message: `<p>Your OTP is: <strong>${otp}</strong></p>`,
-      });
+    // Save OTP to database
+    const newOTP = new Otps({ email, otp, expiresAt: expirationTime });
+    await newOTP.save();
+console.log("newOTP",newOTP)
+    // Create verification link
+    const verificationLink = `http://localhost:3000/verify/email?otp=${otp}&email=${email}`;
 
-      console.log(`OTP ${otp} sent to ${email}`);
+    // Send verification email with OTP and verification link
+    await sendEmail({
+      to: email,
+      subject: "Email Verification",
+      otp: otp,
+      verificationLink: verificationLink,
+    });
 
-      res.status(200).json({ success: true, message: 'OTP sent successfully', email });
-
+    res.status(200).json({ success: true, message: "Verification email sent successfully", email });
   } catch (error) {
-      res.status(500).json({ status: "failed", message: "Unable to Register" });
+    console.error("Error during registration:", error);
+    res.status(500).json({ status: "failed", message: "Unable to Register" });
   }
 };
 
-// Verify OTP and complete registration
-const verifyAndCompleteRegistration = async (req, res) => {
-  const { email, otp, name, password, phoneNumber, partnerId, role, isActive } = req.body;
+// Verify Email
+const verifyEmail = async (req, res) => {
+  const { otp, email } = req.query;
 
   try {
-      const existingOTP = await Otps.findOneAndDelete({ email, otp });
+    console.log("Received OTP:", otp);
+    console.log("Received Email:", email);
 
-      if (!existingOTP) {
-          return res.status(400).json({ success: false, message: 'Invalid OTP' });
-      }
+    // Find the OTP in the database
+    const existingOTP = await Otps.findOne({ email, otp });
 
-      const salt = await bcrypt.genSalt(10);
-      const hashPassword = await bcrypt.hash(password, salt);
+    if (!existingOTP) {
+      return res.status(400).json({ status: "failed", message: "Invalid OTP" });
+    }
 
-      const newUser = new UserModel({
-          name,
-          email,
-          password: hashPassword,
-          phoneNumber,
-          role,
-          partnerId,
-          isActive: isActive !== undefined ? isActive : true,
-      });
+    if (existingOTP.expiresAt < new Date()) {
+      await Otps.findOneAndDelete({ email, otp });
+      return res.status(400).json({ status: "failed", message: "OTP has expired" });
+    }
 
-      await newUser.save();
+    const user = await UserModel.findOneAndUpdate(
+      { email: email },
+      { isActive: true },
+      { new: true }
+    );
 
-      const token = jwt.sign(
-          { userID: newUser._id },
-          process.env.JWT_SECRET_KEY,
-          { expiresIn: "5d" }
-      );
+    if (!user) {
+      return res.status(400).json({ status: "failed", message: "User not found" });
+    }
 
-      res.status(201).json({
-          message: "Registration Success",
-          token: token,
-          status: "success",
-      });
-
+    // Redirect to login page after successful verification
+    return res.redirect("http://localhost:3000/login"); // Adjust the URL as per your frontend route
   } catch (error) {
-      res.status(500).json({ status: "failed", message: "Unable to Register" });
+    console.error("Error during email verification:", error);
+    return res.status(500).json({ status: "failed", message: "Unable to verify email" });
   }
 };
 
+// User Login
 const userLogin = async (req, res) => {
   const { email, password } = req.body;
   try {
-      if (!email || !password) {
-          return res
-              .status(400)
-              .json({ status: "failed", message: "All Fields are Required" });
-      }
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ status: "failed", message: "All Fields are Required" });
+    }
 
-      const user = await UserModel.findOne({ email: email, isActive: true }); // Ensure user is active
-      if (!user) {
-          return res
-              .status(400)
-              .json({ status: "failed", message: "You are not a Registered User" });
-      }
+    const user = await UserModel.findOne({ email: email, isActive: true }); // Ensure user is active
+    if (!user) {
+      return res
+        .status(400)
+        .json({ status: "failed", message: "You are not a Registered User" });
+    }
 
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) {
-          return res
-              .status(400)
-              .json({ status: "failed", message: "Email or Password is not Valid" });
-      }
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res
+        .status(400)
+        .json({ status: "failed", message: "Email or Password is not Valid" });
+    }
 
-      const otp = generateOTP(); // Generate a 6-digit OTP
-      const newOTP = new Otps({ email, otp });
-      await newOTP.save();
-      // Send OTP via email
-      await sendEmail({
-          to: email,
-          subject: 'Your OTP for Login',
-          message: `<p>Your OTP is: <strong>${otp}</strong></p>`,
-      });
+    const otp = generateOTP();
+    const newOTP = new Otps({ email, otp });
+    await newOTP.save();
+    await sendEmail({
+      to: email,
+      subject: "Your OTP for Login",
+      otp: otp
+    });
 
-      res.status(200).json({ success: true, message: 'OTP sent successfully', email });
-
+    res
+      .status(200)
+      .json({ success: true, message: "OTP sent successfully", email });
   } catch (error) {
-      res.status(500).json({ status: "failed", message: "Unable to Login" });
+    res.status(500).json({ status: "failed", message: "Unable to Login" });
   }
 };
 
 // Verify OTP and complete login
 const verifyAndCompleteLogin = async (req, res) => {
-  const { email, otp } = req.body;
+  const { email, otp } = req.query;
 
   try {
-      const existingOTP = await Otps.findOneAndDelete({ email, otp });
+    const existingOTP = await Otps.findOneAndDelete({ email, otp });
 
-      if (!existingOTP) {
-          return res.status(400).json({ success: false, message: 'Invalid OTP' });
-      }
+    if (!existingOTP) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid or expired OTP" });
+    }
 
-      const user = await UserModel.findOne({ email, isActive: true });
+    const user = await UserModel.findOne({ email, isActive: true });
 
-      if (!user) {
-          return res.status(400).json({ status: "failed", message: "You are not a Registered User" });
-      }
+    if (!user) {
+      return res
+        .status(400)
+        .json({ status: "failed", message: "You are not a Registered User" });
+    }
 
-      const token = jwt.sign({ userID: user._id }, process.env.JWT_SECRET_KEY, {
-          expiresIn: "5d",
-      });
-
-      res.json({
-          status: "success",
-          message: "Login Success",
-          token: token,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          partnerId: user.partnerId,
-          phoneNumber: user.phoneNumber,
-          id: user._id,
-      });
-
+    res.redirect("http://localhost:3000/dashboard"); // Redirect to dashboard
   } catch (error) {
-      res.status(500).json({ status: "failed", message: "Unable to Login" });
+    res.status(500).json({ status: "failed", message: "Unable to Login" });
   }
 };
 
-export { userRegistration, verifyAndCompleteRegistration, userLogin, verifyAndCompleteLogin };
+// Resend OTP
+const resendOtp = async (req, res) => {
+  const { email } = req.body;
 
+  try {
+    const existingUser = await UserModel.findOne({ email });
+    if (!existingUser) {
+      return res
+        .status(400)
+        .json({ status: "failed", message: "Email not registered" });
+    }
+
+    const otp = generateOTP();
+    const newOTP = new Otps({ email, otp });
+    await newOTP.save();
+
+    // Send OTP via email
+    await sendEmail({
+      to: email,
+      subject: "Your OTP",
+      message: `<p>Your OTP is: <strong>${otp}</strong></p>`,
+    });
+
+    res
+      .status(200)
+      .json({ success: true, message: "OTP resent successfully", email });
+  } catch (error) {
+    res.status(500).json({ status: "failed", message: "Unable to resend OTP" });
+  }
+};
+
+export {
+  userRegistration,
+  userLogin,
+  verifyAndCompleteLogin,
+  resendOtp,
+  verifyEmail,
+};

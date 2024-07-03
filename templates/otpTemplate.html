@@ -47,13 +47,14 @@
         <div class="content">
             <p>Dear User,</p>
             <p>Your OTP code is:</p>
-            <p class="otp">options.otp</p>
+            <p class="otp">{{OTP_CODE}}</p>
             <p>Please use this code to complete your registration.</p>
+            <p>Or click the following link to verify your email:</p>
+            <p class="otp"><a href="{{VERIFICATION_LINK}}">{{VERIFICATION_LINK}}</a></p>
         </div>
         <div class="footer">
             <p>If you did not request this code, please ignore this email.</p>
         </div>
     </div>
-    <script></script>
 </body>
 </html>
