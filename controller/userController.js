@@ -20,7 +20,9 @@ const userRegistration = async (req, res) => {
     // Check if email already exists
     const user = await UserModel.findOne({ email });
     if (user) {
-      return res.status(400).json({ status: "failed", message: "Email already exists" });
+      return res
+        .status(400)
+        .json({ status: "failed", message: "Email already exists" });
     }
     // Hash the password
     const salt = await bcrypt.genSalt(10);
@@ -34,12 +36,11 @@ const userRegistration = async (req, res) => {
       phoneNumber,
       role,
       partnerId,
-      isActive: false, 
+      isActive: false,
     });
-    // Save the user to the database
+
     await newUser.save();
 
-    // Generate OTP and set expiration time (24 hours)
     const otp = generateOTP();
     const expirationTime = new Date();
     expirationTime.setHours(expirationTime.getHours() + 24);
@@ -47,11 +48,9 @@ const userRegistration = async (req, res) => {
     // Save OTP to database
     const newOTP = new Otps({ email, otp, expiresAt: expirationTime });
     await newOTP.save();
-console.log("newOTP",newOTP)
-    // Create verification link
+    console.log("newOTP", newOTP);
     const verificationLink = `http://localhost:3000/verify/email?otp=${otp}&email=${email}`;
 
-    // Send verification email with OTP and verification link
     await sendEmail({
       to: email,
       subject: "Email Verification",
@@ -59,9 +58,12 @@ console.log("newOTP",newOTP)
       verificationLink: verificationLink,
     });
 
-    res.status(200).json({ success: true, message: "Verification email sent successfully", email });
+    res.status(200).json({
+      success: true,
+      message: "Verification email sent successfully",
+      email,
+    });
   } catch (error) {
-    console.error("Error during registration:", error);
     res.status(500).json({ status: "failed", message: "Unable to Register" });
   }
 };
@@ -69,21 +71,26 @@ console.log("newOTP",newOTP)
 // Verify Email
 const verifyEmail = async (req, res) => {
   const { otp, email } = req.query;
-
+  console.log("Received OTP:", otp);
+  console.log("Received Email:", email);
   try {
-    console.log("Received OTP:", otp);
-    console.log("Received Email:", email);
-
-    // Find the OTP in the database
-    const existingOTP = await Otps.findOne({ email, otp });
+    if (!otp || !email) {
+      return res
+        .status(400)
+        .json({ status: "failed", message: "OTP and Email are required" });
+    }
+    const existingOTP = await Otps.findOne({ otp:otp,email:email });
+    console.log(existingOTP);
 
     if (!existingOTP) {
       return res.status(400).json({ status: "failed", message: "Invalid OTP" });
     }
 
     if (existingOTP.expiresAt < new Date()) {
-      await Otps.findOneAndDelete({ email, otp });
-      return res.status(400).json({ status: "failed", message: "OTP has expired" });
+      await Otps.findOneAndDelete({ otp,email });
+      return res
+        .status(400)
+        .json({ status: "failed", message: "OTP has expired" });
     }
 
     const user = await UserModel.findOneAndUpdate(
@@ -93,14 +100,18 @@ const verifyEmail = async (req, res) => {
     );
 
     if (!user) {
-      return res.status(400).json({ status: "failed", message: "User not found" });
+      return res
+        .status(400)
+        .json({ status: "failed", message: "User not found" });
     }
 
     // Redirect to login page after successful verification
     return res.redirect("http://localhost:3000/login"); // Adjust the URL as per your frontend route
   } catch (error) {
     console.error("Error during email verification:", error);
-    return res.status(500).json({ status: "failed", message: "Unable to verify email" });
+    return res
+      .status(500)
+      .json({ status: "failed", message: "Unable to verify email" });
   }
 };
 
@@ -129,12 +140,15 @@ const userLogin = async (req, res) => {
     }
 
     const otp = generateOTP();
-    const newOTP = new Otps({ email, otp });
+    const expirationTime = new Date();
+    expirationTime.setMinutes(expirationTime.getMinutes() + 10); // OTP valid for 10 minutes
+    const newOTP = new Otps({ email, otp, expiresAt: expirationTime });
     await newOTP.save();
+
     await sendEmail({
       to: email,
       subject: "Your OTP for Login",
-      otp: otp
+      otp: otp,
     });
 
     res
@@ -147,12 +161,12 @@ const userLogin = async (req, res) => {
 
 // Verify OTP and complete login
 const verifyAndCompleteLogin = async (req, res) => {
-  const { email, otp } = req.query;
+  const { email, otp } = req.body;
 
   try {
     const existingOTP = await Otps.findOneAndDelete({ email, otp });
 
-    if (!existingOTP) {
+    if (!existingOTP || existingOTP.expiresAt < new Date()) {
       return res
         .status(400)
         .json({ success: false, message: "Invalid or expired OTP" });
