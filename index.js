@@ -6,6 +6,7 @@ import connectDB from "./config/connectdb.js";
 import userRoutes from "./routes/userRoutes.js";
 // middleware
 import { requestLogger, handleInvalidRoutes } from './middlewares/requestLogger.js';
+
 import assigneeRolesRouters from "./routes/adminRoutes/userRolesRoutes.js";
 import motorPolicyRoutes from "./routes/policy/motorPolicyRoutes.js";
 import policyTypeRoutes from "./routes/adminRoutes/policyTypeRoutes.js";
@@ -16,7 +17,7 @@ import payOutExcelRoutes from "./routes/adminRoutes/payOutExcelRoutes.js";
 import fileUpload from "express-fileupload";
 import payInRoutes from "./routes/adminRoutes/payInRoutes.js";
 import vehicleType from "./routes/adminRoutes/productSubTypeRoutes.js";
-// import partnerRoutes from './routes/partnerIdRoutes.js';
+import partnerRoutes from './routes/adminRoutes/partnerRoutes.js';
 import productName from "./routes/adminRoutes/productRoutes.js";
 import company from "./routes/adminRoutes/companyRoutes.js";
 import broker from "./routes/adminRoutes/brokerRoutes.js";
@@ -103,8 +104,8 @@ app.use("/api/product-type", vehicleType);
 // Product Name
 app.use("/api/product", productName);
 
-// Use the partnerId routes
-// app.use('/api/partner', partnerRoutes);
+// Use the partner routes
+app.use('/api/partner', partnerRoutes);
 
 // Company Name's
 app.use("/api/company", company);

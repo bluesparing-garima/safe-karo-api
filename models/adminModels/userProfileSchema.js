@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 
 const DocumentSchema = new mongoose.Schema({
-  docName: { type: String, required: true },
-  file: { type: String, required: true },
+  docName: { type: String },
+  file: { type: String},
 });
 
 const userProfileSchema = new mongoose.Schema({
@@ -16,7 +16,8 @@ const userProfileSchema = new mongoose.Schema({
   accountHolderName: { type: String, trim: true },
   accountNumber: { type: String, trim: true },
   salary: { type: Number, trim: true },
-
+  joiningDate:{type:String, trim:true},
+  
   // fields which are in partners
   password: { type: String, trim: true },
   originalPassword: { type: String,trim:true },
