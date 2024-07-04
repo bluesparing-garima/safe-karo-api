@@ -151,7 +151,7 @@ export const getAllBookingRequests = async (req, res) => {
 export const getBookingRequestsByBookingId = async (req, res) => {
   try {
     const { bookingId } = req.params;
-    const policies = await BookingRequestModel.find({ _id:bookingId });
+    const policies = await BookingRequestModel.findById({ _id:bookingId });
 
     if (policies.length === 0) {
       return res.status(404).json({
@@ -172,6 +172,7 @@ export const getBookingRequestsByBookingId = async (req, res) => {
     });
   }
 };
+
 // Get booking requests by bookingCreatedBy
 export const getBookingRequestsByCreatedBy = async (req, res) => {
   try {
