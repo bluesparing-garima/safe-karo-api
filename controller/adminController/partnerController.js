@@ -51,7 +51,7 @@ export const uploadPartnerExcel = async (req, res) => {
     const sheetName = workbook.SheetNames[0];
     const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
     const extractedData = worksheet.map((row) => ({
-      role: (row.role || "").toLowerCase(),
+      role: (row.role || ""),
       fullName: (row.fullName || row["Full Name"] || "").toLowerCase(),
       phoneNumber: row.phoneNumber || "",
       email: row.email || "", // engine = cc
