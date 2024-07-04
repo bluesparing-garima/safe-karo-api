@@ -150,12 +150,12 @@ export const getAllBookingRequests = async (req, res) => {
 // Get motorpolicy by bookingId
 export const getBookingRequestsByBookingId = async (req, res) => {
   try {
-    const { bookingId } = req.params;
-    const policies = await MotorPolicyModel.find({ bookingId });
+    const { id } = req.params;
+    const policies = await BookingRequestModel.find({ id });
 
     if (policies.length === 0) {
       return res.status(404).json({
-        message: `No Motor Policy for bookingId ${bookingId}`,
+        message: `No BookingRequest found for this bookingId ${id}`,
         status: "success",
       });
     }
