@@ -51,13 +51,15 @@ export const uploadPartnerExcel = async (req, res) => {
     const sheetName = workbook.SheetNames[0];
     const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
     const extractedData = worksheet.map((row) => ({
-      role: (row.role || ""),
-      fullName: (row.fullName || row["Full Name"] || "").toLowerCase(),
+      role: row.role || "",
+      fullName: row.fullName || row["Full Name"] || "",
       phoneNumber: row.phoneNumber || "",
       email: row.email || "", // engine = cc
       password: row.password || "",
+      headRM: row.headRM || "",
+      headRMId: row.headRMId || "",
       dateOfBirth: row.dateOfBirth || "0",
-      gender: (row.gender || "").toLowerCase(),
+      gender: row.gender || "",
       address: row.address || " ",
       pincode: row.pincode || "",
       bankName: row.bankName || row["Bank Name"] || " ",
@@ -65,7 +67,7 @@ export const uploadPartnerExcel = async (req, res) => {
       accountHolderName: row.accountHolderName || "",
       accountNumber: row.accountNumber || "",
       salary: row.salary || "",
-      partnerId: (row.partnerId || row["Partner Id"] || "").toLowerCase(),
+      partnerId: row.partnerId || row["Partner Id"] || "",
     }));
     const missingFields = [];
 
@@ -90,6 +92,8 @@ export const uploadPartnerExcel = async (req, res) => {
           password: hashedPassword,
           dateOfBirth: record.dateOfBirth,
           gender: record.gender,
+          headRM: record.headRM,
+          headRMId: record.headRMId,
           address: record.address || "",
           pincode: record.pincode || "",
           bankName: record.bankName || "",
