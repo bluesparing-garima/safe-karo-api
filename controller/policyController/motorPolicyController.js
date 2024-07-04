@@ -197,32 +197,6 @@ export const getMotorPolicyByPartnerId = async (req, res) => {
   }
 };
 
-// Get motorpolicy by bookingId
-export const getMotorPolicyByBookingId = async (req, res) => {
-  try {
-    const { bookingId } = req.params;
-    const policies = await MotorPolicyModel.find({ bookingId });
-
-    if (policies.length === 0) {
-      return res.status(404).json({
-        message: `No Motor Policy for bookingId ${bookingId}`,
-        status: "success",
-      });
-    }
-
-    res.status(200).json({
-      message: "Motor Policies retrieved successfully.",
-      data: policies,
-      status: "success",
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: "Error retrieving motor policies",
-      error: error.message,
-    });
-  }
-};
-
 // Check PolicyNumber exist
 export const validatePolicyNumber = async (req, res) => {
   try {
