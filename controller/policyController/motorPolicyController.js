@@ -14,6 +14,7 @@ export const createMotorPolicy = async (req, res) => {
       partnerName,
       relationshipManagerId,
       relationshipManagerName,
+      bookingId,
       paymentDetails,
       policyType,
       caseType,
@@ -64,6 +65,7 @@ export const createMotorPolicy = async (req, res) => {
       relationshipManagerId: relationshipManagerId || "",
       relationshipManagerName: relationshipManagerName || "",
       paymentDetails: paymentDetails || "",
+      bookingId: bookingId || "",
       policyType,
       caseType,
       category,
@@ -178,6 +180,32 @@ export const getMotorPolicyByPartnerId = async (req, res) => {
     if (policies.length === 0) {
       return res.status(404).json({
         message: `No Motor Policy for partnerId ${partnerId}`,
+        status: "success",
+      });
+    }
+
+    res.status(200).json({
+      message: "Motor Policies retrieved successfully.",
+      data: policies,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving motor policies",
+      error: error.message,
+    });
+  }
+};
+
+// Get motorpolicy by bookingId
+export const getMotorPolicyByBookingId = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const policies = await MotorPolicyModel.find({ bookingId });
+
+    if (policies.length === 0) {
+      return res.status(404).json({
+        message: `No Motor Policy for bookingId ${bookingId}`,
         status: "success",
       });
     }
