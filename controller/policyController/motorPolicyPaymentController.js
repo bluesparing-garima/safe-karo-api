@@ -1,5 +1,5 @@
 import motorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
-
+import mongoose from "mongoose";
 
 // Create a new motor policy payment
 export const createMotorPolicyPayment = async (req, res) => {
@@ -136,55 +136,43 @@ export const updateMotorPolicyPayment = async (req, res) => {
   } = req.body;
 
   try {
-    const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res
-        .status(400)
-        .json({ message: "Invalid ID", success: false, status: "error" });
-    }
-
-    const updatedMotorPolicyPayment =
-      await motorPolicyPayment.findByIdAndUpdate(
-        id,
-        {
-          partnerId,
-          policyId,
-          policyNumber,
-          bookingId,
-          od,
-          tp,
-          netPremium,
-          finalPremium,
-          payInODPercentage,
-          payInTPPercentage,
-          payInODAmount,
-          payInTPAmount,
-          payOutODPercentage,
-          payOutTPPercentage,
-          payOutODAmount,
-          payOutTPAmount,
-          payInCommission,
-          payOutCommission,
-          updatedBy,
-        },
-        { new: true }
-      );
-
-    if (!updatedMotorPolicyPayment) {
-      return res
-        .status(404)
-        .json({
+    //const { policiesId } = ;
+    // if (!mongoose.Types.ObjectId.isValid.policyId) {
+    //   return res
+    //     .status(400)
+    //     .json({ message: "Invalid ID", success: false, status: "error" });
+    // }
+    //Check POlicyId
+    const existingProfile = await motorPolicyPayment.findOne({
+      policyId: req.params.policyId,
+    });
+    if (existingProfile) {
+      const updatedMotorPolicyPayment =
+        await motorPolicyPayment.findByIdAndUpdate(
+          existingProfile._id,
+          req.body,
+          { new: true }
+        );
+      console.log("updatedMotorPolicyPayment", updatedMotorPolicyPayment);
+      if (!updatedMotorPolicyPayment) {
+        return res.status(404).json({
           message: "Motor Policy Payment not found",
           success: false,
           status: "error",
         });
-    }
+      }
 
-    res.status(200).json({
-      message: "Motor Policy Payment updated successfully",
-      data: updatedMotorPolicyPayment,
-      success: true,
-      status: "success",
+      res.status(200).json({
+        message: "Motor Policy Payment updated successfully",
+        data: updatedMotorPolicyPayment,
+        success: true,
+        status: "success",
+      });
+    }
+    return res.status(404).json({
+      message: "Motor Policy Payment not found",
+      success: false,
+      status: "error",
     });
   } catch (err) {
     res.status(400).json({ message: err.message, status: "error" });
@@ -203,13 +191,11 @@ export const deleteMotorPolicyPayment = async (req, res) => {
     const deletedMotorPolicyPayment =
       await motorPolicyPayment.findByIdAndDelete(id);
     if (!deletedMotorPolicyPayment) {
-      return res
-        .status(404)
-        .json({
-          message: "Motor Policy Payment not found",
-          success: false,
-          status: "error",
-        });
+      return res.status(404).json({
+        message: "Motor Policy Payment not found",
+        success: false,
+        status: "error",
+      });
     }
     res.status(200).json({
       message: "Motor Policy Payment deleted successfully",
