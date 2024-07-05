@@ -1,14 +1,11 @@
 import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
 import BookingRequestModel from "../../models/bookingModel/bookingRequestSchema.js";
-
+import MotorPolicyPaymentModel from "../../models/policyModel/motorPolicyPaymentSchema.js";
+import mongoose from "mongoose";
 // Create Motor Policy
 export const createMotorPolicy = async (req, res) => {
   try {
     const {
-      tpPercentage,
-      odPercentage,
-      odPayoutAmount,
-      tpPayoutAmount,
       policyStatus,
       partnerId,
       partnerName,
@@ -54,10 +51,6 @@ export const createMotorPolicy = async (req, res) => {
     } = req.body;
 
     const newMotorPolicy = new MotorPolicyModel({
-      tpPercentage,
-      odPercentage,
-      odPayoutAmount,
-      tpPayoutAmount,
       policyStatus,
       partnerId: partnerId || "",
       partnerName: partnerName || "",
@@ -105,7 +98,9 @@ export const createMotorPolicy = async (req, res) => {
     });
 
     // Check if the policyNumber already exists in MotorPolicy
-    const existingMotorPolicy = await MotorPolicyModel.findOne({ policyNumber });
+    const existingMotorPolicy = await MotorPolicyModel.findOne({
+      policyNumber,
+    });
     if (existingMotorPolicy) {
       return res.status(400).json({
         status: "error",
@@ -114,7 +109,9 @@ export const createMotorPolicy = async (req, res) => {
     } else {
       const savedMotorPolicy = await newMotorPolicy.save();
       if (savedMotorPolicy) {
-        const existingBookingRequest = await BookingRequestModel.findOne({ policyNumber });
+        const existingBookingRequest = await BookingRequestModel.findOne({
+          policyNumber,
+        });
         if (existingBookingRequest) {
           existingBookingRequest.bookingStatus = "booked";
           await existingBookingRequest.save();
@@ -154,7 +151,9 @@ export const getMotorPolicies = async (req, res) => {
     // .skip(skip)
     // .limit(limit);
 
-    const totalCount = await MotorPolicyModel.countDocuments({ isActive: true });
+    const totalCount = await MotorPolicyModel.countDocuments({
+      isActive: true,
+    });
 
     res.status(200).json({
       message: "All Motor Policies.",
@@ -195,6 +194,70 @@ export const getMotorPolicyByPartnerId = async (req, res) => {
   }
 };
 
+// Get Motor Policy with Payment Details
+export const getMotorPolicyWithPaymentDetails = async (req, res) => {
+  try {
+    const { policyId } = req.params;
+    // const policyWithPaymentDetails = await MotorPolicyModel.aggregate([
+    //   {
+    //     $match: { _id: mongoose.Types.ObjectId.policyId },
+    //   },
+    //   {
+    //     $lookup: {
+    //       from: 'motorPolicyPayments', // Collection name for MotorPolicyPaymentModel
+    //     localField: '_id',
+    //   foreignField: 'policyId',
+    //   as: 'payments',
+    //     },
+    //   },
+    // ]);
+    const motorPolicy = await MotorPolicyModel.findById(policyId);
+    if (!motorPolicy) {
+      return res
+        .status(404)
+        .json({ message: `Motor Policy with ID ${policyId} not found` });
+    }
+
+    // Find motor policy payments by policyId
+    const motorPolicyPayments = await MotorPolicyPaymentModel.findOne({
+      policyId,
+    });
+
+    // Combine motor policy and payments into a single response
+    const combinedData = {
+      // motorPolicy,
+      // motorPolicyPayments,
+      policyId: motorPolicy._id,
+      policyNumber: motorPolicy.policyNumber,
+      fullName: motorPolicy.fullName,
+      policyType:motorPolicy.policyType,
+      // Add fields from MotorPolicyPaymentModel as needed
+      paymentId: motorPolicyPayments._id,
+      od: motorPolicyPayments.od,
+      tp: motorPolicyPayments.tp,
+      payInODPercentage: motorPolicyPayments.payInODPercentage,
+    };
+
+    if (combinedData.length === 0) {
+      return res.status(404).json({
+        message: `No Motor Policy found for policyId ${policyId}`,
+        status: "error",
+      });
+    }
+
+    res.status(200).json({
+      message: "Motor Policy with Payment Details retrieved successfully.",
+      data: combinedData,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving motor policy with payment details",
+      error: error.message,
+    });
+  }
+};
+
 // Check PolicyNumber exist
 export const validatePolicyNumber = async (req, res) => {
   try {
@@ -224,10 +287,6 @@ export const validatePolicyNumber = async (req, res) => {
 // Update Motor Policy by ID
 export const updateMotorPolicy = async (req, res) => {
   const {
-    tpPercentage,
-    odPercentage,
-      odPayoutAmount,
-      tpPayoutAmount,
     policyStatus,
     partnerId,
     partnerName,
@@ -268,15 +327,11 @@ export const updateMotorPolicy = async (req, res) => {
     policyCreatedBy,
     documents,
     productType,
-    isActive, // Add isActive to capture from request body
-    updatedBy, // Assume this is provided in the request
+    isActive,
+    updatedBy,
   } = req.body;
 
   const formData = {
-    tpPercentage,
-    odPercentage,
-      odPayoutAmount,
-      tpPayoutAmount,
     policyStatus,
     policyType,
     caseType,
@@ -315,9 +370,9 @@ export const updateMotorPolicy = async (req, res) => {
     relationshipManagerId,
     relationshipManagerName,
     paymentDetails,
-    isActive: isActive !== undefined ? isActive : true, // Default to true if not provided
-    updatedBy: updatedBy || "system", // Set to 'system' or user info if not provided
-    updatedOn: new Date(), // Set the current date for updatedOn
+    isActive: isActive !== undefined ? isActive : true,
+    updatedBy: updatedBy || "system",
+    updatedOn: new Date(),
   };
 
   // Check if partnerId and partnerName are provided in the request body
@@ -362,7 +417,7 @@ export const deleteMotorPolicy = async (req, res) => {
         .json({ status: "error", message: "Motor Policy not found" });
     }
 
-    deletedForm.isActive = false; // Soft delete by marking isActive as false
+    deletedForm.isActive = false;
     await deletedForm.save();
 
     res.status(200).json({
