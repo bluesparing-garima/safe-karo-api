@@ -142,7 +142,7 @@ export const updateMotorPolicyPayment = async (req, res) => {
     //     .status(400)
     //     .json({ message: "Invalid ID", success: false, status: "error" });
     // }
-
+    //Check POlicyId
     const existingProfile = await motorPolicyPayment.findOne({
       policyId: req.params.policyId,
     });
