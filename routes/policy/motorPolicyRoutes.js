@@ -7,13 +7,14 @@ import {
   updateMotorPolicy,
   deleteMotorPolicy,
   validatePolicyNumber,
-  getMotorPolicyWithPaymentDetails
+  getMotorPolicyWithPaymentDetails,
+  getMotorPolicyByPolicyId
 } from '../../controller/policyController/motorPolicyController.js';
-
 const router = express.Router();
 
 router.post('/', logActivity, createMotorPolicy);
 router.get('/', logActivity, getMotorPolicies);
+router.get('/policyId/:policyId',logActivity,getMotorPolicyByPolicyId)
 router.get('/partner/:partnerId', logActivity, getMotorPolicyByPartnerId);
 router.put('/:id', logActivity, updateMotorPolicy);
 router.delete('/:id', logActivity, deleteMotorPolicy);
