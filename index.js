@@ -5,10 +5,12 @@ import cors from "cors";
 import connectDB from "./config/connectdb.js";
 import userRoutes from "./routes/userRoutes.js";
 // middleware
-import { requestLogger, handleInvalidRoutes } from './middlewares/requestLogger.js';
+import {
+  requestLogger,
+  handleInvalidRoutes,
+} from "./middlewares/requestLogger.js";
 
 import assigneeRolesRouters from "./routes/adminRoutes/userRolesRoutes.js";
-import motorPolicyRoutes from "./routes/policy/motorPolicyRoutes.js";
 import policyTypeRoutes from "./routes/adminRoutes/policyTypeRoutes.js";
 import caseTypeRoutes from "./routes/adminRoutes/caseTypeRoutes.js";
 import addRolesRoutes from "./routes/adminRoutes/rolesRoutes.js";
@@ -17,7 +19,7 @@ import payOutExcelRoutes from "./routes/adminRoutes/payOutExcelRoutes.js";
 import fileUpload from "express-fileupload";
 import payInRoutes from "./routes/adminRoutes/payInRoutes.js";
 import vehicleType from "./routes/adminRoutes/productSubTypeRoutes.js";
-import partnerRoutes from './routes/adminRoutes/partnerRoutes.js';
+import partnerRoutes from "./routes/adminRoutes/partnerRoutes.js";
 import productName from "./routes/adminRoutes/productRoutes.js";
 import company from "./routes/adminRoutes/companyRoutes.js";
 import broker from "./routes/adminRoutes/brokerRoutes.js";
@@ -34,7 +36,10 @@ import agentDashboardRoutes from "./routes/dashboardRoutes/agentDashboardRoutes.
 // import policyTimerManageRoutes from './routes/policyTimerManageRoute.js';
 import activityLogRoutes from "./routes/adminRoutes/activityLogRoutes.js";
 
-//agentController Routes.
+// Motor policy routes
+import motorPolicyRoutes from "./routes/policy/motorPolicyRoutes.js";
+import motorPolicyPayment from "./routes/policy/motorPolicyPaymentRoutes.js";
+// AgentController Routes.
 import leadGenerate from "./routes/agentRoutes/leadGenerateRoutes.js";
 import leadQuotation from "./routes/agentRoutes/leadQuotationRoutes.js";
 import leadPayment from "./routes/agentRoutes/leadPaymentRoutes.js";
@@ -45,7 +50,6 @@ const DATABASE_URL = process.env.DATEBASE_URL;
 
 // CORS Policy
 app.use(cors());
-
 
 // if deployed successfully
 app.get("/", (req, res) => {
@@ -77,6 +81,9 @@ app.use("/api/user-roles", assigneeRolesRouters);
 // motor policy Routes
 app.use("/api/policy/motor", motorPolicyRoutes);
 
+// motor policy payment Routes
+app.use("/api/policy/motor/payment", motorPolicyPayment);
+
 //create new Policy Routes
 app.use("/api/policy-type", policyTypeRoutes);
 
@@ -105,7 +112,7 @@ app.use("/api/product-type", vehicleType);
 app.use("/api/product", productName);
 
 // Use the partner routes
-app.use('/api/partner', partnerRoutes);
+app.use("/api/partner", partnerRoutes);
 
 // Company Name's
 app.use("/api/company", company);
