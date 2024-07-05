@@ -177,7 +177,7 @@ export const getMotorPolicies = async (req, res) => {
 export const getMotorPolicyByPolicyId = async (req, res) => {
   try {
     const { policyId } = req.params;
-    const policies = await MotorPolicyModel.find({ _id:policyId });
+    const policies = await MotorPolicyModel.findById({ _id:policyId });
 
     if (policies.length === 0) {
       return res.status(404).json({
