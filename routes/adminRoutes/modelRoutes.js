@@ -2,6 +2,7 @@ import express from "express";
 import {
   createModel,
   getAllModels,
+  validateModel,
   getModelById,
   updateModel,
   deleteModel,
@@ -14,6 +15,9 @@ router.post("/", logActivity, createModel);
 
 // Get all model names
 router.get("/", logActivity, getAllModels);
+
+// validate the model
+router.get("/validate-model/:model", logActivity, validateModel);
 
 // Get model  by ID
 router.get("/:id", logActivity, getModelById);

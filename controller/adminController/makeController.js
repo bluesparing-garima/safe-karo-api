@@ -1,5 +1,5 @@
 import MakeModel from "../../models/adminModels/makeSchema.js";
-
+import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
 // Create a new make
 const createMake = async (req, res) => {
   try {
@@ -53,6 +53,33 @@ const getAllMakes = async (req, res) => {
   }
 };
 
+// Check make exist or not.
+export const validateMake = async (req, res) => {
+  try {
+    const { make } = req.params;
+    const makeExists = await MotorPolicyModel.exists({
+      make,
+    });
+    if (makeExists) {
+      return res.status(200).json({
+        message: `make already exists`,
+        exist: true,
+        status: "error",
+      });
+    } else {
+      return res.status(200).json({
+        message: `make does not exist`,
+        exist: false,
+        status: "success",
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      message: "Error checking make",
+      error: error.message,
+    });
+  }
+};
 // Get make by ID
 const getMakeById = async (req, res) => {
   try {
@@ -143,10 +170,4 @@ const deleteMake = async (req, res) => {
   }
 };
 
-export {
-  createMake,
-  getAllMakes,
-  getMakeById,
-  updateMake,
-  deleteMake,
-};
+export { createMake, getAllMakes, getMakeById, updateMake, deleteMake };
