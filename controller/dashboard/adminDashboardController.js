@@ -81,10 +81,10 @@ export const getDashboardCount = async (req, res) => {
 
     const formattedBookingCounts = {};
     let totalBookingRequest = 0;
-    bookingCounts.forEach(booking => {
-      formattedBookingCounts[booking._id] = booking.count;
-      totalBookingRequest += booking.count;
-    });
+    // bookingCounts.forEach(booking => {
+    //   formattedBookingCounts[booking._id] = booking.count;
+    //   totalBookingRequest += booking.count;
+    // });
 
     // Prepare final response data
     const data = {
@@ -97,7 +97,7 @@ export const getDashboardCount = async (req, res) => {
         totalPayInCommission: commissionSums.length > 0 ? commissionSums[0].totalPayInCommission : 0,
         totalPayOutCommission: commissionSums.length > 0 ? commissionSums[0].totalPayOutCommission : 0,
         totalBookingRequest,
-        bookingStatusCounts: formattedBookingCounts,
+       // bookingStatusCounts: formattedBookingCounts,
       },
       status: "success"
     };
