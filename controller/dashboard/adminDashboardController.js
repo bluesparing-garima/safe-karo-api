@@ -1,7 +1,7 @@
-import UserProfileModel from '../../models/adminModels/userProfileSchema.js';
-import MotorPolicyModel from '../../models/policyModel/motorpolicySchema.js';
-import MotorPolicyPaymentModel from '../../models/policyModel/motorPolicyPaymentSchema.js';
-import BookingRequest from '../../models/bookingModel/bookingRequestSchema.js';
+import UserProfileModel from "../../models/adminModels/userProfileSchema.js";
+import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
+import MotorPolicyPaymentModel from "../../models/policyModel/motorPolicyPaymentSchema.js";
+import BookingRequest from "../../models/bookingModel/bookingRequestSchema.js";
 
 // Controller function to get dashboard count
 export const getDashboardCount = async (req, res) => {
@@ -13,30 +13,33 @@ export const getDashboardCount = async (req, res) => {
           normalizedRole: {
             $switch: {
               branches: [
-                { case: { $eq: ['$role', 'RM'] }, then: 'Relationship Manager' },
+                {
+                  case: { $eq: ["$role", "RM"] },
+                  then: "Relationship Manager",
+                },
               ],
-              default: '$role'
-            }
-          }
-        }
+              default: "$role",
+            },
+          },
+        },
       },
-      { $group: { _id: '$normalizedRole', count: { $sum: 1 } } },
+      { $group: { _id: "$normalizedRole", count: { $sum: 1 } } },
     ]);
 
     const formattedRoleCounts = {};
-    roleCounts.forEach(role => {
+    roleCounts.forEach((role) => {
       formattedRoleCounts[role._id] = role.count;
     });
 
     // Count policies by category
     const policyCounts = await MotorPolicyModel.aggregate([
-      { $group: { _id: '$category', count: { $sum: 1 } } },
+      { $group: { _id: "$category", count: { $sum: 1 } } },
       {
         $group: {
           _id: null,
-          totalNetPremium: { $sum: '$netPremium' },
-          totalFinalPremium: { $sum: '$finalPremium' },
-          categories: { $push: { category: '$_id', count: '$count' } },
+          totalNetPremium: { $sum: "$netPremium" },
+          totalFinalPremium: { $sum: "$finalPremium" },
+          categories: { $push: { category: "$_id", count: "$count" } },
         },
       },
       {
@@ -51,7 +54,7 @@ export const getDashboardCount = async (req, res) => {
 
     const formattedPolicyCounts = {};
     if (policyCounts.length > 0) {
-      policyCounts[0].categories.forEach(policy => {
+      policyCounts[0].categories.forEach((policy) => {
         formattedPolicyCounts[policy.category] = policy.count;
       });
     }
@@ -61,8 +64,8 @@ export const getDashboardCount = async (req, res) => {
       {
         $group: {
           _id: null,
-          totalPayInCommission: { $sum: '$payInCommission' },
-          totalPayOutCommission: { $sum: '$payOutCommission' },
+          totalPayInCommission: { $sum: "$payInCommission" },
+          totalPayOutCommission: { $sum: "$payOutCommission" },
         },
       },
       {
@@ -76,7 +79,7 @@ export const getDashboardCount = async (req, res) => {
 
     // Count booking requests by status
     const bookingCounts = await BookingRequest.aggregate([
-      { $group: { _id: '$bookingStatus', count: { $sum: 1 } } },
+      { $group: { _id: "$bookingStatus", count: { $sum: 1 } } },
     ]);
 
     const formattedBookingCounts = {};
@@ -92,20 +95,28 @@ export const getDashboardCount = async (req, res) => {
       data: {
         ...formattedRoleCounts,
         ...formattedPolicyCounts,
-        totalNetPremium: policyCounts.length > 0 ? policyCounts[0].totalNetPremium : 0,
-        totalFinalPremium: policyCounts.length > 0 ? policyCounts[0].totalFinalPremium : 0,
-        totalPayInCommission: commissionSums.length > 0 ? commissionSums[0].totalPayInCommission : 0,
-        totalPayOutCommission: commissionSums.length > 0 ? commissionSums[0].totalPayOutCommission : 0,
-        totalBookingRequest,
-       // bookingStatusCounts: formattedBookingCounts,
+        "Net Premium":
+          policyCounts.length > 0 ? policyCounts[0].totalNetPremium : 0,
+        "Final Premium":
+          policyCounts.length > 0 ? policyCounts[0].totalFinalPremium : 0,
+        "PayIn Commission":
+          commissionSums.length > 0
+            ? commissionSums[0].totalPayInCommission
+            : 0,
+        "PayOut Commission":
+          commissionSums.length > 0
+            ? commissionSums[0].totalPayOutCommission
+            : 0,
+        "Booking Request": totalBookingRequest,
+        // bookingStatusCounts: formattedBookingCounts,
       },
-      status: "success"
+      status: "success",
     };
 
     res.status(200).json(data);
   } catch (error) {
     res.status(500).json({
-      message: 'Something went wrong',
+      message: "Something went wrong",
       error: error.message,
     });
   }
