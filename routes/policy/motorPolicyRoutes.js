@@ -7,6 +7,7 @@ import {
   updateMotorPolicy,
   deleteMotorPolicy,
   validatePolicyNumber,
+  validateVehicleNumber,
   getMotorPolicyWithPaymentDetails,
   getMotorPolicyByPolicyId
 } from '../../controller/policyController/motorPolicyController.js';
@@ -19,6 +20,7 @@ router.get('/partner/:partnerId', logActivity, getMotorPolicyByPartnerId);
 router.put('/:id', logActivity, updateMotorPolicy);
 router.delete('/:id', logActivity, deleteMotorPolicy);
 router.get('/validate-policy-number', logActivity, validatePolicyNumber);
+router.get('/validate-vehicle-number', logActivity, validateVehicleNumber);
 router.get('/payment-details/:policyId', logActivity, getMotorPolicyWithPaymentDetails);
 
 export default router;
