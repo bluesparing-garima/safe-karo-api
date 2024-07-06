@@ -15,8 +15,13 @@ const router = express.Router();
 
 router.post("/", logActivity, createMotorPolicy);
 router.get("/", logActivity, getMotorPolicies);
+
+
+router.get("/validatePolicyNumber", logActivity, validatePolicyNumber);
+
 router.get("/policyId/:policyId", logActivity, getMotorPolicyByPolicyId);
 router.get("/partner/:partnerId", logActivity, getMotorPolicyByPartnerId);
+
 router.put("/:id", logActivity, updateMotorPolicy);
 router.delete("/:id", logActivity, deleteMotorPolicy);
 router.get("/validatePolicyNumber", logActivity, validatePolicyNumber);

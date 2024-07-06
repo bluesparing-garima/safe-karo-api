@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 
 const DocumentSchema = new mongoose.Schema({
-  docName: { type: String },
-  file: { type: String},
+  docName: { type: String, trim: true },
+  file: { type: String, trim: true },
 });
 
 const userProfileSchema = new mongoose.Schema({
@@ -16,11 +16,11 @@ const userProfileSchema = new mongoose.Schema({
   accountHolderName: { type: String, trim: true },
   accountNumber: { type: String, trim: true },
   salary: { type: Number, trim: true },
-  joiningDate:{type:String, trim:true},
-  
+  joiningDate: { type: String, trim: true },
+
   // fields which are in partners
   password: { type: String, trim: true },
-  originalPassword: { type: String,trim:true },
+  originalPassword: { type: String, trim: true },
   wallet: { type: Number, trim: true, default: 0 },
 
   // fields which are common.

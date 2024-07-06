@@ -1,4 +1,5 @@
 import BookingRequestModel from "../../models/bookingModel/bookingRequestSchema.js";
+import MotorPolicyModel from  '../../models/policyModel/motorpolicySchema.js';
 
 // Helper function to check for missing fields
 const getMissingFields = (fields, requiredFields) => {
@@ -146,6 +147,32 @@ export const getAllBookingRequests = async (req, res) => {
       .json({ message: "Error retrieving bookings", error: error.message });
   }
 };
+// Get motorpolicy by bookingId
+export const getBookingRequestsByBookingId = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const policies = await BookingRequestModel.findById({ _id:bookingId });
+
+    if (policies.length === 0) {
+      return res.status(404).json({
+        message: `No BookingRequest found for this bookingId ${bookingId}`,
+        status: "success",
+      });
+    }
+
+    res.status(200).json({
+      message: "Motor Policies retrieved successfully.",
+      data: policies,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving motor policies",
+      error: error.message,
+    });
+  }
+};
+
 // Get booking requests by bookingCreatedBy
 export const getBookingRequestsByCreatedBy = async (req, res) => {
   try {

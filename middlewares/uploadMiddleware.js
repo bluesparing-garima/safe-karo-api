@@ -35,15 +35,15 @@ const upload = multer({
   storage,
   limits: { fileSize: 1024 * 1024 * 5 }, // Limit file size to 5MB
   fileFilter,
-}).any(); // Accept any type of file
+}).any(); 
 
-// Middleware function to handle file upload
+
 const uploadMiddleware = (req, res, next) => {
   upload(req, res, (err) => {
     if (err) {
       return res.status(400).json({ message: err.message });
     }
-    next(); // Proceed to the next middleware or route handler
+    next();
   });
 };
 
