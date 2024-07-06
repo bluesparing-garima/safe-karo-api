@@ -31,33 +31,42 @@ export const getDashboardCount = async (req, res) => {
       formattedRoleCounts[role._id] = role.count;
     });
 
-    // Count policies by category
+    // Count policies by category and calculate net and final premiums
     const policyCounts = await MotorPolicyModel.aggregate([
-      { $group: { _id: "$category", count: { $sum: 1 } } },
+      {
+        $group: {
+          _id: {
+            $toLower: "$category",
+          },
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const netPremiums = await MotorPolicyModel.aggregate([
       {
         $group: {
           _id: null,
-          totalNetPremium: { $sum: "$netPremium" },
-          totalFinalPremium: { $sum: "$finalPremium" },
-          categories: { $push: { category: "$_id", count: "$count" } },
+          NetPremium: { $sum: "$netPremium" },
+          FinalPremium: { $sum: "$finalPremium" },
         },
       },
       {
         $project: {
           _id: 0,
-          totalNetPremium: 1,
-          totalFinalPremium: 1,
-          categories: 1,
+          NetPremium: 1,
+          FinalPremium: 1,
         },
       },
     ]);
 
     const formattedPolicyCounts = {};
-    if (policyCounts.length > 0) {
-      policyCounts[0].categories.forEach((policy) => {
-        formattedPolicyCounts[policy.category] = policy.count;
-      });
-    }
+    policyCounts.forEach((policy) => {
+      formattedPolicyCounts[policy._id] = policy.count;
+    });
+    const netPremium = netPremiums.length > 0 ? netPremiums[0].NetPremium : 0;
+    const finalPremium =
+      netPremiums.length > 0 ? netPremiums[0].FinalPremium : 0;
 
     // Sum payInCommission and payOutCommission
     const commissionSums = await MotorPolicyPaymentModel.aggregate([
@@ -84,10 +93,10 @@ export const getDashboardCount = async (req, res) => {
 
     const formattedBookingCounts = {};
     let totalBookingRequest = 0;
-    // bookingCounts.forEach(booking => {
-    //   formattedBookingCounts[booking._id] = booking.count;
-    //   totalBookingRequest += booking.count;
-    // });
+    bookingCounts.forEach((booking) => {
+      formattedBookingCounts[booking._id] = booking.count;
+      totalBookingRequest += booking.count;
+    });
 
     // Prepare final response data
     const data = {
@@ -95,10 +104,8 @@ export const getDashboardCount = async (req, res) => {
       data: {
         ...formattedRoleCounts,
         ...formattedPolicyCounts,
-        "Net Premium":
-          policyCounts.length > 0 ? policyCounts[0].totalNetPremium : 0,
-        "Final Premium":
-          policyCounts.length > 0 ? policyCounts[0].totalFinalPremium : 0,
+        "Net Premium": netPremium,
+        "Final Premium": finalPremium,
         "PayIn Commission":
           commissionSums.length > 0
             ? commissionSums[0].totalPayInCommission
@@ -108,7 +115,8 @@ export const getDashboardCount = async (req, res) => {
             ? commissionSums[0].totalPayOutCommission
             : 0,
         "Booking Request": totalBookingRequest,
-        // bookingStatusCounts: formattedBookingCounts,
+        totalBookingRequest,
+        ...formattedBookingCounts,
       },
       status: "success",
     };
