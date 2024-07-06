@@ -161,7 +161,7 @@ export const createPartner = async (req, res) => {
       wallet,
       joiningDate = "",
       document = "",
-      role = "Agent",
+      role = "Partner",
       createdBy = "Admin",
       isActive = true,
     } = req.body;

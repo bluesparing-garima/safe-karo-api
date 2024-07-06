@@ -207,9 +207,15 @@ export const getUserProfilesByRole = async (req, res) => {
     const userProfile = await UserProfileModel.find({
       role: { $in: searchRoles },
     });
+
+    const transformedUserProfile = userProfile.map(profile => ({
+      ...profile.toObject(),
+      role: profile.role.toLowerCase()
+    }));
+
     res.status(200).json({
       message: "User profiles retrieved successfully",
-      data: userProfile,
+      data: transformedUserProfile,
     });
   } catch (error) {
     res.status(500).json({
@@ -218,6 +224,7 @@ export const getUserProfilesByRole = async (req, res) => {
     });
   }
 };
+
 
 // get user profile by ID
 export const getUserProfileById = async (req, res) => {
@@ -265,7 +272,7 @@ export const updateUserProfile = async (req, res) => {
     );
 
     const updatedUserData = { ...updatedData };
-    delete updatedUserData.partnerId; // Remove partnerId from the data to prevent updating it
+    delete updatedUserData.partnerId;
 
     const updatedUser = await UserModel.findOneAndUpdate(
       { email: updatedData.email },

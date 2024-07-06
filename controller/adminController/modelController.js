@@ -1,4 +1,5 @@
 import Model from "../../models/adminModels/modelSchema.js";
+import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
 
 // Create a new model
 const createModel = async (req, res) => {
@@ -13,7 +14,7 @@ const createModel = async (req, res) => {
     }
 
     const newmodel = new Model({
-        makeId,
+      makeId,
       makeName,
       modelName,
       createdBy,
@@ -55,6 +56,34 @@ const getAllModels = async (req, res) => {
   }
 };
 
+// Check Model exist or not.
+export const validateModel = async (req, res) => {
+  try {
+    const { model } = req.params;
+    const modelExists = await MotorPolicyModel.exists({
+      model,
+    });
+    if (modelExists) {
+      return res.status(200).json({
+        message: `model already exists`,
+        exist: true,
+        status: "success",
+      });
+    } else {
+      return res.status(200).json({
+        message: `model does not exist`,
+        exist: false,
+        status: "success",
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      message: "Error checking model",
+      error: error.message,
+    });
+  }
+};
+
 // Get model by ID
 const getModelById = async (req, res) => {
   try {
@@ -84,7 +113,7 @@ const getModelById = async (req, res) => {
 const updateModel = async (req, res) => {
   try {
     const { id } = req.params;
-    const { makeId,makeName,modelName, updatedBy, isActive } = req.body;
+    const { makeId, makeName, modelName, updatedBy, isActive } = req.body;
 
     // Check if model exists
     const existingModel = await Model.findById(id);
@@ -147,10 +176,4 @@ const deleteModel = async (req, res) => {
   }
 };
 
-export {
-  createModel,
-  getAllModels,
-  getModelById,
-  updateModel,
-  deleteModel,
-};
+export { createModel, getAllModels, getModelById, updateModel, deleteModel };

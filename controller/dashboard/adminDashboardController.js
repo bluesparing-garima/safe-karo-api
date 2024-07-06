@@ -76,7 +76,7 @@ export const getDashboardCount = async (req, res) => {
 
     // Count booking requests by status
     const bookingCounts = await BookingRequest.aggregate([
-      { $group: { _id: '$status', count: { $sum: 1 } } },
+      { $group: { _id: '$bookingStatus', count: { $sum: 1 } } },
     ]);
 
     const formattedBookingCounts = {};

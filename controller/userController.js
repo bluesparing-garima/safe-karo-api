@@ -30,7 +30,7 @@ const userRegistration = async (req, res) => {
       phoneNumber,
       role,
       partnerId,
-      isActive: isActive !== undefined ? isActive : true,
+      isActive: isActive !== undefined ? isActive : false,
 
     });
 

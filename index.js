@@ -32,17 +32,17 @@ import userProfile from "./routes/adminRoutes/userProfileRoutes.js";
 import payOutRoute from "./routes/adminRoutes/payOutRoutes.js";
 import bookingRequestRoute from "./routes/bookingRequestRoutes/bookingRequestRoutes.js";
 import adminDashboard from "./routes/dashboardRoutes/adminDashboardRoute.js";
-import agentDashboardRoutes from "./routes/dashboardRoutes/agentDashboardRoutes.js";
+import partnerDashboardRoutes from "./routes/dashboardRoutes/partnerDashboardRoutes.js";
 // import policyTimerManageRoutes from './routes/policyTimerManageRoute.js';
 import activityLogRoutes from "./routes/adminRoutes/activityLogRoutes.js";
 
 // Motor policy routes
 import motorPolicyRoutes from "./routes/policy/motorPolicyRoutes.js";
 import motorPolicyPayment from "./routes/policy/motorPolicyPaymentRoutes.js";
-// AgentController Routes.
-import leadGenerate from "./routes/agentRoutes/leadGenerateRoutes.js";
-import leadQuotation from "./routes/agentRoutes/leadQuotationRoutes.js";
-import leadPayment from "./routes/agentRoutes/leadPaymentRoutes.js";
+// PartnerController Routes.
+import leadGenerate from "./routes/partnerRoutes/leadGenerateRoutes.js";
+import leadQuotation from "./routes/partnerRoutes/leadQuotationRoutes.js";
+import leadPayment from "./routes/partnerRoutes/leadPaymentRoutes.js";
 
 const app = express();
 const port = process.env.PORT;
@@ -143,8 +143,8 @@ app.use("/api/booking-request", bookingRequestRoute);
 // admin dashboard
 app.use("/api/dashboard", adminDashboard);
 
-// agent dashboard
-app.use("/api/dashboard", agentDashboardRoutes);
+// partner dashboard
+app.use("/api/dashboard", partnerDashboardRoutes);
 
 // timeManager
 // app.use('/api/policyTimerManage',policyTimerManageRoutes);
@@ -154,7 +154,7 @@ app.use("/api/activityLog", activityLogRoutes);
 
 // ---------------------------------- Lead Routes --------------------------------------//
 
-//Agent lead generate.
+//Partner lead generate.
 app.use("/api/lead-generate", leadGenerate);
 
 // lead Quotation.
