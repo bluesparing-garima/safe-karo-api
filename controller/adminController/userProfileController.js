@@ -123,6 +123,7 @@ export const createUserProfile = async (req, res) => {
       name: fullName,
       email,
       password: hashedPassword,
+      partnerCode:userProfile.partnerId,
       phoneNumber,
       role,
       isActive: isActive !== undefined ? isActive : true,

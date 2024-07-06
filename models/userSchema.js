@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema({
   phoneNumber: { type: Number, required: true},
   role: { type: String, required: true}, 
   partnerId:{type:String,required:true},
+  partnerCode:{type:String,trim:true,unique:true},
   createdOn: { type: Date, default: Date.now },
   lastLogin: { type: Date, default: Date.now },
   isActive: { type: Boolean, default: true },
