@@ -80,7 +80,9 @@ export const createUserProfile = async (req, res) => {
     }
 
     const existingUserInUserModel = await UserModel.findOne({ email });
-    const existingUserInUserProfileModel = await UserProfileModel.findOne({ email });
+    const existingUserInUserProfileModel = await UserProfileModel.findOne({
+      email,
+    });
 
     if (existingUserInUserModel || existingUserInUserProfileModel) {
       return res.status(400).json({
@@ -114,13 +116,13 @@ export const createUserProfile = async (req, res) => {
       createdBy,
       isActive: isActive !== undefined ? isActive : true,
       partnerId,
-      originalPassword: password, 
+      originalPassword: password,
     });
-      
+
     const newUser = new UserModel({
       name: fullName,
       email,
-      password: hashedPassword, 
+      password: hashedPassword,
       phoneNumber,
       role,
       isActive: isActive !== undefined ? isActive : true,
@@ -153,13 +155,15 @@ export const checkEmailExists = async (req, res) => {
     }
 
     const existingUserInUserModel = await UserModel.findOne({ email });
-    const existingUserInUserProfileModel = await UserProfileModel.findOne({ email });
+    const existingUserInUserProfileModel = await UserProfileModel.findOne({
+      email,
+    });
 
     if (existingUserInUserModel || existingUserInUserProfileModel) {
       return res.status(200).json({
         message: "Email already exists",
         emailExists: true,
-        status: "success"
+        status: "success",
       });
     } else {
       return res.status(200).json({
@@ -204,13 +208,17 @@ export const getUserProfilesByRole = async (req, res) => {
       role === "RM" || role === "Relationship Manager"
         ? ["RM", "Relationship Manager"]
         : [role];
+    
+    // Create case-insensitive regular expressions for each role
+    const regexRoles = searchRoles.map((r) => new RegExp(`^${r}$`, 'i'));
+
     const userProfile = await UserProfileModel.find({
-      role: { $in: searchRoles },
+      role: { $in: regexRoles },
     });
 
-    const transformedUserProfile = userProfile.map(profile => ({
+    const transformedUserProfile = userProfile.map((profile) => ({
       ...profile.toObject(),
-      role: profile.role.toLowerCase()
+      role: profile.role.toLowerCase(),
     }));
 
     res.status(200).json({
@@ -248,7 +256,7 @@ export const getUserProfileById = async (req, res) => {
   }
 };
 
-// update userProfile
+// Update userProfile
 export const updateUserProfile = async (req, res) => {
   try {
     const { password, ...rest } = req.body;
@@ -296,11 +304,10 @@ export const updateUserProfile = async (req, res) => {
   }
 };
 
-
 // Delete (deactivate) a user profile by ID
 export const deleteUserProfile = async (req, res) => {
   try {
-    const deletedProfile = await UserProfileModel.findByIdAndDelete(
+    const deletedProfile = await UserProfileModel.findByIdAndUpdate(
       req.params.id,
       { isActive: false },
       { new: true }
