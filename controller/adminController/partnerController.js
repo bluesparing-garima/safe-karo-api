@@ -52,7 +52,7 @@ export const uploadPartnerExcel = async (req, res) => {
     const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
     const extractedData = worksheet.map((row) => ({
       role: row.role || "",
-      branch: row.branch || "",
+      branchName: row.branchName || "",
       fullName: row.fullName || row["Full Name"] || "",
       phoneNumber: row.phoneNumber || "",
       email: row.email || "", // engine = cc
@@ -87,6 +87,7 @@ export const uploadPartnerExcel = async (req, res) => {
 
         const userProfile = new UserProfileModel({
           role: record.role,
+          branchName: record.branchName,
           fullName: record.fullName,
           phoneNumber: record.phoneNumber,
           email: record.email,
