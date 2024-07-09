@@ -165,7 +165,6 @@ export const createMotorPolicy = async (req, res) => {
         payOutCommission: 0,
         createdBy: savedMotorPolicy.createdBy,
       });
-      //console.log("newMotorPolicyPayment", newMotorPolicyPayment);
       const savedMotorPolicyPayment = await newMotorPolicyPayment.save();
       //console.log("savedMotorPolicyPayment", savedMotorPolicyPayment);
       if (savedMotorPolicy) {
