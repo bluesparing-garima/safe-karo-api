@@ -166,7 +166,6 @@ export const createMotorPolicy = async (req, res) => {
         createdBy: savedMotorPolicy.createdBy,
       });
       const savedMotorPolicyPayment = await newMotorPolicyPayment.save();
-      //console.log("savedMotorPolicyPayment", savedMotorPolicyPayment);
       if (savedMotorPolicy) {
         const existingBookingRequest = await BookingRequestModel.findOne({
           policyNumber,
