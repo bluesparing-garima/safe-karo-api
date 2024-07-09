@@ -44,7 +44,7 @@ import leadGenerate from "./routes/partnerRoutes/leadGenerateRoutes.js";
 import leadQuotation from "./routes/partnerRoutes/leadQuotationRoutes.js";
 import leadPayment from "./routes/partnerRoutes/leadPaymentRoutes.js";
 import testRoutes from "./routes/testRoutes.js";
-
+import path from "path"; // Import path to resolve the directory path
 const app = express();
 const port = process.env.PORT;
 const DATABASE_URL = process.env.DATEBASE_URL;
@@ -52,7 +52,7 @@ const DATABASE_URL = process.env.DATEBASE_URL;
 // CORS Policy
 app.use(cors());
 
-app.use('/api', testRoutes);
+app.use("/api", testRoutes);
 
 // if deployed successfully
 app.get("/", (req, res) => {
@@ -167,7 +167,14 @@ app.use("/api/lead-quotation", leadQuotation);
 app.use("/api/lead-payment", leadPayment);
 
 // Handle invalid routes
-app.use(handleInvalidRoutes);
+//app.use(handleInvalidRoutes);
+
+
+//Add for acess the folder
+
+// Serve static files from the uploads directory
+const __dirname = path.resolve();
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);

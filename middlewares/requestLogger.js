@@ -1,4 +1,5 @@
-import { createActivityLog } from '../controller/adminController/activityLogController.js';
+import { createActivityLog } from "../controller/adminController/activityLogController.js";
+import path from "path";
 
 const requestLogger = async (req, res, next) => {
   const logData = {
@@ -13,16 +14,27 @@ const requestLogger = async (req, res, next) => {
   };
 
   // Add response logging
-  res.on('finish', async () => {
+  res.on("finish", async () => {
     logData.statusCode = res.statusCode;
     logData.response = res.statusMessage || "";
-    await createActivityLog(logData);
+
+    // Check if the endpoint accesses files in the 'uploads' folder
+    if (req.originalUrl.startsWith("/uploads")) {
+      logData.endpoint = "File Access: " + req.originalUrl; // Update endpoint for file access
+    }
+
+    try {
+      await createActivityLog(logData);
+    } catch (error) {
+      console.error("Error logging activity:", error);
+    }
   });
 
   next();
 };
 
 const handleInvalidRoutes = async (req, res) => {
+
   const logData = {
     endpoint: req.originalUrl,
     statusCode: 404,
@@ -34,7 +46,12 @@ const handleInvalidRoutes = async (req, res) => {
     createdOn: new Date(),
   };
 
-  await createActivityLog(logData);
+  try {
+    await createActivityLog(logData);
+  } catch (error) {
+    console.error("Error logging invalid route activity:", error);
+  }
+
   res.status(404).json({ status: "failed", message: "Route not found" });
 };
 
