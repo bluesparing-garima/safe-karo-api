@@ -143,6 +143,31 @@ export const createMotorPolicy = async (req, res) => {
       });
     } else {
       const savedMotorPolicy = await newMotorPolicy.save();
+
+      const newMotorPolicyPayment = new MotorPolicyPaymentModel({
+        partnerId: savedMotorPolicy.partnerId,
+        policyId: savedMotorPolicy._id,
+        policyNumber: savedMotorPolicy.policyNumber,
+        bookingId: savedMotorPolicy.bookingId,
+        od: savedMotorPolicy.od,
+        tp: savedMotorPolicy.tp,
+        netPremium: savedMotorPolicy.netPremium,
+        finalPremium: savedMotorPolicy.finalPremium,
+        payInODPercentage: 0,
+        payInTPPercentage: 0,
+        payInODAmount: 0,
+        payInTPAmount: 0,
+        payOutODPercentage: 0,
+        payOutTPPercentage: 0,
+        payOutODAmount: 0,
+        payOutTPAmount: 0,
+        payInCommission: 0,
+        payOutCommission: 0,
+        createdBy: savedMotorPolicy.createdBy,
+      });
+      //console.log("newMotorPolicyPayment", newMotorPolicyPayment);
+      const savedMotorPolicyPayment = await newMotorPolicyPayment.save();
+      //console.log("savedMotorPolicyPayment", savedMotorPolicyPayment);
       if (savedMotorPolicy) {
         const existingBookingRequest = await BookingRequestModel.findOne({
           policyNumber,
@@ -188,7 +213,7 @@ export const uploadFilesAndData = (req, res) => {
     if (!fullName || !email || !partnerId) {
       return res.status(400).json({ message: "Name and email are required!" });
     }
-    
+
     // const fileDetails = Object.keys(req.files).map(key => {
     //     return req.files[key].map(file => ({
     //       fieldname: file.fieldname,
@@ -203,7 +228,6 @@ export const uploadFilesAndData = (req, res) => {
       });
       return acc;
     }, {});
- 
 
     res.status(200).json({
       message: "Files and data uploaded successfully!",
