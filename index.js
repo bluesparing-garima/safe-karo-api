@@ -43,6 +43,7 @@ import motorPolicyPayment from "./routes/policy/motorPolicyPaymentRoutes.js";
 import leadGenerate from "./routes/partnerRoutes/leadGenerateRoutes.js";
 import leadQuotation from "./routes/partnerRoutes/leadQuotationRoutes.js";
 import leadPayment from "./routes/partnerRoutes/leadPaymentRoutes.js";
+import testRoutes from "./routes/testRoutes.js";
 
 const app = express();
 const port = process.env.PORT;
@@ -50,6 +51,8 @@ const DATABASE_URL = process.env.DATEBASE_URL;
 
 // CORS Policy
 app.use(cors());
+
+app.use('/api', testRoutes);
 
 // if deployed successfully
 app.get("/", (req, res) => {

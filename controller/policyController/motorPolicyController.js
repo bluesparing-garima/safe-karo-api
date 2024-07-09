@@ -1,12 +1,23 @@
 import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
 import BookingRequestModel from "../../models/bookingModel/bookingRequestSchema.js";
 import MotorPolicyPaymentModel from "../../models/policyModel/motorPolicyPaymentSchema.js";
-import mongoose from "mongoose";
-import motorpolicySchema from "../../models/policyModel/motorpolicySchema.js";
+import multer from "multer";
+import upload from "../../middlewares/uploadMiddleware.js";
 
 // Create Motor Policy
 export const createMotorPolicy = async (req, res) => {
-  try {
+  // upload.array('rcback', 10)(req, res, (err) => {
+  console.log(req.body);
+  console.log("out", req.files);
+  upload(req, res, async (err) => {
+    console.log("::", req.files);
+    if (err) {
+      return res.status(400).json({ message: err });
+    }
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ message: "No files selected!" });
+    }
+
     const {
       policyStatus,
       partnerId,
@@ -47,12 +58,29 @@ export const createMotorPolicy = async (req, res) => {
       finalPremium,
       paymentMode,
       policyCreatedBy,
-      documents,
+      rcFront,
+      rcBack,
+      survey,
+      previosPolicy,
+      puc,
+      fitness,
+      proposal,
+      currentPolicy,
+      other,
       productType,
       createdBy,
       isActive,
     } = req.body;
 
+    console.log(req.body);
+    const fileDetails = Object.keys(req.files).reduce((acc, key) => {
+      req.files[key].forEach((file) => {
+        acc[file.fieldname] = file.filename;
+      });
+      return acc;
+    }, {});
+
+    console.log(fileDetails);
     const newMotorPolicy = new MotorPolicyModel({
       policyStatus,
       partnerId: partnerId || "",
@@ -93,14 +121,22 @@ export const createMotorPolicy = async (req, res) => {
       finalPremium,
       paymentMode,
       policyCreatedBy,
-      documents,
+      fileDetails,
+      // rcFront,
+      // rcBack,
+      // survey,
+      // previosPolicy,
+      // puc,
+      // fitness,
+      // proposal,
+      // currentPolicy,
+      // other,
       productType,
       createdBy,
       isActive: isActive !== undefined ? isActive : true, // Set default to true if not provided
       updatedBy: null, // Explicitly set updatedBy to null
       updatedOn: null, // Explicitly set updatedOn to null
     });
-
     // Check if the policyNumber already exists in MotorPolicy
     const existingMotorPolicy = await MotorPolicyModel.findOne({
       policyNumber,
@@ -112,6 +148,7 @@ export const createMotorPolicy = async (req, res) => {
         message: `Motor Policy with ${policyNumber} already exists.`,
       });
     } else {
+      console.log(newMotorPolicy);
       const savedMotorPolicy = await newMotorPolicy.save();
       if (savedMotorPolicy) {
         const existingBookingRequest = await BookingRequestModel.findOne({
@@ -141,11 +178,7 @@ export const createMotorPolicy = async (req, res) => {
         });
       }
     }
-  } catch (error) {
-    res
-      .status(500)
-      .json({ status: "error", success: true, message: error.message });
-  }
+  });
 };
 
 // Get Motor Policies
@@ -458,7 +491,15 @@ export const updateMotorPolicy = async (req, res) => {
     finalPremium,
     paymentMode,
     policyCreatedBy,
-    documents,
+    rcFront,
+    rcBack,
+    survey,
+    previosPolicy,
+    puc,
+    fitness,
+    proposal,
+    currentPolicy,
+    other,
     productType,
     isActive,
     updatedBy,
@@ -498,7 +539,15 @@ export const updateMotorPolicy = async (req, res) => {
     finalPremium,
     paymentMode,
     policyCreatedBy,
-    documents,
+    rcFront,
+    rcBack,
+    survey,
+    previosPolicy,
+    puc,
+    fitness,
+    proposal,
+    currentPolicy,
+    other,
     productType,
     relationshipManagerId,
     relationshipManagerName,
