@@ -15,8 +15,6 @@ const router = express.Router();
 
 router.post("/", logActivity, createMotorPolicy);
 router.get("/", logActivity, getMotorPolicies);
-
-
 router.get("/validatePolicyNumber", logActivity, validatePolicyNumber);
 
 router.get("/policyId/:policyId", logActivity, getMotorPolicyByPolicyId);

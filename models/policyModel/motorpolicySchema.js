@@ -1,9 +1,9 @@
 import mongoose from "mongoose";
 
-const DocumentSchema = new mongoose.Schema({
-  docName: { type: String, required: true },
-  file: { type: String, required: true },
-});
+// const DocumentSchema = new mongoose.Schema({
+//   docName: { type: String, required: true },
+//   file: { type: String, required: true },
+// });
 
 const MotorPolicySchema = new mongoose.Schema({
   policyType: { type: String, trim: true }, // package
@@ -46,7 +46,16 @@ const MotorPolicySchema = new mongoose.Schema({
   bookingId: { type: String, default: "", trim: true },
   paymentDetails: { type: String, default: "", trim: true },
   productType: { type: String, default: "", trim: true },
-  documents: [DocumentSchema],
+  // documents: [DocumentSchema],
+  rcFront: { type: String, trim: true },
+  rcBack: { type: String, trim: true },
+  perviousPolicy: { type: String, trim: true },
+  survey: { type: String, trim: true },
+  puc: { type: String, trim: true },
+  fitness: { type: String, trim: true },
+  proposal: { type: String, trim: true },
+  currentPolicy: { type: String, trim: true },
+  other: { type: String, trim: true },
   createdBy: {
     type: String,
     required: true,
