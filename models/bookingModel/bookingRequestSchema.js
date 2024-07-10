@@ -1,11 +1,11 @@
 import mongoose from 'mongoose';
 
-const DocumentSchema = new mongoose.Schema({
-    docName: { 
-        type: String, 
-    },
-    file: { type: String},
-});
+// const DocumentSchema = new mongoose.Schema({
+//     docName: { 
+//         type: String, 
+//     },
+//     file: { type: String},
+// });
 
 const bookingRequestSchema = new mongoose.Schema({
     partnerId:{type:String,trim:true},
@@ -20,17 +20,15 @@ const bookingRequestSchema = new mongoose.Schema({
     productType: { type: String, trim: true },
     subCategory: { type: String, trim: true },
     companyName: { type: String, trim: true },
-    // documents: {
-    //     type: [DocumentSchema],
-    //     validate: {
-    //         validator: function(docs) {
-    //             return docs.some(doc => doc.docName === 'policyPDF');
-    //         },
-    //         message: 'At least one document must have docName "policyPDF"'
-    //     },
-    // },
-    // policyPDF:{type:String,trim:true},
-    documents:[DocumentSchema],
+    rcFront: { type: String, trim: true },
+    rcBack: { type: String, trim: true },
+    previousPolicy: { type: String, trim: true },
+    survey: { type: String, trim: true },
+    puc: { type: String, trim: true },
+    fitness: { type: String, trim: true },
+    proposal: { type: String, trim: true },
+    currentPolicy: { type: String, trim: true },
+    other: { type: String, trim: true },
     bookingStatus:{type:String,trim:true},
     bookingAcceptedBy:{type:String,trim:true},
     createdBy: { type: String, trim: true },

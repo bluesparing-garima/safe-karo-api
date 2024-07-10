@@ -1,68 +1,70 @@
 import leadGenerateModel from "../../models/partnerModels/leadGenerateSchema.js";
+import upload from "../../middlewares/uploadMiddleware.js";
 
-// Create a new lead
 const createNewLead = async (req, res) => {
-  const {
-    policyType,
-    category,
-    companyName,
-    caseType,
-    status,
-    documents,
-    remarks,
-    partnerId,
-    partnerName,
-    relationshipManagerId,
-    relationshipManagerName,
-    leadCreatedBy,
-    createdBy
-  } = req.body;
+  upload(req, res, async (err) => {
+    if (err) {
+      return res.status(400).json({ message: err.message });
+    }
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ message: "No files selected!" });
+    }
 
-  if (
-    !policyType ||
-    !category ||
-    !companyName ||
-    !caseType ||
-    !status ||
-    !partnerId ||
-    !createdBy
-  ) {
-    return res.status(400).json({ status: "failed", message: "Required fields are missing" });
-  }
+    try {
+      const {
+        policyType,
+        category,
+        companyName,
+        caseType,
+        status,
+        remarks,
+        partnerId,
+        partnerName,
+        relationshipManagerId,
+        relationshipManagerName,
+        leadCreatedBy,
+        createdBy,
+      } = req.body;
 
-  try {
-    const newLead = new leadGenerateModel({
-      policyType,
-      category,
-      companyName,
-      caseType,
-      status,
-      documents,
-      remarks,
-      partnerId: partnerId || "",
-      partnerName: partnerName || "",
-      relationshipManagerId: relationshipManagerId || "",
-      relationshipManagerName: relationshipManagerName || "",
-      leadCreatedBy,
-      createdBy: createdBy,
-      createdOn: new Date(),
-      isActive: true,
-    });
+      const fileDetails = Object.keys(req.files).reduce((acc, key) => {
+        req.files[key].forEach((file) => {
+          acc[file.fieldname] = file.filename;
+        });
+        return acc;
+      }, {});
+      const newLead = new leadGenerateModel({
+        policyType,
+        category,
+        companyName,
+        caseType,
+        status,
+        ...fileDetails,
+        remarks,
+        partnerId: partnerId || "",
+        partnerName: partnerName || "",
+        relationshipManagerId: relationshipManagerId || "",
+        relationshipManagerName: relationshipManagerName || "",
+        leadCreatedBy,
+        createdBy: createdBy,
+        createdOn: new Date(),
+        isActive: true,
+      });
 
-    const savedLead = await newLead.save();
+      const savedLead = await newLead.save();
 
-    res.status(200).json({
-      message: "New Lead created successfully",
-      data: savedLead,
-      status: "success",
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: "failed",
-      message: "Unable to create new lead",
-      error: error.message,
-    });
-  }
+      res.status(200).json({
+        message: "New Lead created successfully",
+        data: savedLead,
+        status: "success",
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: "failed",
+        message: "Unable to create new lead",
+        error: error.message,
+      });
+    }
+  });
 };
 
 // Get all leads
@@ -88,7 +90,7 @@ export const getleadsByCreatedBy = async (req, res) => {
   try {
     const { leadCreatedBy } = req.params;
     const leads = await leadGenerateModel.find({ leadCreatedBy });
-    
+
     if (leads.length === 0) {
       return res.status(404).json({
         message: `No lead found for leadCreatedBy: ${leadCreatedBy}`,
@@ -113,7 +115,7 @@ export const getLeadsByPartnerId = async (req, res) => {
   try {
     const { partnerId } = req.params;
     const leads = await leadGenerateModel.find({ partnerId });
-    
+
     if (leads.length === 0) {
       return res.status(404).json({
         message: `No leads found for partnerId: ${partnerId}`,
@@ -141,7 +143,9 @@ const getLeadById = async (req, res) => {
     // Check if lead exists
     const existingLead = await leadGenerateModel.findById(id);
     if (!existingLead) {
-      return res.status(404).json({ status: "failed", message: "Lead not found" });
+      return res
+        .status(404)
+        .json({ status: "failed", message: "Lead not found" });
     }
 
     res.status(200).json({
@@ -158,35 +162,86 @@ const getLeadById = async (req, res) => {
   }
 };
 
-// Update Lead
-const updateLead = async (req, res) => {
+// Accept Lead request
+export const acceptLeadRequest = async (req, res) => {
   try {
-    const { id } = req.params;
-    const updateData = req.body;
+    const existingLead = await leadGenerateModel.findById(req.params.id);
+    if (!existingLead) {
+      return res.status(404).json({ message: "Lead not found" });
+    }
 
-    // Check if Lead exists and update in one step
     const updatedLead = await leadGenerateModel.findByIdAndUpdate(
-      id,
-      updateData,
+      req.params.id,
+      req.body,
       { new: true }
     );
 
-    if (!updatedLead) {
-      return res.status(404).json({ status: "failed", message: "Lead not found" });
-    }
-
     res.status(200).json({
-      message: "Lead updated successfully",
+      message: "Lead Accepted successfully",
       data: updatedLead,
       status: "success",
     });
   } catch (error) {
     res.status(500).json({
-      status: "failed",
-      message: "Unable to update Lead",
+      message: "Error Accepting Lead",
       error: error.message,
     });
   }
+};
+
+// Update Lead
+const updateLead = async (req, res) => {
+  // Middleware to handle file uploads
+  upload(req, res, async (err) => {
+    if (err) {
+      return res.status(400).json({ message: err.message });
+    }
+    if (!req.files || Object.keys(req.files).length === 0) {
+      return res.status(400).json({ message: "No files selected!" });
+    }
+    try {
+      const updateData = req.body;
+
+      // Process uploaded files and add to updateData if available
+      const fileDetails = Object.keys(req.files).reduce((acc, key) => {
+        req.files[key].forEach((file) => {
+          acc[file.fieldname] = file.filename;
+        });
+        return acc;
+      }, {});
+
+      // Merge updateData with fileDetails
+      const updatedLeadData = {
+        ...updateData,
+        ...fileDetails,
+      };
+
+      // Find and update lead by ID
+      const updatedLead = await leadGenerateModel.findByIdAndUpdate(
+        req.params.id,
+        updatedLeadData,
+        { new: true }
+      );
+
+      if (!updatedLead) {
+        return res
+          .status(404)
+          .json({ status: "failed", message: "Lead not found" });
+      }
+
+      res.status(200).json({
+        message: "Lead updated successfully",
+        data: updatedLead,
+        status: "success",
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: "failed",
+        message: "Unable to update Lead",
+        error: error.message,
+      });
+    }
+  });
 };
 
 // Delete Lead
@@ -197,7 +252,9 @@ const deleteLead = async (req, res) => {
     // Check if Lead exists
     const existingLead = await leadGenerateModel.findById(id);
     if (!existingLead) {
-      return res.status(404).json({ status: "failed", message: "Lead not found" });
+      return res
+        .status(404)
+        .json({ status: "failed", message: "Lead not found" });
     }
 
     // Delete the lead

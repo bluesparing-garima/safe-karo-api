@@ -1,23 +1,15 @@
+import upload from "../../middlewares/uploadMiddleware.js";
 import BookingRequestModel from "../../models/bookingModel/bookingRequestSchema.js";
-import MotorPolicyModel from  '../../models/policyModel/motorpolicySchema.js';
+import fs from "fs";
+import path from "path";
 
-// Helper function to check for missing fields
-const getMissingFields = (fields, requiredFields) => {
-  return requiredFields.filter(
-    (field) =>
-      !fields.hasOwnProperty(field) ||
-      fields[field] === undefined ||
-      fields[field] === null
-  );
-};
-
-// Check if a policy number already exists
+// Function to check if the policy number already exists
 const checkPolicyNumberExist = async (policyNumber) => {
-  const existingBooking = await BookingRequestModel.findOne({ policyNumber });
-  return existingBooking !== null;
+  const booking = await BookingRequestModel.findOne({ policyNumber });
+  return !!booking;
 };
 
-// Create a new bookingRequest
+// Create Booking Request.
 export const createBookingRequest = async (req, res) => {
   try {
     const {
@@ -32,75 +24,86 @@ export const createBookingRequest = async (req, res) => {
       productType,
       subCategory,
       companyName,
-      documents,
       createdBy,
+      rcFront,
+      rcBack,
+      survey,
+      previosPolicy,
+      puc,
+      fitness,
+      proposal,
+      currentPolicy,
+      other,
       isActive,
       bookingCreatedBy,
       bookingAcceptedBy,
     } = req.body;
 
-    const requiredFields = [
-      "partnerId",
-      "partnerName",
-      "policyNumber",
-      "category",
-      "caseType",
-      "policyType",
-      "productType",
-      "companyName",
-      "createdBy",
-    ];
-    const missingFields = getMissingFields(req.body, requiredFields);
-    if (missingFields.length > 0) {
-      return res
-        .status(400)
-        .json({
-          message: `Missing required fields: ${missingFields.join(", ")}`,
-        });
-    }
-
     // Check if policy number already exists
     const policyExists = await checkPolicyNumberExist(policyNumber);
     if (policyExists) {
       return res.status(200).json({
-        message: `Policy number '${policyNumber}' already exists`,
+        message: `Policy number ${policyNumber} already exists`,
         status: "success",
       });
     }
 
-    // Create new booking if policy number doesn't exist
-    const newBooking = new BookingRequestModel({
-      partnerId,
-      partnerName,
-      relationshipManagerId,
-      relationshipManagerName,
-      policyNumber,
-      category,
-      caseType,
-      policyType,
-      productType,
-      subCategory,
-      companyName,
-      documents,
-      bookingCreatedBy,
-      bookingAcceptedBy,
-      bookingStatus:"requested",
-      createdBy,
-      isActive: isActive !== undefined ? isActive : true,
-    });
+    // Proceed with file uploads only if the policy number doesn't exist
+    upload(req, res, async (err) => {
+      if (err) {
+        return res.status(400).json({ message: err.message });
+      }
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ message: "No files selected!" });
+      }
 
-    await newBooking.save();
-    res
-      .status(200)
-      .json({
-        message: "Booking Request generated successfully",
-        data: newBooking,
-        status: "success",
-      });
+      try {
+        const fileDetails = Object.keys(req.files).reduce((acc, key) => {
+          req.files[key].forEach((file) => {
+            acc[file.fieldname] = file.filename;
+          });
+          return acc;
+        }, {});
+
+        // Create new booking if policy number doesn't exist
+        const newBooking = new BookingRequestModel({
+          partnerId,
+          partnerName,
+          relationshipManagerId,
+          relationshipManagerName,
+          policyNumber,
+          category,
+          caseType,
+          policyType,
+          productType,
+          subCategory,
+          companyName,
+          ...fileDetails,
+          bookingCreatedBy,
+          bookingAcceptedBy,
+          bookingStatus: "requested",
+          createdBy,
+          isActive: isActive !== undefined ? isActive : true,
+        });
+
+        await newBooking.save();
+        res.status(200).json({
+          message: "Booking Request generated successfully",
+          data: newBooking,
+          status: "success",
+        });
+      } catch (error) {
+        res.status(500).json({
+          message: "Error creating booking",
+          error: error.message,
+        });
+      }
+    });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error creating booking", error: error.message });
+    res.status(500).json({
+      message: "Error processing request",
+      error: error.message,
+    });
   }
 };
 
@@ -130,7 +133,6 @@ export const validatePolicyNumber = async (req, res) => {
   }
 };
 
-
 // Get all bookings
 export const getAllBookingRequests = async (req, res) => {
   try {
@@ -151,7 +153,7 @@ export const getAllBookingRequests = async (req, res) => {
 export const getBookingRequestsByBookingId = async (req, res) => {
   try {
     const { bookingId } = req.params;
-    const policies = await BookingRequestModel.findById({ _id:bookingId });
+    const policies = await BookingRequestModel.findById({ _id: bookingId });
 
     if (policies.length === 0) {
       return res.status(404).json({
@@ -178,7 +180,7 @@ export const getBookingRequestsByCreatedBy = async (req, res) => {
   try {
     const { bookingCreatedBy } = req.params;
     const bookings = await BookingRequestModel.find({ bookingCreatedBy });
-    
+
     if (bookings.length === 0) {
       return res.status(404).json({
         message: `No bookings found for bookingCreatedBy: ${bookingCreatedBy}`,
@@ -202,9 +204,10 @@ export const getBookingRequestsByCreatedBy = async (req, res) => {
 // Get booking requests by bookingAcceptedy
 export const getBookingRequestsByAcceptedBy = async (req, res) => {
   try {
+    console.log("Accept");
     const { bookingAcceptedBy } = req.params;
     const bookings = await BookingRequestModel.find({ bookingAcceptedBy });
-    
+
     if (bookings.length === 0) {
       return res.status(404).json({
         message: `No bookings found for bookingAcceptedeBy: ${bookingAcceptedBy}`,
@@ -230,7 +233,7 @@ export const getBookingRequestsByPartnerId = async (req, res) => {
   try {
     const { partnerId } = req.params;
     const bookings = await BookingRequestModel.find({ partnerId });
-    
+
     if (bookings.length === 0) {
       return res.status(404).json({
         message: `No bookings found for partnerId: ${partnerId}`,
@@ -251,27 +254,130 @@ export const getBookingRequestsByPartnerId = async (req, res) => {
   }
 };
 
-// Update a booking by ID
-export const updateBookingRequest = async (req, res) => {
+// Accept booking request
+export const acceptBookingRequest = async (req, res) => {
   try {
+    const existingBooking = await BookingRequestModel.findById(req.params.id);
+    if (!existingBooking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    console.log("req.body", req.body);
     const updatedBooking = await BookingRequestModel.findByIdAndUpdate(
       req.params.id,
       req.body,
       { new: true }
     );
-    if (!updatedBooking) {
-      return res.status(404).json({ message: "Booking not found" });
+
+    res.status(200).json({
+      message: "Booking Accepted successfully",
+      data: updatedBooking,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error Accepting booking",
+      error: error.message,
+    });
+  }
+};
+
+// Update a booking by ID
+export const updateBookingRequest = async (req, res) => {
+  upload(req, res, async (err) => {
+    if (err) {
+      return res.status(400).json({ message: err.message });
     }
-    res
-      .status(200)
-      .json({
+    if (!req.files || Object.keys(req.files).length === 0) {
+      return res.status(400).json({ message: "No files selected!" });
+    }
+
+    try {
+      const existingBooking = await BookingRequestModel.findById(req.params.id);
+      if (!existingBooking) {
+        return res.status(404).json({ message: "Booking not found" });
+      }
+
+      const fileDetails = Object.keys(req.files).reduce((acc, key) => {
+        req.files[key].forEach((file) => {
+          acc[file.fieldname] = file.filename;
+        });
+        return acc;
+      }, {});
+
+      Object.keys(fileDetails).forEach((field) => {
+        if (existingBooking[field]) {
+          const oldFilePath = path.join("uploads", existingBooking[field]);
+          fs.unlink(oldFilePath, (err) => {
+            if (err) {
+              console.error(`Error deleting old file: ${oldFilePath}`, err);
+            }
+          });
+        }
+      });
+
+      const updateData = {
+        ...req.body,
+        ...fileDetails,
+      };
+
+      const updatedBooking = await BookingRequestModel.findByIdAndUpdate(
+        req.params.id,
+        updateData,
+        { new: true }
+      );
+
+      res.status(200).json({
         message: "Booking updated successfully",
         data: updatedBooking,
         status: "success",
       });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error updating booking", error: error.message });
-  }
+    } catch (error) {
+      res.status(500).json({
+        message: "Error updating booking",
+        error: error.message,
+      });
+    }
+  });
+};
+
+export const uploadFilesAndData = (req, res) => {
+  // upload.array('rcback', 10)(req, res, (err) => {
+  upload(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ message: err });
+    }
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ message: "No files selected!" });
+    }
+
+    const { rcBack, fullName, partnerId, rcFront, email } = req.body;
+    if (!fullName || !email || !partnerId) {
+      return res.status(400).json({ message: "Name and email are required!" });
+    }
+
+    // const fileDetails = Object.keys(req.files).map(key => {
+    //     return req.files[key].map(file => ({
+    //       fieldname: file.fieldname,
+    //       filename: file.filename,
+    //       path: file.path
+    //     }));
+    //   }).flat();
+
+    const fileDetails = Object.keys(req.files).reduce((acc, key) => {
+      req.files[key].forEach((file) => {
+        acc[file.fieldname] = file.filename;
+      });
+      return acc;
+    }, {});
+
+    res.status(200).json({
+      message: "Files and data uploaded successfully!",
+      data: {
+        fullName,
+        email,
+        files: fileDetails,
+      },
+    });
+  });
 };

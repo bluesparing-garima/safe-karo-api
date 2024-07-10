@@ -7,10 +7,8 @@ import upload from "../../middlewares/uploadMiddleware.js";
 // Create Motor Policy
 export const createMotorPolicy = async (req, res) => {
   // upload.array('rcback', 10)(req, res, (err) => {
-  console.log(req.body);
-  console.log("out", req.files);
+
   upload(req, res, async (err) => {
-    console.log("::", req.files);
     if (err) {
       return res.status(400).json({ message: err });
     }
@@ -72,7 +70,6 @@ export const createMotorPolicy = async (req, res) => {
       isActive,
     } = req.body;
 
-    console.log(req.body);
     const fileDetails = Object.keys(req.files).reduce((acc, key) => {
       req.files[key].forEach((file) => {
         acc[file.fieldname] = file.filename;
@@ -80,7 +77,6 @@ export const createMotorPolicy = async (req, res) => {
       return acc;
     }, {});
 
-    console.log(fileDetails);
     const newMotorPolicy = new MotorPolicyModel({
       policyStatus,
       partnerId: partnerId || "",
@@ -121,7 +117,7 @@ export const createMotorPolicy = async (req, res) => {
       finalPremium,
       paymentMode,
       policyCreatedBy,
-      fileDetails,
+      ...fileDetails,
       // rcFront,
       // rcBack,
       // survey,
@@ -148,8 +144,30 @@ export const createMotorPolicy = async (req, res) => {
         message: `Motor Policy with ${policyNumber} already exists.`,
       });
     } else {
-      console.log(newMotorPolicy);
       const savedMotorPolicy = await newMotorPolicy.save();
+
+      const newMotorPolicyPayment = new MotorPolicyPaymentModel({
+        partnerId: savedMotorPolicy.partnerId,
+        policyId: savedMotorPolicy._id,
+        policyNumber: savedMotorPolicy.policyNumber,
+        bookingId: savedMotorPolicy.bookingId,
+        od: savedMotorPolicy.od,
+        tp: savedMotorPolicy.tp,
+        netPremium: savedMotorPolicy.netPremium,
+        finalPremium: savedMotorPolicy.finalPremium,
+        payInODPercentage: 0,
+        payInTPPercentage: 0,
+        payInODAmount: 0,
+        payInTPAmount: 0,
+        payOutODPercentage: 0,
+        payOutTPPercentage: 0,
+        payOutODAmount: 0,
+        payOutTPAmount: 0,
+        payInCommission: 0,
+        payOutCommission: 0,
+        createdBy: savedMotorPolicy.createdBy,
+      });
+      const savedMotorPolicyPayment = await newMotorPolicyPayment.save();
       if (savedMotorPolicy) {
         const existingBookingRequest = await BookingRequestModel.findOne({
           policyNumber,
@@ -180,7 +198,6 @@ export const createMotorPolicy = async (req, res) => {
     }
   });
 };
-
 // Get Motor Policies
 export const getMotorPolicies = async (req, res) => {
   // const page = parseInt(req.query.page) || 1;
@@ -371,7 +388,15 @@ export const getMotorPolicyWithPaymentDetails = async (req, res) => {
       relationshipManagerName: motorPolicy.relationshipManagerName,
       paymentDetails: motorPolicy.paymentDetails,
       productType: motorPolicy.productType,
-      documents: motorPolicy.documents,
+      rcFront: motorPolicy.rcFront,
+      rcBack: motorPolicy.rcBack,
+      previousPolicy: motorPolicy.previousPolicy,
+      survey: motorPolicy.survey,
+      puc: motorPolicy.puc,
+      fitness: motorPolicy.fitness,
+      proposal: motorPolicy.proposal,
+      currentPolicy: motorPolicy.currentPolicy,
+      other: motorPolicy.other,
       createdBy: motorPolicy.createdBy,
       createdOn: motorPolicy.createdOn,
       isActive: motorPolicy.isActive,
@@ -395,10 +420,10 @@ export const getMotorPolicyWithPaymentDetails = async (req, res) => {
       payOutTPAmount: motorPolicyPayments.payOutTPAmount,
       payInCommission: motorPolicyPayments.payInCommission,
       payOutCommission: motorPolicyPayments.payOutCommission,
-      createdBy: motorPolicyPayments.createdBy,
-      createdOn: motorPolicyPayments.createdOn,
-      updatedBy: motorPolicyPayments.updatedBy,
-      updatedOn: motorPolicyPayments.updatedOn,
+      paymentCreatedBy: motorPolicyPayments.createdBy,
+      paymentCreatedOn: motorPolicyPayments.createdOn,
+      paymentUpdatedBy: motorPolicyPayments.updatedBy,
+      paymentUpdatedOn: motorPolicyPayments.updatedOn,
     };
 
     if (combinedData.length === 0) {
@@ -452,141 +477,162 @@ export const validatePolicyNumber = async (req, res) => {
 
 // Update Motor Policy by ID
 export const updateMotorPolicy = async (req, res) => {
-  const {
-    policyStatus,
-    partnerId,
-    partnerName,
-    relationshipManagerId,
-    relationshipManagerName,
-    paymentDetails,
-    policyType,
-    caseType,
-    category,
-    subCategory,
-    companyName,
-    broker,
-    vehicleAge,
-    make,
-    model,
-    fuelType,
-    rto,
-    vehicleNumber,
-    seatingCapacity,
-    weight,
-    cc,
-    ncb,
-    policyNumber,
-    fullName,
-    emailId,
-    phoneNumber,
-    mfgYear,
-    tenure,
-    registrationDate,
-    endDate,
-    issueDate,
-    idv,
-    od,
-    tp,
-    netPremium,
-    finalPremium,
-    paymentMode,
-    policyCreatedBy,
-    rcFront,
-    rcBack,
-    survey,
-    previosPolicy,
-    puc,
-    fitness,
-    proposal,
-    currentPolicy,
-    other,
-    productType,
-    isActive,
-    updatedBy,
-  } = req.body;
-
-  const formData = {
-    policyStatus,
-    policyType,
-    caseType,
-    category,
-    subCategory,
-    companyName,
-    broker,
-    vehicleAge,
-    make,
-    model,
-    fuelType,
-    rto,
-    vehicleNumber,
-    seatingCapacity,
-    weight,
-    cc,
-    ncb,
-    policyNumber,
-    fullName,
-    emailId,
-    phoneNumber,
-    mfgYear,
-    tenure,
-    registrationDate,
-    endDate,
-    issueDate,
-    idv,
-    od,
-    tp,
-    netPremium,
-    finalPremium,
-    paymentMode,
-    policyCreatedBy,
-    rcFront,
-    rcBack,
-    survey,
-    previosPolicy,
-    puc,
-    fitness,
-    proposal,
-    currentPolicy,
-    other,
-    productType,
-    relationshipManagerId,
-    relationshipManagerName,
-    paymentDetails,
-    isActive: isActive !== undefined ? isActive : true,
-    updatedBy: updatedBy || "system",
-    updatedOn: new Date(),
-  };
-
-  // Check if partnerId and partnerName are provided in the request body
-  if (partnerId !== undefined) {
-    formData.partnerId = partnerId;
-  }
-  if (partnerName !== undefined) {
-    formData.partnerName = partnerName;
-  }
-
-  try {
-    const updatedForm = await MotorPolicyModel.findByIdAndUpdate(
-      req.params.id,
-      formData,
-      { new: true, runValidators: true }
-    );
-
-    if (!updatedForm) {
-      return res
-        .status(404)
-        .json({ status: "error", message: "Motor Policy not found" });
+  // Middleware to handle file uploads
+  upload(req, res, async (err) => {
+    if (err) {
+      return res.status(400).json({ message: err.message });
+    }
+    if (!req.files || Object.keys(req.files).length === 0) {
+      return res.status(400).json({ message: "No files selected!" });
     }
 
-    res.status(200).json({
-      message: `Motor Policy with ID ${req.params.id} updated successfully`,
-      data: updatedForm,
-      status: "success",
-    });
-  } catch (error) {
-    console.error("Error updating motor policy:", error);
-    res.status(500).json({ status: "error", message: error.message });
-  }
+    try {
+      const {
+        policyStatus,
+        partnerId,
+        partnerName,
+        relationshipManagerId,
+        relationshipManagerName,
+        paymentDetails,
+        policyType,
+        caseType,
+        category,
+        subCategory,
+        companyName,
+        broker,
+        vehicleAge,
+        make,
+        model,
+        fuelType,
+        rto,
+        vehicleNumber,
+        seatingCapacity,
+        weight,
+        cc,
+        ncb,
+        policyNumber,
+        fullName,
+        emailId,
+        phoneNumber,
+        mfgYear,
+        tenure,
+        registrationDate,
+        endDate,
+        issueDate,
+        idv,
+        od,
+        tp,
+        netPremium,
+        finalPremium,
+        paymentMode,
+        policyCreatedBy,
+        rcFront,
+        rcBack,
+        survey,
+        previosPolicy,
+        puc,
+        fitness,
+        proposal,
+        currentPolicy,
+        other,
+        productType,
+        isActive,
+        updatedBy,
+      } = req.body;
+
+      const formData = {
+        policyStatus,
+        policyType,
+        caseType,
+        category,
+        subCategory,
+        companyName,
+        broker,
+        vehicleAge,
+        make,
+        model,
+        fuelType,
+        rto,
+        vehicleNumber,
+        seatingCapacity,
+        weight,
+        cc,
+        ncb,
+        policyNumber,
+        fullName,
+        emailId,
+        phoneNumber,
+        mfgYear,
+        tenure,
+        registrationDate,
+        endDate,
+        issueDate,
+        idv,
+        od,
+        tp,
+        netPremium,
+        finalPremium,
+        paymentMode,
+        policyCreatedBy,
+        rcFront,
+        rcBack,
+        survey,
+        previosPolicy,
+        puc,
+        fitness,
+        proposal,
+        currentPolicy,
+        other,
+        productType,
+        relationshipManagerId,
+        relationshipManagerName,
+        paymentDetails,
+        isActive: isActive !== undefined ? isActive : true,
+        updatedBy: updatedBy || "system",
+        updatedOn: new Date(),
+      };
+
+      // Check if partnerId and partnerName are provided in the request body
+      if (partnerId !== undefined) {
+        formData.partnerId = partnerId;
+      }
+      if (partnerName !== undefined) {
+        formData.partnerName = partnerName;
+      }
+
+      const fileDetails = {};
+
+      // Process uploaded files if available
+      if (req.files) {
+        Object.keys(req.files).forEach((key) => {
+          fileDetails[key] = req.files[key][0].filename;
+        });
+        // Merge file details into formData
+        Object.assign(formData, fileDetails);
+      }
+
+      const updatedForm = await MotorPolicyModel.findByIdAndUpdate(
+        req.params.id,
+        formData,
+        { new: true, runValidators: true }
+      );
+
+      if (!updatedForm) {
+        return res
+          .status(404)
+          .json({ status: "error", message: "Motor Policy not found" });
+      }
+
+      res.status(200).json({
+        message: `Motor Policy with ID ${req.params.id} updated successfully`,
+        data: updatedForm,
+        status: "success",
+      });
+    } catch (error) {
+      console.error("Error updating motor policy:", error);
+      res.status(500).json({ status: "error", message: error.message });
+    }
+  });
 };
 
 // Delete Motor Policy by ID

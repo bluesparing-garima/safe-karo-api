@@ -6,7 +6,8 @@ import {
   updateLead,
   deleteLead,
   getleadsByCreatedBy,
-  getLeadsByPartnerId
+  getLeadsByPartnerId,
+  acceptLeadRequest
 } from "../../controller/partnerController/leadGenerateController.js";
 import logActivity from "../../middlewares/logActivity.js";
 const router = express.Router();
@@ -25,6 +26,9 @@ router.get("/partner-id/:partnerId",logActivity,getLeadsByPartnerId);
 
 // Get Lead by id
 router.get("/:id",logActivity,getLeadById);
+
+// Accept a lead request
+router.put("/accepted-lead/:id",logActivity, acceptLeadRequest);
 
 // Update a Lead
 router.put("/:id", logActivity,updateLead);
