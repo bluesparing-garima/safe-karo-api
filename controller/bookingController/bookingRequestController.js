@@ -49,7 +49,7 @@ export const createBookingRequest = async (req, res) => {
     }
 
     // Proceed with file uploads only if the policy number doesn't exist
-    upload(req, res, async (err) => {
+    upload(req, res, async (err) => { 
       if (err) {
         return res.status(400).json({ message: err.message });
       }

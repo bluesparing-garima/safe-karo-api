@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import UserProfileModel from "../../models/adminModels/userProfileSchema.js";
 import UserModel from "../../models/userSchema.js";
-
+import upload from '../../middlewares/uploadMiddleware.js'
 // Function to generate Partner ID
 const generatePartnerId = async () => {
   const lastUser = await UserProfileModel.findOne({
@@ -42,108 +42,122 @@ const hashPassword = async (password) => {
 };
 
 // Create a new user profile
-export const createUserProfile = async (req, res) => {
-  try {
-    const {
-      branchName,
-      role,
-      headRM,
-      headRMId,
-      fullName,
-      phoneNumber,
-      email,
-      password,
-      dateOfBirth,
-      gender,
-      address,
-      pincode,
-      bankName,
-      IFSC,
-      accountHolderName,
-      accountNumber,
-      salary,
-      document,
-      createdBy,
-      isActive,
-    } = req.body;
+export const createUserProfile = (req, res) => {
+  upload(req, res, async (err) => {
+    if (err) {
+      return res.status(400).json({ message: err.message });
+    }
+    if (!req.files || Object.keys(req.files).length === 0) {
+      return res.status(400).json({ message: "No files selected!" });
+    }
+    try {
+      const {
+        branchName,
+        role,
+        headRM,
+        headRMId,
+        fullName,
+        phoneNumber,
+        email,
+        password,
+        dateOfBirth,
+        gender,
+        address,
+        pincode,
+        bankName,
+        IFSC,
+        accountHolderName,
+        accountNumber,
+        salary,
+        createdBy,
+        isActive,
+      } = req.body;
 
-    const missingFields = [];
+      const fileDetails = Object.keys(req.files).reduce((acc, key) => {
+        req.files[key].forEach((file) => {
+          acc[file.fieldname] = file.filename;
+        });
+        return acc;
+      }, {});
 
-    if (!branchName) missingFields.push("branchName");
-    if (!role) missingFields.push("role");
+      const missingFields = [];
 
-    if (missingFields.length > 0) {
-      return res.status(400).json({
-        message: "Missing required fields for user profile creation",
-        missingFields,
+      if (!branchName) missingFields.push("branchName");
+      if (!role) missingFields.push("role");
+
+      if (missingFields.length > 0) {
+        return res.status(400).json({
+          message: "Missing required fields for user profile creation",
+          missingFields,
+        });
+      }
+
+      const existingUserInUserModel = await UserModel.findOne({ email });
+      const existingUserInUserProfileModel = await UserProfileModel.findOne({
+        email,
+      });
+
+      if (existingUserInUserModel || existingUserInUserProfileModel) {
+        return res.status(400).json({
+          message: "Email already exists",
+        });
+      }
+
+      const partnerId = await generatePartnerId();
+
+      const hashedPassword = await hashPassword(password);
+
+      const userProfile = new UserProfileModel({
+        branchName,
+        role,
+        headRM,
+        headRMId,
+        fullName,
+        phoneNumber,
+        email,
+        password: hashedPassword,
+        dateOfBirth,
+        gender,
+        address,
+        pincode,
+        bankName,
+        IFSC,
+        accountHolderName,
+        accountNumber,
+        salary,
+        ...fileDetails,
+        createdBy,
+        isActive: isActive !== undefined ? isActive : true,
+        partnerId,
+        originalPassword: password,
+      });
+
+      const newUser = new UserModel({
+        name: fullName,
+        email,
+        password: hashedPassword,
+        partnerCode: userProfile.partnerId,
+        phoneNumber,
+        role,
+        isActive: isActive !== undefined ? isActive : true,
+        partnerId: userProfile._id,
+      });
+
+      await userProfile.save();
+      await newUser.save();
+
+      res.status(201).json({
+        message: "User profile created successfully",
+        data: userProfile,
+        status: "success",
+      });
+    } catch (error) {
+      res.status(500).json({
+        message: "Error creating user profile",
+        error: error.message,
       });
     }
-
-    const existingUserInUserModel = await UserModel.findOne({ email });
-    const existingUserInUserProfileModel = await UserProfileModel.findOne({
-      email,
-    });
-
-    if (existingUserInUserModel || existingUserInUserProfileModel) {
-      return res.status(400).json({
-        message: "Email already exists",
-      });
-    }
-
-    const partnerId = await generatePartnerId();
-
-    const hashedPassword = await hashPassword(password);
-
-    const userProfile = new UserProfileModel({
-      branchName,
-      role,
-      headRM,
-      headRMId,
-      fullName,
-      phoneNumber,
-      email,
-      password: hashedPassword,
-      dateOfBirth,
-      gender,
-      address,
-      pincode,
-      bankName,
-      IFSC,
-      accountHolderName,
-      accountNumber,
-      salary,
-      document,
-      createdBy,
-      isActive: isActive !== undefined ? isActive : true,
-      partnerId,
-      originalPassword: password,
-    });
-
-    const newUser = new UserModel({
-      name: fullName,
-      email,
-      password: hashedPassword,
-      partnerCode:userProfile.partnerId,
-      phoneNumber,
-      role,
-      isActive: isActive !== undefined ? isActive : true,
-      partnerId: userProfile._id,
-    });
-
-    await userProfile.save();
-    await newUser.save();
-
-    res.status(201).json({
-      message: "User profile created successfully",
-      data: userProfile,
-      status: "success",
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: "Error creating user profile",
-      error: error.message,
-    });
-  }
+  });
 };
 
 // Check email existence
@@ -257,52 +271,74 @@ export const getUserProfileById = async (req, res) => {
   }
 };
 
-// Update userProfile
-export const updateUserProfile = async (req, res) => {
-  try {
-    const { password, ...rest } = req.body;
-    let updatedData = { ...rest };
+// Update user profile
+export const updateUserProfile = (req, res) => {
+  upload(req, res, async (err) => {
+    if (err) {
+      return res.status(400).json({ message: err.message });
+    }
+    if (!req.files || Object.keys(req.files).length === 0) {
+      return res.status(400).json({ message: "No files selected!" });
+    }
+    try {
+      const { password, ...rest } = req.body;
+      let updatedData = { ...rest };
 
-    if (password) {
-      const hashedPassword = await hashPassword(password);
-      updatedData.password = hashedPassword;
-      updatedData.originalPassword = password;
-    } else {
-      const existingProfile = await UserProfileModel.findById(req.params.id);
-      if (existingProfile) {
-        updatedData.originalPassword = existingProfile.originalPassword;
+      if (password) {
+        const hashedPassword = await hashPassword(password);
+        updatedData.password = hashedPassword;
+        updatedData.originalPassword = password;
+      } else {
+        const existingProfile = await UserProfileModel.findById(req.params.id);
+        if (existingProfile) {
+          updatedData.originalPassword = existingProfile.originalPassword;
+        }
       }
+
+      const fileDetails = Object.keys(req.files).reduce((acc, key) => {
+        req.files[key].forEach((file) => {
+          acc[file.fieldname] = file.filename;
+        });
+        return acc;
+      }, {});
+
+      // Assuming `existingBooking` context is clarified or removed
+
+      const updateData = {
+        ...req.body,
+        ...fileDetails,
+      };
+
+      const updatedProfile = await UserProfileModel.findByIdAndUpdate(
+        req.params.id,
+        updateData,
+        { new: true }
+      );
+
+      const updatedUserData = { ...updateData };
+      delete updatedUserData.partnerId;
+
+      const updatedUser = await UserModel.findOneAndUpdate(
+        { email: updateData.email },
+        updatedUserData,
+        { new: true }
+      );
+
+      if (!updatedProfile && !updatedUser) {
+        return res.status(404).json({ message: "User profile not found" });
+      }
+      res.status(200).json({
+        message: "User profile updated successfully",
+        data: updatedProfile,
+        originalPassword: updatedProfile.originalPassword,
+      });
+    } catch (error) {
+      res.status(500).json({
+        message: "Error updating user profile",
+        error: error.message,
+      });
     }
-
-    const updatedProfile = await UserProfileModel.findByIdAndUpdate(
-      req.params.id,
-      updatedData,
-      { new: true }
-    );
-
-    const updatedUserData = { ...updatedData };
-    delete updatedUserData.partnerId;
-
-    const updatedUser = await UserModel.findOneAndUpdate(
-      { email: updatedData.email },
-      updatedUserData,
-      { new: true }
-    );
-
-    if (!updatedProfile && !updatedUser) {
-      return res.status(404).json({ message: "User profile not found" });
-    }
-    res.status(200).json({
-      message: "User profile updated successfully",
-      data: updatedProfile,
-      originalPassword: updatedProfile.originalPassword, // Ensure the original password is included in the response
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: "Error updating user profile",
-      error: error.message,
-    });
-  }
+  });
 };
 
 // Delete (deactivate) a user profile by ID
