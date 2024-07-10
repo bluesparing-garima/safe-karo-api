@@ -3,6 +3,103 @@ import MotorPolicyModel from "../models/policyModel/motorpolicySchema.js";
 import BookingRequestModel from "../models/bookingModel/bookingRequestSchema.js";
 import MotorPolicyPaymentModel from "../models/policyModel/motorPolicyPaymentSchema.js";
 
+// Function to check if the policy number already exists
+const checkPolicyNumberExist = async (policyNumber) => {
+  const booking = await BookingRequestModel.findOne({ policyNumber });
+  return !!booking;
+};
+
+// Create Booking Request.
+export const createBookingRequest = async (req, res) => {
+  console.log("req.files", req.files);
+  upload(req, res, async (err) => {
+    if (err) {
+      return res.status(400).json({ message: err });
+    }
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ message: "No files selected!" });
+    }
+
+    try {
+      const {
+        partnerId,
+        partnerName,
+        relationshipManagerId,
+        relationshipManagerName,
+        policyNumber,
+        category,
+        caseType,
+        policyType,
+        productType,
+        subCategory,
+        companyName,
+        createdBy,
+        rcFront,
+        rcBack,
+        survey,
+        previosPolicy,
+        puc,
+        fitness,
+        proposal,
+        currentPolicy,
+        other,
+        isActive,
+        bookingCreatedBy,
+        bookingAcceptedBy,
+      } = req.body;
+
+      const fileDetails = Object.keys(req.files).reduce((acc, key) => {
+        req.files[key].forEach((file) => {
+          acc[file.fieldname] = file.filename;
+        });
+        return acc;
+      }, {});
+
+      // Check if policy number already exists
+      const policyExists = await checkPolicyNumberExist(policyNumber);
+      if (policyExists) {
+        return res.status(200).json({
+          message: `Policy number '${policyNumber}' already exists`,
+          status: "success",
+        });
+      }
+
+      // Create new booking if policy number doesn't exist
+      const newBooking = new BookingRequestModel({
+        partnerId,
+        partnerName,
+        relationshipManagerId,
+        relationshipManagerName,
+        policyNumber,
+        category,
+        caseType,
+        policyType,
+        productType,
+        subCategory,
+        companyName,
+        ...fileDetails,
+        bookingCreatedBy,
+        bookingAcceptedBy,
+        bookingStatus: "requested",
+        createdBy,
+        isActive: isActive !== undefined ? isActive : true,
+      });
+
+      await newBooking.save();
+      res.status(200).json({
+        message: "Booking Request generated successfully",
+        data: newBooking,
+        status: "success",
+      });
+    } catch (error) {
+      res.status(500).json({
+        message: "Error creating booking",
+        error: error.message,
+      });
+    }
+  });
+};
+
 export const createMotorPolicy = async (req, res) => {
   // upload.array('rcback', 10)(req, res, (err) => {
 
@@ -200,6 +297,7 @@ export const createMotorPolicy = async (req, res) => {
 export const uploadFilesAndData = (req, res) => {
   // upload.array('rcback', 10)(req, res, (err) => {
   upload(req, res, (err) => {
+    console.log
     if (err) {
       return res.status(400).json({ message: err });
     }

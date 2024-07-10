@@ -52,19 +52,37 @@ const DATABASE_URL = process.env.DATEBASE_URL;
 // CORS Policy
 app.use(cors());
 
-app.use("/api", testRoutes);
-
+// Database Connection
+connectDB(DATABASE_URL);
 // if deployed successfully
 app.get("/", (req, res) => {
   res.send("backend api deployed successfully!!!!!");
 });
 
-// Database Connection
-connectDB(DATABASE_URL);
-
 // JSON
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// userProfile
+app.use("/api/user-profile", userProfile);
+
+// Booking request
+app.use("/api/booking-request", bookingRequestRoute);
+
+// motor policy Routes
+app.use("/api/policy/motor", motorPolicyRoutes);
+
+//Partner lead generate.
+app.use("/api/lead-Generate", leadGenerate);
+
+// lead Quotation.
+app.use("/api/lead-quotation", leadQuotation);
+
+// lead payment.
+app.use("/api/lead-payment", leadPayment);
+
+// testing
+// app.use("/api", testRoutes);
 
 app.use(
   fileUpload({
@@ -75,14 +93,8 @@ app.use(
 // Load Routes
 app.use("/api/user", userRoutes);
 
-// userProfile
-app.use("/api/user-profile", userProfile);
-
 //assignee roles Routes
 app.use("/api/user-roles", assigneeRolesRouters);
-
-// motor policy Routes
-app.use("/api/policy/motor", motorPolicyRoutes);
 
 // motor policy payment Routes
 app.use("/api/policy/motor/payment", motorPolicyPayment);
@@ -140,9 +152,6 @@ app.use("/api/branches", branch);
 
 // lead generate
 
-// Booking request
-app.use("/api/booking-request", bookingRequestRoute);
-
 // admin dashboard
 app.use("/api/dashboard", adminDashboard);
 
@@ -157,18 +166,8 @@ app.use("/api/activityLog", activityLogRoutes);
 
 // ---------------------------------- Lead Routes --------------------------------------//
 
-//Partner lead generate.
-app.use("/api/lead-generate", leadGenerate);
-
-// lead Quotation.
-app.use("/api/lead-quotation", leadQuotation);
-
-// lead payment.
-app.use("/api/lead-payment", leadPayment);
-
 // Handle invalid routes
 //app.use(handleInvalidRoutes);
-
 
 //Add for acess the folder
 

@@ -100,23 +100,22 @@ import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
 // Set storage engine
 const storage = multer.diskStorage({
   destination: path.join(__dirname, "../uploads/"),
-  filename: (req, file, cb) => {
-    const { fullName, partnerId } = req.body;
-    const uniqueSuffix = `${fullName}_${partnerId}${path.extname(
-      file.originalname
-    )}`;
-    cb(null, uniqueSuffix);
-  },
   // filename: (req, file, cb) => {
-  //   cb(
-  //     null,
-  //     file.fieldname + "-" + Date.now() + path.extname(file.originalname)
-  //   );
+  //   const { fullName, partnerId } = req.body;
+  //   const uniqueSuffix = `${fullName}_${partnerId}${path.extname(
+  //     file.originalname
+  //   )}`;
+  //   cb(null, uniqueSuffix);
   // },
+  filename: (req, file, cb) => {
+    cb(
+      null,
+      file.fieldname + "_" + Date.now() + path.extname(file.originalname)
+    );
+  },
 });
 
 // Check File Type
@@ -169,7 +168,17 @@ const upload = multer({
   { name: "proposal", maxCount: 1 },
   { name: "currentPolicy", maxCount: 1 },
   { name: "previousPolicy", maxCount: 1 },
-  { name: "other", maxCount: 1 }, // Change here
+  // userProfile documents
+  { name: "image", maxCount: 1 },
+  { name: "adharCardFront", maxCount: 1 },
+  { name: "adharCardBack", maxCount: 1 },
+  { name: "panCard", maxCount: 1 },
+  { name: "qualification", maxCount: 1 },
+  { name: "bankProof", maxCount: 1 },
+  { name: "experience", maxCount: 1 },
+  { name: "quotationImage", maxCount: 1 },
+  // common for all documents file.
+  { name: "other", maxCount: 1 },
 ]);
 
 export default upload;

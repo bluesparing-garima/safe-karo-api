@@ -49,7 +49,7 @@ const MotorPolicySchema = new mongoose.Schema({
   // documents: [DocumentSchema],
   rcFront: { type: String, trim: true },
   rcBack: { type: String, trim: true },
-  perviousPolicy: { type: String, trim: true },
+  previousPolicy: { type: String, trim: true },
   survey: { type: String, trim: true },
   puc: { type: String, trim: true },
   fitness: { type: String, trim: true },
