@@ -92,6 +92,7 @@ export const uploadPartnerExcel = async (req, res) => {
           phoneNumber: record.phoneNumber,
           email: record.email,
           password: hashedPassword,
+          originalPassword: record.password,
           dateOfBirth: record.dateOfBirth,
           gender: record.gender,
           headRM: record.headRM,
@@ -114,10 +115,12 @@ export const uploadPartnerExcel = async (req, res) => {
           name: record.fullName,
           email: record.email,
           password: hashedPassword,
+          originalPassword: record.password,
           phoneNumber: record.phoneNumber,
           role: record.role,
           isActive: record.isActive !== undefined ? record.isActive : true,
-          partnerId: record.partnerId || (await generatePartnerId()),
+          partnerId: userProfile._id,
+          partnerCode: record.partnerId || (await generatePartnerCode()),
         });
 
         await userProfile.save();
@@ -215,6 +218,7 @@ export const createPartner = async (req, res) => {
       role,
       isActive: isActive !== undefined ? isActive : true,
       partnerId: userProfile._id,
+      partnerCode: partnerId || (await generatePartnerId()),
     });
 
     await userProfile.save();
