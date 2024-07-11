@@ -119,8 +119,8 @@ export const uploadPartnerExcel = async (req, res) => {
           phoneNumber: record.phoneNumber,
           role: record.role,
           isActive: record.isActive !== undefined ? record.isActive : true,
-          partnerId: userProfile._id,
-          partnerCode: record.partnerId || (await generatePartnerCode()),
+          partnerId: userProfile.id || (await generatePartnerId()),
+          partnerCode:record.partnerId,
         });
 
         await userProfile.save();
