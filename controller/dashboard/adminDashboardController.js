@@ -101,28 +101,32 @@ export const getDashboardCount = async (req, res) => {
     // Prepare final response data
     const data = {
       message: "Dashboard Count retrieved successfully",
-      data: {
-        roleCounts: formattedRoleCounts,
-        policyCounts: formattedPolicyCounts,
-        premiums: {
-          NetPremium: netPremium,
-          FinalPremium: finalPremium,
+      data: [
+        {
+          roleCounts: formattedRoleCounts,
+          policyCounts: formattedPolicyCounts,
+          premiums: {
+            "Net Premium": netPremium,
+            "Final Premium": finalPremium,
+          },
+          commissions: {
+            "PayIn Commission":
+              commissionSums.length > 0
+                ? commissionSums[0].totalPayInCommission
+                : 0,
+            "PayOut Commission":
+              commissionSums.length > 0
+                ? commissionSums[0].totalPayOutCommission
+                : 0,
+          },
+          bookingRequests: {
+            "Total Booking": totalBookingRequest,
+            "Accepted Booking": formattedBookingCounts.accepted || 0,
+            "Booked Booking": formattedBookingCounts.booked || 0,
+            "Requested Booking": formattedBookingCounts.requested || 0,
+          },
         },
-        commissions: {
-          PayInCommission:
-            commissionSums.length > 0
-              ? commissionSums[0].totalPayInCommission
-              : 0,
-          PayOutCommission:
-            commissionSums.length > 0
-              ? commissionSums[0].totalPayOutCommission
-              : 0,
-        },
-        bookingRequests: {
-          total: totalBookingRequest,
-          ...formattedBookingCounts,
-        },
-      },
+      ],
       status: "success",
     };
 
