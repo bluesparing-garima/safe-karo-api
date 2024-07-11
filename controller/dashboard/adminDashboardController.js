@@ -2,6 +2,7 @@ import UserProfileModel from "../../models/adminModels/userProfileSchema.js";
 import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
 import MotorPolicyPaymentModel from "../../models/policyModel/motorPolicyPaymentSchema.js";
 import BookingRequest from "../../models/bookingModel/bookingRequestSchema.js";
+import Lead from '../../models/partnerModels/leadGenerateSchema.js';
 
 // Controller function to get dashboard count
 export const getDashboardCount = async (req, res) => {
@@ -64,6 +65,7 @@ export const getDashboardCount = async (req, res) => {
     policyCounts.forEach((policy) => {
       formattedPolicyCounts[policy._id] = policy.count;
     });
+
     const netPremium = netPremiums.length > 0 ? netPremiums[0].NetPremium : 0;
     const finalPremium =
       netPremiums.length > 0 ? netPremiums[0].FinalPremium : 0;
@@ -86,6 +88,9 @@ export const getDashboardCount = async (req, res) => {
       },
     ]);
 
+    const totalPayInCommission = commissionSums.length > 0 ? commissionSums[0].totalPayInCommission : 0;
+    const totalPayOutCommission = commissionSums.length > 0 ? commissionSums[0].totalPayOutCommission : 0;
+
     // Count booking requests by status
     const bookingCounts = await BookingRequest.aggregate([
       { $group: { _id: "$bookingStatus", count: { $sum: 1 } } },
@@ -96,6 +101,34 @@ export const getDashboardCount = async (req, res) => {
     bookingCounts.forEach((booking) => {
       formattedBookingCounts[booking._id] = booking.count;
       totalBookingRequest += booking.count;
+    });
+
+    // Count leads by status
+    const leadCounts = await Lead.aggregate([
+      { $group: { _id: "$status", count: { $sum: 1 } } },
+    ]);
+
+    const formattedLeadCounts = {};
+    let totalLead = 0;
+    leadCounts.forEach((lead) => {
+      formattedLeadCounts[lead._id] = lead.count;
+      totalLead += lead.count;
+    });
+
+    // Prepare bookingRequests dynamically
+    const bookingRequests = {
+      "Total Booking": totalBookingRequest,
+    };
+    Object.keys(formattedBookingCounts).forEach(key => {
+      bookingRequests[`${key.charAt(0).toUpperCase()}${key.slice(1)} Booking`] = formattedBookingCounts[key];
+    });
+
+    // Prepare leadCounts dynamically
+    const leadRequests = {
+      "Total Lead": totalLead,
+    };
+    Object.keys(formattedLeadCounts).forEach(key => {
+      leadRequests[`${key.charAt(0).toUpperCase()}${key.slice(1)} Lead`] = formattedLeadCounts[key];
     });
 
     // Prepare final response data
@@ -110,21 +143,11 @@ export const getDashboardCount = async (req, res) => {
             "Final Premium": finalPremium,
           },
           commissions: {
-            "PayIn Commission":
-              commissionSums.length > 0
-                ? commissionSums[0].totalPayInCommission
-                : 0,
-            "PayOut Commission":
-              commissionSums.length > 0
-                ? commissionSums[0].totalPayOutCommission
-                : 0,
+            "PayIn Commission": totalPayInCommission,
+            "PayOut Commission": totalPayOutCommission,
           },
-          bookingRequests: {
-            "Total Booking": totalBookingRequest,
-            "Accepted Booking": formattedBookingCounts.accepted || 0,
-            "Booked Booking": formattedBookingCounts.booked || 0,
-            "Requested Booking": formattedBookingCounts.requested || 0,
-          },
+          bookingRequests: bookingRequests,
+          leadCounts: leadRequests,
         },
       ],
       status: "success",
