@@ -92,7 +92,7 @@ export const getPartnerDashboardCount = async (req, res) => {
             'Net Premium': netPremium,
           },
           commissions: {
-            'Reward': reward,
+            'PayOut Commission': reward,
           },
           bookingRequests: bookingRequests,
           leadCounts: leadRequests,
