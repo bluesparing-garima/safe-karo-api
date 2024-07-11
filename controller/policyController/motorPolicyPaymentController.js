@@ -1,5 +1,6 @@
 import motorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
 import mongoose from "mongoose";
+import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
 
 // Create a new motor policy payment
 export const createMotorPolicyPayment = async (req, res) => {
@@ -25,29 +26,50 @@ export const createMotorPolicyPayment = async (req, res) => {
     createdBy,
   } = req.body;
 
-  const newMotorPolicyPayment = new motorPolicyPayment({
-    partnerId,
-    policyId,
-    policyNumber,
-    bookingId,
-    od,
-    tp,
-    netPremium,
-    finalPremium,
-    payInODPercentage,
-    payInTPPercentage,
-    payInODAmount,
-    payInTPAmount,
-    payOutODPercentage,
-    payOutTPPercentage,
-    payOutODAmount,
-    payOutTPAmount,
-    payInCommission,
-    payOutCommission,
-    createdBy,
-  });
-
   try {
+    // Check if policyId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(policyId)) {
+      return res.status(400).json({
+        message: "Invalid policyId",
+        success: false,
+        status: "error",
+      });
+    }
+
+    // Fetch MotorPolicy using policyId
+    const motorPolicy = await MotorPolicyModel.findById(policyId);
+    
+    if (!motorPolicy) {
+      return res.status(404).json({
+        message: "Motor Policy not found",
+        success: false,
+        status: "error",
+      });
+    }
+
+    const newMotorPolicyPayment = new motorPolicyPayment({
+      partnerId,
+      policyId,
+      policyNumber,
+      bookingId,
+      od,
+      tp,
+      netPremium,
+      finalPremium,
+      payInODPercentage,
+      payInTPPercentage,
+      payInODAmount,
+      payInTPAmount,
+      payOutODPercentage,
+      payOutTPPercentage,
+      payOutODAmount,
+      payOutTPAmount,
+      payInCommission,
+      payOutCommission,
+      policyDate: motorPolicy.createdOn, // Assign createdOn date from MotorPolicyModel
+      createdBy,
+    });
+
     const savedMotorPolicyPayment = await newMotorPolicyPayment.save();
     res.status(201).json({
       message: "Motor Policy Payment created successfully",
