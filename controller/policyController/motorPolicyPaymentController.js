@@ -66,7 +66,7 @@ export const createMotorPolicyPayment = async (req, res) => {
       payOutTPAmount,
       payInCommission,
       payOutCommission,
-      policyDate: motorPolicy.createdOn, // Assign createdOn date from MotorPolicyModel
+      policyDate: motorPolicy.createdOn,
       createdBy,
     });
 
