@@ -31,6 +31,7 @@ const bookingRequestSchema = new mongoose.Schema({
     other: { type: String, trim: true },
     bookingStatus:{type:String,trim:true},
     bookingAcceptedBy:{type:String,trim:true},
+    leadId:{type:String,trim:true},
     createdBy: { type: String, trim: true },
     createdOn: { type: Date, default: Date.now },
     updatedBy: { type: String, default: null },

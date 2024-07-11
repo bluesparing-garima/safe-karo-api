@@ -37,6 +37,7 @@ export const createBookingRequest = async (req, res) => {
       isActive,
       bookingCreatedBy,
       bookingAcceptedBy,
+      leadId,
     } = req.body;
 
     // Check if policy number already exists
@@ -82,6 +83,7 @@ export const createBookingRequest = async (req, res) => {
           bookingCreatedBy,
           bookingAcceptedBy,
           bookingStatus: "requested",
+          leadId,
           createdBy,
           isActive: isActive !== undefined ? isActive : true,
         });
