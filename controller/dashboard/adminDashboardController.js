@@ -65,7 +65,6 @@ export const getDashboardCount = async (req, res) => {
     policyCounts.forEach((policy) => {
       formattedPolicyCounts[policy._id] = policy.count;
     });
-
     const netPremium = netPremiums.length > 0 ? netPremiums[0].NetPremium : 0;
     const finalPremium =
       netPremiums.length > 0 ? netPremiums[0].FinalPremium : 0;
