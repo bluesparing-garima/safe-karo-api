@@ -44,7 +44,7 @@ export const getBookingDashboardCount = async (req, res) => {
           premiums: {
             "Net Premium": netPremium,
           },
-          Booking: {
+          bookingRequests: {
             acceptedRequests: acceptedRequests,
           },
           // commissions: {
