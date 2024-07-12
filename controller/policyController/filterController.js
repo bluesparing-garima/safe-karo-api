@@ -56,3 +56,86 @@ export const getPoliciesByDateRange = async (req, res) => {
       });
     }
   };
+
+export const getAllMatchingRecords = async (req, res) => {
+  try {
+    const {
+      rto,
+      policyType,
+      caseType,
+      productType,
+      companyName,
+      make,
+      model,
+      fuelType,
+      cc,
+      weight,
+      ncb,
+      vehicleAge,
+    } = req.query;
+
+    const missingFields = [];
+    if (!rto) missingFields.push("rto");
+    if (!policyType) missingFields.push("policyType");
+    if (!caseType) missingFields.push("caseType");
+    if (!productType) missingFields.push("productType");
+    if (!companyName) missingFields.push("companyName");
+    if (!make) missingFields.push("make");
+    if (!model) missingFields.push("model");
+    if (!fuelType) missingFields.push("fuelType");
+    if (!cc) missingFields.push("cc");
+    if (!weight) missingFields.push("weight");
+    if (!ncb) missingFields.push("ncb");
+    if (!vehicleAge) missingFields.push("vehicleAge");
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        message: "Missing required query parameters",
+        missingFields,
+        status: "Failed",
+      });
+    }
+
+    const dbQuery = {
+      fuelType: fuelType,
+      productType: productType,
+      cc: cc,
+      weight: weight,
+      ncb: ncb,
+      policyType: policyType,
+      rto: rto,
+      caseType: caseType,
+      companyName: companyName,
+      make: make,
+      model: model,
+      vehicleAge: vehicleAge,
+    };
+
+    Object.keys(dbQuery).forEach((key) => {
+      if (dbQuery[key] === undefined || dbQuery[key] === null) {
+        delete dbQuery[key];
+      }
+    });
+
+    const matchedRecords = await MotorPolicyModel.find(dbQuery);
+
+    if (matchedRecords.length === 0) {
+      return res.status(200).json({
+        message: "No matching records found in the database",
+        data: [],
+        status: "Success",
+      });
+    }
+
+    res.status(200).json({
+      message: "Records found",
+      data: matchedRecords,
+      status: "Success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error fetching data",
+      error: error.message,
+    });
+  }
+};

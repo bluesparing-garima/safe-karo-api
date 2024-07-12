@@ -80,7 +80,7 @@ app.use("/api/policy/motor", motorPolicyRoutes);
 app.use("/api/policy/motor/payment", motorPolicyPayment);
 
 // filter policy Routes
-app.use('/api',filterPolicy);
+app.use('/api/policy/motor/filter',filterPolicy);
 
 //Partner lead generate.
 app.use("/api/lead-Generate", leadGenerate);
