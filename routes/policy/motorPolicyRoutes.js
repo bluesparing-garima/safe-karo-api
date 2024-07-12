@@ -10,6 +10,7 @@ import {
   validateVehicleNumber,
   getMotorPolicyWithPaymentDetails,
   getMotorPolicyByPolicyId,
+  getMotorPolicyByPolicyCompletedBy,
 } from "../../controller/policyController/motorPolicyController.js";
 const router = express.Router();
 
@@ -19,7 +20,7 @@ router.get("/validatePolicyNumber", logActivity, validatePolicyNumber);
 
 router.get("/policyId/:policyId", logActivity, getMotorPolicyByPolicyId);
 router.get("/partner/:partnerId", logActivity, getMotorPolicyByPartnerId);
-
+router.get("/policy-completed-by/:policyCompletedBy", logActivity,getMotorPolicyByPolicyCompletedBy);
 router.put("/:id", logActivity, updateMotorPolicy);
 router.delete("/:id", logActivity, deleteMotorPolicy);
 router.get("/validatePolicyNumber", logActivity, validatePolicyNumber);

@@ -23,6 +23,7 @@ export const createMotorPolicy = async (req, res) => {
       relationshipManagerId,
       relationshipManagerName,
       bookingId,
+      policyCompletedBy,
       paymentDetails,
       policyType,
       caseType,
@@ -85,6 +86,7 @@ export const createMotorPolicy = async (req, res) => {
       relationshipManagerName: relationshipManagerName || "",
       paymentDetails: paymentDetails || "",
       bookingId: bookingId || "",
+      policyCompletedBy:policyCompletedBy || "",
       policyType,
       caseType,
       category,
@@ -443,6 +445,35 @@ export const getMotorPolicyWithPaymentDetails = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Error retrieving motor policy with payment details",
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+// Get using policyCompletedBy
+export const getMotorPolicyByPolicyCompletedBy = async (req, res) => {
+  try {
+    const { policyCompletedBy } = req.params;
+    const policies = await MotorPolicyModel.find({ policyCompletedBy });
+
+    if (policies.length === 0) {
+      return res.status(404).json({
+        message: `No Motor Policy for policyCompletedBy ${policyCompletedBy}`,
+        success: false,
+        status: "success",
+      });
+    }
+
+    res.status(200).json({
+      message: "Motor Policies retrieved successfully for policyCompletedBy.",
+      data: policies,
+      success: true,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving motor policies for policyCompletedBy",
       success: false,
       error: error.message,
     });
