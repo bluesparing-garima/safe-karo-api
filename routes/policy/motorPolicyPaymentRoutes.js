@@ -1,7 +1,7 @@
 import express from 'express';
 import logActivity from "../../middlewares/logActivity.js";
 import {
-  createMotorPolicyPayment,
+  createOrUpdateMotorPolicyPayment,
   getAllMotorPolicyPayments,
   getMotorPolicyPaymentByPolicyId,
   updateMotorPolicyPayment,
@@ -10,7 +10,7 @@ import {
 
 const router = express.Router();
 router.put('/:policyId', logActivity, updateMotorPolicyPayment);
-router.post('/', logActivity, createMotorPolicyPayment);
+router.post('/', logActivity, createOrUpdateMotorPolicyPayment);
 router.get('/', logActivity, getAllMotorPolicyPayments);
 router.get('/:policyId', logActivity, getMotorPolicyPaymentByPolicyId);
 router.delete('/:id', logActivity, deleteMotorPolicyPayment);

@@ -71,7 +71,6 @@ export const createMotorPolicy = async (req, res) => {
     // Add default value for weight
     const weight = req.body.weight || 0;
 
-
     if (!policyNumber || !fullName || !vehicleNumber) {
       return res.status(400).json({
         message: "Required fields are missing: policyNumber, fullName, vehicleNumber",
@@ -147,46 +146,61 @@ export const createMotorPolicy = async (req, res) => {
       } else {
         const savedMotorPolicy = await newMotorPolicy.save();
 
-        const newMotorPolicyPayment = new MotorPolicyPaymentModel({
-          partnerId: savedMotorPolicy.partnerId,
-          policyId: savedMotorPolicy._id,
-          policyNumber: savedMotorPolicy.policyNumber,
-          bookingId: savedMotorPolicy.bookingId,
-          od: savedMotorPolicy.od,
-          tp: savedMotorPolicy.tp,
-          netPremium: savedMotorPolicy.netPremium,
-          finalPremium: savedMotorPolicy.finalPremium,
-          payInODPercentage: 0,
-          payInTPPercentage: 0,
-          payInODAmount: 0,
-          payInTPAmount: 0,
-          payOutODPercentage: 0,
-          payOutTPPercentage: 0,
-          payOutODAmount: 0,
-          payOutTPAmount: 0,
-          payInCommission: 0,
-          payOutCommission: 0,
-          createdBy: savedMotorPolicy.createdBy,
-        });
-        const savedMotorPolicyPayment = await newMotorPolicyPayment.save();
         if (savedMotorPolicy) {
-          const existingBookingRequest = await BookingRequestModel.findOne({
-            policyNumber,
+          const newMotorPolicyPayment = new MotorPolicyPaymentModel({
+            partnerId: savedMotorPolicy.partnerId,
+            policyId: savedMotorPolicy._id,
+            policyNumber: savedMotorPolicy.policyNumber,
+            bookingId: savedMotorPolicy.bookingId,
+            od: savedMotorPolicy.od,
+            tp: savedMotorPolicy.tp,
+            netPremium: savedMotorPolicy.netPremium,
+            finalPremium: savedMotorPolicy.finalPremium,
+            payInODPercentage: 0,
+            payInTPPercentage: 0,
+            payInODAmount: 0,
+            payInTPAmount: 0,
+            payOutODPercentage: 0,
+            payOutTPPercentage: 0,
+            payOutODAmount: 0,
+            payOutTPAmount: 0,
+            payInCommission: 0,
+            payOutCommission: 0,
+            policyDate:savedMotorPolicy.createdOn,
+            createdBy: savedMotorPolicy.createdBy,
           });
-          if (existingBookingRequest) {
-            existingBookingRequest.bookingStatus = "booked";
-            await existingBookingRequest.save();
 
-            return res.status(200).json({
-              status: "success",
-              success: true,
-              message: `Policy Number ${policyNumber} booked successfully`,
+          try {
+            const savedMotorPolicyPayment = await newMotorPolicyPayment.save();
+            console.log("Motor Policy Payment saved successfully", savedMotorPolicyPayment);
+
+            const existingBookingRequest = await BookingRequestModel.findOne({
+              policyNumber,
             });
-          } else {
-            return res.status(200).json({
-              status: "success",
-              message: `Policy Number created successfully`,
-              data: savedMotorPolicy,
+
+            if (existingBookingRequest) {
+              existingBookingRequest.bookingStatus = "booked";
+              await existingBookingRequest.save();
+
+              return res.status(200).json({
+                status: "success",
+                success: true,
+                message: `Policy Number ${policyNumber} booked successfully`,
+              });
+            } else {
+              return res.status(200).json({
+                status: "success",
+                message: `Policy Number created successfully`,
+                data: savedMotorPolicy,
+              });
+            }
+          } catch (error) {
+            console.error("Error saving Motor Policy Payment:", error);
+            return res.status(500).json({
+              status: "error",
+              success: false,
+              message: "Error saving Motor Policy Payment",
+              error: error.message,
             });
           }
         } else {

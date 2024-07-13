@@ -2,8 +2,8 @@ import motorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchem
 import mongoose from "mongoose";
 import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
 
-// Create a new motor policy payment
-export const createMotorPolicyPayment = async (req, res) => {
+// Create or update a motor policy payment
+export const createOrUpdateMotorPolicyPayment = async (req, res) => {
   const {
     partnerId,
     policyId,
@@ -24,6 +24,7 @@ export const createMotorPolicyPayment = async (req, res) => {
     payInCommission,
     payOutCommission,
     createdBy,
+    updatedBy,
   } = req.body;
 
   try {
@@ -38,7 +39,7 @@ export const createMotorPolicyPayment = async (req, res) => {
 
     // Fetch MotorPolicy using policyId
     const motorPolicy = await MotorPolicyModel.findById(policyId);
-    
+
     if (!motorPolicy) {
       return res.status(404).json({
         message: "Motor Policy not found",
@@ -47,6 +48,41 @@ export const createMotorPolicyPayment = async (req, res) => {
       });
     }
 
+    // Check if a motorPolicyPayment with the given policyId already exists
+    const existingPayment = await motorPolicyPayment.findOne({ policyId });
+
+    if (existingPayment) {
+      // Update the existing motorPolicyPayment
+      existingPayment.partnerId = partnerId;
+      existingPayment.policyNumber = policyNumber;
+      existingPayment.bookingId = bookingId;
+      existingPayment.od = od;
+      existingPayment.tp = tp;
+      existingPayment.netPremium = netPremium;
+      existingPayment.finalPremium = finalPremium;
+      existingPayment.payInODPercentage = payInODPercentage;
+      existingPayment.payInTPPercentage = payInTPPercentage;
+      existingPayment.payInODAmount = payInODAmount;
+      existingPayment.payInTPAmount = payInTPAmount;
+      existingPayment.payOutODPercentage = payOutODPercentage;
+      existingPayment.payOutTPPercentage = payOutTPPercentage;
+      existingPayment.payOutODAmount = payOutODAmount;
+      existingPayment.payOutTPAmount = payOutTPAmount;
+      existingPayment.payInCommission = payInCommission;
+      existingPayment.payOutCommission = payOutCommission;
+      existingPayment.updatedBy = updatedBy;
+      existingPayment.policyDate = motorPolicy.createdOn;
+
+      const updatedPayment = await existingPayment.save();
+      return res.status(200).json({
+        message: "Motor Policy Payment updated successfully",
+        data: updatedPayment,
+        success: true,
+        status: "success",
+      });
+    }
+
+    // Create a new motorPolicyPayment if not existing
     const newMotorPolicyPayment = new motorPolicyPayment({
       partnerId,
       policyId,
@@ -73,7 +109,6 @@ export const createMotorPolicyPayment = async (req, res) => {
     const savedMotorPolicyPayment = await newMotorPolicyPayment.save();
     return res.status(201).json({
       message: "Motor Policy Payment created successfully",
-      data: savedMotorPolicyPayment,
       success: true,
       status: "success",
     });
@@ -158,38 +193,61 @@ export const updateMotorPolicyPayment = async (req, res) => {
   } = req.body;
 
   try {
+    // Check if policyId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(policyId)) {
+      return res.status(400).json({
+        message: "Invalid policyId",
+        success: false,
+        status: "error",
+      });
+    }
+
     const existingProfile = await motorPolicyPayment.findOne({
       policyId: req.params.policyId,
     });
-    if (existingProfile) {
-      const updatedMotorPolicyPayment =
-        await motorPolicyPayment.findByIdAndUpdate(
-          existingProfile._id,
-          req.body,
-          { new: true }
-        );
-      if (!updatedMotorPolicyPayment) {
-        return res.status(404).json({
-          message: "Motor Policy Payment not found",
-          success: false,
-          status: "error",
-        });
-      }
 
-      return res.status(200).json({
-        message: "Motor Policy Payment updated successfully",
-        data: updatedMotorPolicyPayment,
-        success: true,
-        status: "success",
+    if (!existingProfile) {
+      return res.status(404).json({
+        message: "Motor Policy Payment not found",
+        success: false,
+        status: "error",
       });
     }
-    return res.status(404).json({
-      message: "Motor Policy Payment not found",
+
+    // Update the existing profile with the new data
+    existingProfile.partnerId = partnerId;
+    existingProfile.policyNumber = policyNumber;
+    existingProfile.bookingId = bookingId;
+    existingProfile.od = od;
+    existingProfile.tp = tp;
+    existingProfile.netPremium = netPremium;
+    existingProfile.finalPremium = finalPremium;
+    existingProfile.payInODPercentage = payInODPercentage;
+    existingProfile.payInTPPercentage = payInTPPercentage;
+    existingProfile.payInODAmount = payInODAmount;
+    existingProfile.payInTPAmount = payInTPAmount;
+    existingProfile.payOutODPercentage = payOutODPercentage;
+    existingProfile.payOutTPPercentage = payOutTPPercentage;
+    existingProfile.payOutODAmount = payOutODAmount;
+    existingProfile.payOutTPAmount = payOutTPAmount;
+    existingProfile.payInCommission = payInCommission;
+    existingProfile.payOutCommission = payOutCommission;
+    existingProfile.updatedBy = updatedBy;
+
+    const updatedMotorPolicyPayment = await existingProfile.save();
+
+    return res.status(200).json({
+      message: "Motor Policy Payment updated successfully",
+      data: updatedMotorPolicyPayment,
+      success: true,
+      status: "success",
+    });
+  } catch (err) {
+    return res.status(400).json({
+      message: err.message,
       success: false,
       status: "error",
     });
-  } catch (err) {
-    return res.status(400).json({ message: err.message, status: "error" });
   }
 };
 
