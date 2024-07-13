@@ -28,31 +28,29 @@ export const createOrUpdateMotorPolicyPayment = async (req, res) => {
   } = req.body;
 
   try {
-    // Check if policyId is a valid ObjectId
     if (!mongoose.Types.ObjectId.isValid(policyId)) {
-      return res.status(400).json({
+      res.status(400).json({
         message: "Invalid policyId",
         success: false,
         status: "error",
       });
+      return;
     }
 
-    // Fetch MotorPolicy using policyId
     const motorPolicy = await MotorPolicyModel.findById(policyId);
 
     if (!motorPolicy) {
-      return res.status(404).json({
+      res.status(404).json({
         message: "Motor Policy not found",
         success: false,
         status: "error",
       });
+      return;
     }
 
-    // Check if a motorPolicyPayment with the given policyId already exists
     const existingPayment = await motorPolicyPayment.findOne({ policyId });
 
     if (existingPayment) {
-      // Update the existing motorPolicyPayment
       existingPayment.partnerId = partnerId;
       existingPayment.policyNumber = policyNumber;
       existingPayment.bookingId = bookingId;
@@ -74,46 +72,45 @@ export const createOrUpdateMotorPolicyPayment = async (req, res) => {
       existingPayment.policyDate = motorPolicy.createdOn;
 
       const updatedPayment = await existingPayment.save();
-      return res.status(200).json({
+      res.status(200).json({
         message: "Motor Policy Payment updated successfully",
         data: updatedPayment,
         success: true,
         status: "success",
       });
+    } else {
+      const newMotorPolicyPayment = new motorPolicyPayment({
+        partnerId,
+        policyId,
+        policyNumber,
+        bookingId,
+        od,
+        tp,
+        netPremium,
+        finalPremium,
+        payInODPercentage,
+        payInTPPercentage,
+        payInODAmount,
+        payInTPAmount,
+        payOutODPercentage,
+        payOutTPPercentage,
+        payOutODAmount,
+        payOutTPAmount,
+        payInCommission,
+        payOutCommission,
+        policyDate: motorPolicy.createdOn,
+        createdBy,
+      });
+
+      const savedMotorPolicyPayment = await newMotorPolicyPayment.save();
+      res.status(201).json({
+        message: "Motor Policy Payment created successfully",
+        success: true,
+        status: "success",
+      });
     }
-
-    // Create a new motorPolicyPayment if not existing
-    const newMotorPolicyPayment = new motorPolicyPayment({
-      partnerId,
-      policyId,
-      policyNumber,
-      bookingId,
-      od,
-      tp,
-      netPremium,
-      finalPremium,
-      payInODPercentage,
-      payInTPPercentage,
-      payInODAmount,
-      payInTPAmount,
-      payOutODPercentage,
-      payOutTPPercentage,
-      payOutODAmount,
-      payOutTPAmount,
-      payInCommission,
-      payOutCommission,
-      policyDate: motorPolicy.createdOn,
-      createdBy,
-    });
-
-    const savedMotorPolicyPayment = await newMotorPolicyPayment.save();
-    return res.status(201).json({
-      message: "Motor Policy Payment created successfully",
-      success: true,
-      status: "success",
-    });
   } catch (err) {
-    return res.status(400).json({
+    res.status(400).json({
       message: err.message,
       success: false,
       status: "error",
@@ -125,14 +122,14 @@ export const createOrUpdateMotorPolicyPayment = async (req, res) => {
 export const getAllMotorPolicyPayments = async (req, res) => {
   try {
     const motorPolicyPayments = await motorPolicyPayment.find();
-    return res.status(200).json({
+    res.status(200).json({
       message: "All Motor Policy Payments retrieved successfully",
       data: motorPolicyPayments,
       success: true,
       status: "success",
     });
   } catch (err) {
-    return res.status(500).json({
+    res.status(500).json({
       message: err.message,
       success: false,
       status: "error",
@@ -147,20 +144,21 @@ export const getMotorPolicyPaymentByPolicyId = async (req, res) => {
       policyId: req.params.policyId,
     });
     if (!motorPolicyPaymentData) {
-      return res.status(404).json({
+      res.status(404).json({
         message: "Motor Policy Payment not found",
         success: false,
         status: "error",
       });
+      return;
     }
-    return res.status(200).json({
+    res.status(200).json({
       message: "Motor Policy Payment retrieved successfully",
       success: true,
       data: motorPolicyPaymentData,
       status: "success",
     });
   } catch (err) {
-    return res.status(500).json({
+    res.status(500).json({
       message: err.message,
       success: false,
       status: "error",
@@ -193,13 +191,13 @@ export const updateMotorPolicyPayment = async (req, res) => {
   } = req.body;
 
   try {
-    // Check if policyId is a valid ObjectId
     if (!mongoose.Types.ObjectId.isValid(policyId)) {
-      return res.status(400).json({
+      res.status(400).json({
         message: "Invalid policyId",
         success: false,
         status: "error",
       });
+      return;
     }
 
     const existingProfile = await motorPolicyPayment.findOne({
@@ -207,14 +205,14 @@ export const updateMotorPolicyPayment = async (req, res) => {
     });
 
     if (!existingProfile) {
-      return res.status(404).json({
+      res.status(404).json({
         message: "Motor Policy Payment not found",
         success: false,
         status: "error",
       });
+      return;
     }
 
-    // Update the existing profile with the new data
     existingProfile.partnerId = partnerId;
     existingProfile.policyNumber = policyNumber;
     existingProfile.bookingId = bookingId;
@@ -236,14 +234,14 @@ export const updateMotorPolicyPayment = async (req, res) => {
 
     const updatedMotorPolicyPayment = await existingProfile.save();
 
-    return res.status(200).json({
+    res.status(200).json({
       message: "Motor Policy Payment updated successfully",
       data: updatedMotorPolicyPayment,
       success: true,
       status: "success",
     });
   } catch (err) {
-    return res.status(400).json({
+    res.status(400).json({
       message: err.message,
       success: false,
       status: "error",
@@ -256,25 +254,32 @@ export const deleteMotorPolicyPayment = async (req, res) => {
   try {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res
-        .status(400)
-        .json({ message: "Invalid ID", success: false, status: "error" });
+      res.status(400).json({
+        message: "Invalid ID",
+        success: false,
+        status: "error",
+      });
+      return;
     }
-    const deletedMotorPolicyPayment =
-      await motorPolicyPayment.findByIdAndDelete(id);
+    const deletedMotorPolicyPayment = await motorPolicyPayment.findByIdAndDelete(id);
     if (!deletedMotorPolicyPayment) {
-      return res.status(404).json({
+      res.status(404).json({
         message: "Motor Policy Payment not found",
         success: false,
         status: "error",
       });
+      return;
     }
-    return res.status(200).json({
+    res.status(200).json({
       message: "Motor Policy Payment deleted successfully",
       success: true,
       status: "success",
     });
   } catch (err) {
-    return res.status(500).json({ message: err.message, success: false, status: "error" });
+    res.status(500).json({
+      message: err.message,
+      success: false,
+      status: "error",
+    });
   }
 };
