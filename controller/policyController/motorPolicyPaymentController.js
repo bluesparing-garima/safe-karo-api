@@ -71,14 +71,14 @@ export const createMotorPolicyPayment = async (req, res) => {
     });
 
     const savedMotorPolicyPayment = await newMotorPolicyPayment.save();
-    res.status(201).json({
+    return res.status(201).json({
       message: "Motor Policy Payment created successfully",
       data: savedMotorPolicyPayment,
       success: true,
       status: "success",
     });
   } catch (err) {
-    res.status(400).json({
+    return res.status(400).json({
       message: err.message,
       success: false,
       status: "error",
@@ -90,14 +90,14 @@ export const createMotorPolicyPayment = async (req, res) => {
 export const getAllMotorPolicyPayments = async (req, res) => {
   try {
     const motorPolicyPayments = await motorPolicyPayment.find();
-    res.status(200).json({
+    return res.status(200).json({
       message: "All Motor Policy Payments retrieved successfully",
       data: motorPolicyPayments,
       success: true,
       status: "success",
     });
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       message: err.message,
       success: false,
       status: "error",
@@ -118,14 +118,14 @@ export const getMotorPolicyPaymentByPolicyId = async (req, res) => {
         status: "error",
       });
     }
-    res.status(200).json({
+    return res.status(200).json({
       message: "Motor Policy Payment retrieved successfully",
       success: true,
       data: motorPolicyPaymentData,
       status: "success",
     });
   } catch (err) {
-    res.status(500).json({
+    return res.status(500).json({
       message: err.message,
       success: false,
       status: "error",
@@ -158,13 +158,6 @@ export const updateMotorPolicyPayment = async (req, res) => {
   } = req.body;
 
   try {
-    //const { policiesId } = ;
-    // if (!mongoose.Types.ObjectId.isValid.policyId) {
-    //   return res
-    //     .status(400)
-    //     .json({ message: "Invalid ID", success: false, status: "error" });
-    // }
-    //Check POlicyId
     const existingProfile = await motorPolicyPayment.findOne({
       policyId: req.params.policyId,
     });
@@ -175,7 +168,6 @@ export const updateMotorPolicyPayment = async (req, res) => {
           req.body,
           { new: true }
         );
-      console.log("updatedMotorPolicyPayment", updatedMotorPolicyPayment);
       if (!updatedMotorPolicyPayment) {
         return res.status(404).json({
           message: "Motor Policy Payment not found",
@@ -184,7 +176,7 @@ export const updateMotorPolicyPayment = async (req, res) => {
         });
       }
 
-      res.status(200).json({
+      return res.status(200).json({
         message: "Motor Policy Payment updated successfully",
         data: updatedMotorPolicyPayment,
         success: true,
@@ -197,7 +189,7 @@ export const updateMotorPolicyPayment = async (req, res) => {
       status: "error",
     });
   } catch (err) {
-    res.status(400).json({ message: err.message, status: "error" });
+    return res.status(400).json({ message: err.message, status: "error" });
   }
 };
 
@@ -219,14 +211,12 @@ export const deleteMotorPolicyPayment = async (req, res) => {
         status: "error",
       });
     }
-    res.status(200).json({
+    return res.status(200).json({
       message: "Motor Policy Payment deleted successfully",
       success: true,
       status: "success",
     });
   } catch (err) {
-    res
-      .status(500)
-      .json({ message: err.message, success: false, status: "error" });
+    return res.status(500).json({ message: err.message, success: false, status: "error" });
   }
 };
