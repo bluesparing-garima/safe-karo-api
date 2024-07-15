@@ -24,7 +24,7 @@ export const getPartnerDashboardCount = async (req, res) => {
       { $group: { _id: '$category', count: { $sum: 1 } } },
     ]);
 
-    const formattedCounts = policyCounts.reduce((acc, curr) => {
+    const formattedPolicyCounts = policyCounts.reduce((acc, curr) => {
       acc[curr._id] = curr.count;
       return acc;
     }, {});
@@ -94,6 +94,7 @@ export const getPartnerDashboardCount = async (req, res) => {
           commissions: {
             'PayOut Commission': reward,
           },
+          policyCounts: formattedPolicyCounts,
           bookingRequests: bookingRequests,
           leadCounts: leadRequests,
         },
