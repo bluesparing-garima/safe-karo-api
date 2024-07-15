@@ -69,6 +69,7 @@ export const createUserProfile = (req, res) => {
         accountHolderName,
         accountNumber,
         salary,
+        joiningDate,
         createdBy,
         isActive,
       } = req.body;
@@ -126,6 +127,7 @@ export const createUserProfile = (req, res) => {
         accountNumber,
         salary,
         ...fileDetails,
+        joiningDate,
         createdBy,
         isActive: isActive !== undefined ? isActive : true,
         partnerId,
