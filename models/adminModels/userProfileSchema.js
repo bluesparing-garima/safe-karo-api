@@ -16,7 +16,6 @@ const userProfileSchema = new mongoose.Schema({
   accountHolderName: { type: String, trim: true },
   accountNumber: { type: String, trim: true },
   salary: { type: Number, trim: true },
-  joiningDate: { type: String, trim: true },
 
   // fields which are in partners
   password: { type: String, trim: true },
