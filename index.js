@@ -42,6 +42,7 @@ import activityLogRoutes from "./routes/adminRoutes/activityLogRoutes.js";
 // Motor policy routes
 import motorPolicyRoutes from "./routes/policy/motorPolicyRoutes.js";
 import motorPolicyPayment from "./routes/policy/motorPolicyPaymentRoutes.js";
+import filterPolicy from "./routes/policy/filterRoutes.js";
 // PartnerController Routes.
 import leadGenerate from "./routes/partnerRoutes/leadGenerateRoutes.js";
 import leadQuotation from "./routes/partnerRoutes/leadQuotationRoutes.js";
@@ -75,6 +76,12 @@ app.use("/api/booking-request", bookingRequestRoute);
 // motor policy Routes
 app.use("/api/policy/motor", motorPolicyRoutes);
 
+// motor policy payment Routes
+app.use("/api/policy/motor/payment", motorPolicyPayment);
+
+// filter policy Routes
+app.use('/api/policy/motor/filter',filterPolicy);
+
 //Partner lead generate.
 app.use("/api/lead-Generate", leadGenerate);
 
@@ -99,8 +106,6 @@ app.use("/api/user", userRoutes);
 //assignee roles Routes
 app.use("/api/user-roles", assigneeRolesRouters);
 
-// motor policy payment Routes
-app.use("/api/policy/motor/payment", motorPolicyPayment);
 
 //create new Policy Routes
 app.use("/api/policy-type", policyTypeRoutes);
