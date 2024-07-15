@@ -4,11 +4,10 @@ import BookingRequest from "../../models/bookingModel/bookingRequestSchema.js";
 // Controller function to fetch booking dashboard counts
 export const getBookingDashboardCount = async (req, res) => {
   const { policyCompletedBy } = req.params;
-  console.log("policyCompletedBy", policyCompletedBy);
 
   if (!policyCompletedBy) {
     return res.status(400).json({
-      message: "Booking Id is required",
+      message: "Policy Completed By is required",
       status: "error",
     });
   }
@@ -19,22 +18,27 @@ export const getBookingDashboardCount = async (req, res) => {
       { $match: { policyCompletedBy } },
       { $group: { _id: null, totalNetPremium: { $sum: "$netPremium" } } },
     ]);
-    console.log("netPremium", netPremiumAggregate);
-    const netPremium =
-      netPremiumAggregate.length > 0
-        ? netPremiumAggregate[0].totalNetPremium
-        : 0;
+    const netPremium = netPremiumAggregate.length > 0 ? netPremiumAggregate[0].totalNetPremium : 0;
 
-    // Aggregate accepted booking requests for the specified policyCompletedBy
-    const acceptedRequestsAggregate = await BookingRequest.aggregate([
-      { $match: { bookingAcceptedBy:policyCompletedBy } },
+    // Aggregate final premium for the specified policyCompletedBy
+    const finalPremiumAggregate = await MotorPolicyModel.aggregate([
+      { $match: { policyCompletedBy } },
+      { $group: { _id: null, totalFinalPremium: { $sum: "$finalPremium" } } },
+    ]);
+    const finalPremium = finalPremiumAggregate.length > 0 ? finalPremiumAggregate[0].totalFinalPremium : 0;
+
+    // Aggregate booking requests by status for the specified policyCompletedBy
+    const bookingRequestsAggregate = await BookingRequest.aggregate([
+      { $match: { bookingAcceptedBy: policyCompletedBy } },
       { $group: { _id: "$bookingStatus", count: { $sum: 1 } } },
     ]);
-    console.log(acceptedRequestsAggregate)
-    const acceptedRequests =
-      acceptedRequestsAggregate.length > 0
-        ? acceptedRequestsAggregate[0].count
-        : 0;
+
+    const totalBookingRequests = bookingRequestsAggregate.reduce((acc, curr) => acc + curr.count, 0);
+
+    const formattedBookingRequests = bookingRequestsAggregate.reduce((acc, curr) => {
+      acc[curr._id] = curr.count;
+      return acc;
+    }, {});
 
     // Aggregate motor policy counts for the specified policyCompletedBy
     const motorPolicyAggregate = await MotorPolicyModel.aggregate([
@@ -42,13 +46,10 @@ export const getBookingDashboardCount = async (req, res) => {
       { $group: { _id: "$category", count: { $sum: 1 } } },
     ]);
 
-    const formattedPolicyCounts = motorPolicyAggregate.reduce(
-      (acc, curr) => {
-        acc[curr._id] = curr.count;
-        return acc;
-      },
-      {}
-    );
+    const formattedPolicyCounts = motorPolicyAggregate.reduce((acc, curr) => {
+      acc[curr._id] = curr.count;
+      return acc;
+    }, {});
 
     const data = {
       message: "Booking dashboard counts retrieved successfully",
@@ -56,9 +57,13 @@ export const getBookingDashboardCount = async (req, res) => {
         {
           premiums: {
             "Net Premium": netPremium,
+            "Final Premium": finalPremium,
           },
           bookingRequests: {
-            "Accepted Requests": acceptedRequests,
+            "Total Booking": totalBookingRequests,
+            "Accepted Booking": formattedBookingRequests["accepted"] || 0,
+            "Requested Booking": formattedBookingRequests["requested"] || 0,
+            "Booked Booking": formattedBookingRequests["booked"] || 0,
           },
           policyCounts: formattedPolicyCounts,
         },
