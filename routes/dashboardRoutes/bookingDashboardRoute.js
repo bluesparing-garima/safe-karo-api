@@ -3,6 +3,6 @@ import { getBookingDashboardCount } from "../../controller/dashboard/bookingDash
 import logActivity from "../../middlewares/logActivity.js";
 const router = express.Router();
 
-router.get("/:partnerId", logActivity, getBookingDashboardCount);
+router.get("/:policyCompletedBy", logActivity, getBookingDashboardCount);
 
 export default router;
