@@ -163,7 +163,7 @@ export const getAllMatchingRecords = async (req, res) => {
       make: make,
       model: model,
       vehicleAge: vehicleAge,
-      broker:broker,
+      broker: broker,
     };
 
     Object.keys(dbQuery).forEach((key) => {
@@ -173,18 +173,77 @@ export const getAllMatchingRecords = async (req, res) => {
     });
 
     const matchedRecords = await MotorPolicyModel.find(dbQuery);
+    const policyIds = matchedRecords.map((policy) => policy._id);
+    const payments = await MotorPolicyPaymentModel.find({
+      policyId: { $in: policyIds },
+    });
 
-    if (matchedRecords.length === 0) {
-      return res.status(200).json({
-        message: "No matching records found in the database",
-        data: [],
-        status: "Success",
-      });
-    }
+    const policyData = matchedRecords.map((policy) => {
+      const payment = payments.find(
+        (payment) => payment.policyId.toString() === policy._id.toString()
+      );
+      return {
+        policyType: policy.policyType,
+        caseType: policy.caseType,
+        category: policy.category,
+        subCategory: policy.subCategory,
+        companyName: policy.companyName,
+        broker: policy.broker,
+        vehicleAge: policy.vehicleAge,
+        make: policy.make,
+        model: policy.model,
+        fuelType: policy.fuelType,
+        rto: policy.rto,
+        vehicleNumber: policy.vehicleNumber,
+        weight: policy.weight,
+        cc: policy.cc,
+        ncb: policy.ncb,
+        policyNumber: policy.policyNumber,
+        fullName: policy.fullName,
+        emailId: policy.emailId,
+        phoneNumber: policy.phoneNumber,
+        mfgYear: policy.mfgYear,
+        tenure: policy.tenure,
+        idv: policy.idv,
+        od: policy.od,
+        tp: policy.tp,
+        netPremium: policy.netPremium,
+        finalPremium: policy.finalPremium,
+        paymentMode: policy.paymentMode,
+        partnerId: policy.partnerId,
+        partnerName: policy.partnerName,
+        relationshipManagerId: policy.relationshipManagerId,
+        relationshipManagerName: policy.relationshipManagerName,
+        bookingId: policy.bookingId,
+        policyCompletedBy: policy.policyCompletedBy,
+        paymentDetails: policy.paymentDetails,
+        productType: policy.productType,
+        createdBy: policy.createdBy,
+        updatedBy: policy.updatedBy,
+        updatedOn: policy.updatedOn,
+        isActive: policy.isActive,
+        createdOn: policy.createdOn,
+        paymentId: payment ? payment._id : null,
+        payInODPercentage: payment ? payment.payInODPercentage : null,
+        payInTPPercentage: payment ? payment.payInTPPercentage : null,
+        payInODAmount: payment ? payment.payInODAmount : null,
+        payInTPAmount: payment ? payment.payInTPAmount : null,
+        payOutODPercentage: payment ? payment.payOutODPercentage : null,
+        payOutTPPercentage: payment ? payment.payOutTPPercentage : null,
+        payOutODAmount: payment ? payment.payOutODAmount : null,
+        payOutTPAmount: payment ? payment.payOutTPAmount : null,
+        payInCommission: payment ? payment.payInCommission : null,
+        payOutCommission: payment ? payment.payOutCommission : null,
+        paymentCreatedBy: payment ? payment.createdBy : null,
+        paymentCreatedOn: payment ? payment.createdOn : null,
+        paymentUpdatedBy: payment ? payment.updatedBy : null,
+        paymentUpdatedOn: payment ? payment.updatedOn : null,
+      };
+    });
 
     res.status(200).json({
       message: "Records found",
-      data: matchedRecords,
+      data: policyData,
       status: "Success",
     });
   } catch (error) {
