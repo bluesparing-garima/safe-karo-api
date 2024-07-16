@@ -63,6 +63,10 @@ app.get("/", (req, res) => {
   res.send("backend api deployed successfully!!!!!");
 });
 
+app.use(fileUpload({
+  createParentPath: true
+}));
+
 // JSON
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -94,11 +98,6 @@ app.use("/api/lead-payment", leadPayment);
 // testing
 // app.use("/api", testRoutes);
 
-app.use(
-  fileUpload({
-    createParentPath: true, // Allow creating parent path if it doesn't exist
-  })
-);
 
 // Load Routes
 app.use("/api/user", userRoutes);
