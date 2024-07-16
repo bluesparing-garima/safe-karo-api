@@ -14,10 +14,19 @@ export const getPoliciesByDateRange = async (req, res) => {
   }
 
   try {
+    // Convert startDate to MongoDB date object for the start of the day
+    const startDateObj = new Date(startDate);
+    startDateObj.setHours(0, 0, 0, 0); // Set hours, minutes, seconds, and milliseconds to 0
+
+    // Convert endDate to MongoDB date object for the end of the day
+    const endDateObj = new Date(endDate);
+    endDateObj.setHours(23, 59, 59, 999); // Set hours, minutes, seconds, and milliseconds to end of day
+
+    // Query to find documents within the date range
     const policies = await MotorPolicyModel.find({
       createdOn: {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate),
+        $gte: startDateObj,
+        $lte: endDateObj,
       },
     });
 
