@@ -24,7 +24,7 @@ export const getPoliciesByDateRange = async (req, res) => {
 
     // Query to find documents within the date range
     const policies = await MotorPolicyModel.find({
-      createdOn: {
+      issueDate: {
         $gte: startDateObj,
         $lte: endDateObj,
       },
@@ -88,6 +88,7 @@ export const getPoliciesByDateRange = async (req, res) => {
         updatedOn: policy.updatedOn,
         isActive: policy.isActive,
         createdOn: policy.createdOn,
+        issueDate:policy.issueDate,
         paymentId: payment ? payment._id : null,
         payInODPercentage: payment ? payment.payInODPercentage : null,
         payInTPPercentage: payment ? payment.payInTPPercentage : null,
@@ -271,14 +272,19 @@ export const updateODTPByDateRange = async (req, res) => {
     return res.status(400).json({
       status: "error",
       success: false,
-      message:
-        "Start date, end date, and at least one of OD or TP are required.",
+      message: "Start date, end date, and at least one of OD or TP are required.",
     });
   }
 
   try {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    // Convert startDate to MongoDB date object for the start of the day
+    const startDateObj = new Date(startDate);
+    startDateObj.setHours(0, 0, 0, 0);
+
+    // Convert endDate to MongoDB date object for the end of the day
+    const endDateObj = new Date(endDate);
+    endDateObj.setHours(23, 59, 59, 999);
+
     const updateFields = {};
 
     if (od !== undefined) {
@@ -288,20 +294,155 @@ export const updateODTPByDateRange = async (req, res) => {
       updateFields.tp = parseFloat(tp);
     }
 
-    const updateResult = await MotorPolicyPaymentModel.updateMany(
-      { createdOn: { $gte: start, $lte: end } },
+    // Update MotorPolicyPaymentModel
+    const updatePaymentResult = await MotorPolicyPaymentModel.updateMany(
+      { issueDate: { $gte: startDateObj, $lte: endDateObj } },
+      { $set: updateFields }
+    );
+
+    // Update MotorPolicyModel
+    const paymentPolicies = await MotorPolicyPaymentModel.find(
+      { issueDate: { $gte: startDateObj, $lte: endDateObj } },
+      { policyNumber: 1 }
+    );
+
+    const policyNumbers = paymentPolicies.map(policy => policy.policyNumber);
+
+    const updatePolicyResult = await MotorPolicyModel.updateMany(
+      { policyNumber: { $in: policyNumbers } },
       { $set: updateFields }
     );
 
     res.status(200).json({
-      message: "OD and TP updated successfully.",
+      message: "OD and TP updated successfully in both models.",
       success: true,
       status: "success",
-      updateResult,
+      updatePaymentResult,
+      updatePolicyResult,
     });
   } catch (error) {
     res.status(500).json({
       message: "Error updating OD and TP.",
+      success: false,
+      error: error.message,
+    });
+  }
+};
+;
+
+// update payIn and payOut commission
+export const updateCommissionByDateRange = async (req, res) => {
+  const {
+    startDate,
+    endDate,
+    payInODPercentage,
+    payInTPPercentage,
+    payOutODPercentage,
+    payOutTPPercentage,
+  } = req.body;
+
+  if (!startDate || !endDate) {
+    return res.status(400).json({
+      status: 'error',
+      success: false,
+      message: 'Start date and end date are required.',
+    });
+  }
+
+  if (
+    payInODPercentage === undefined &&
+    payInTPPercentage === undefined &&
+    payOutODPercentage === undefined &&
+    payOutTPPercentage === undefined
+  ) {
+    return res.status(400).json({
+      status: 'error',
+      success: false,
+      message: 'At least one of pay-in or pay-out percentages is required.',
+    });
+  }
+
+  try {
+    // Convert startDate to MongoDB date object for the start of the day
+    const startDateObj = new Date(startDate);
+    startDateObj.setHours(0, 0, 0, 0);
+
+    // Convert endDate to MongoDB date object for the end of the day
+    const endDateObj = new Date(endDate);
+    endDateObj.setHours(23, 59, 59, 999);
+
+    // Find the documents to be updated
+    const documentsToUpdate = await MotorPolicyPaymentModel.find({
+      createdOn: { $gte: startDateObj, $lte: endDateObj },
+    });
+
+    if (documentsToUpdate.length === 0) {
+      return res.status(404).json({
+        status: 'error',
+        success: false,
+        message: 'No documents found in the specified date range.',
+      });
+    }
+
+    // Calculate and update commission fields for each document
+    const updatedDocumentsWithCommission = await Promise.all(
+      documentsToUpdate.map(async (doc) => {
+        const { od, tp } = doc;
+
+        let updatedFields = {};
+        let payInCommission = 0;
+        let payOutCommission = 0;
+
+        if (payInODPercentage !== undefined && payInTPPercentage !== undefined) {
+          const calculatedPayInODAmount = (od * payInODPercentage) / 100;
+          const calculatedPayInTPAmount = (tp * payInTPPercentage) / 100;
+          payInCommission = calculatedPayInODAmount + calculatedPayInTPAmount;
+
+          updatedFields = {
+            ...updatedFields,
+            payInODPercentage,
+            payInTPPercentage,
+            payInODAmount: calculatedPayInODAmount,
+            payInTPAmount: calculatedPayInTPAmount,
+            payInCommission,
+          };
+        }
+
+        if (payOutODPercentage !== undefined && payOutTPPercentage !== undefined) {
+          const calculatedPayOutODAmount = (od * payOutODPercentage) / 100;
+          const calculatedPayOutTPAmount = (tp * payOutTPPercentage) / 100;
+          payOutCommission = calculatedPayOutODAmount + calculatedPayOutTPAmount;
+
+          updatedFields = {
+            ...updatedFields,
+            payOutODPercentage,
+            payOutTPPercentage,
+            payOutODAmount: calculatedPayOutODAmount,
+            payOutTPAmount: calculatedPayOutTPAmount,
+            payOutCommission,
+          };
+        }
+
+        // Update the document with calculated fields
+        const updatedDoc = await MotorPolicyPaymentModel.findByIdAndUpdate(
+          doc._id,
+          { $set: updatedFields },
+          { new: true }
+        );
+
+        return updatedDoc;
+      })
+    );
+
+    res.status(200).json({
+      message: `Commission fields updated successfully.`,
+      success: true,
+      status: 'success',
+      updatedDocumentsWithCommission,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: `Error updating commission fields.`,
       success: false,
       error: error.message,
     });
