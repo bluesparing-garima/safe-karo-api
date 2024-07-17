@@ -46,6 +46,10 @@ import filterPolicy from "./routes/policy/filterRoutes.js";
 import leadGenerate from "./routes/partnerRoutes/leadGenerateRoutes.js";
 import leadQuotation from "./routes/partnerRoutes/leadQuotationRoutes.js";
 import leadPayment from "./routes/partnerRoutes/leadPaymentRoutes.js";
+
+// Accounts 
+import accountRoute from "./routes/accountRoutes/accountRoute.js";
+
 import testRoutes from "./routes/testRoutes.js";
 import path from "path"; // Import path to resolve the directory path
 const app = express();
@@ -174,7 +178,10 @@ app.use("/api/booking-dashboard", bookingDashboardRoutes);
 // activity logs
 app.use("/api/activityLog", activityLogRoutes);
 
-// ---------------------------------- Lead Routes --------------------------------------//
+// --------------------------------------- Account Route --------------------------------
+
+// Account routes
+app.use('/api/account',accountRoute);
 
 // Handle invalid routes
 //app.use(handleInvalidRoutes);
