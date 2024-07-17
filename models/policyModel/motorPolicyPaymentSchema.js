@@ -19,7 +19,8 @@ const motorPolicyPaymentSchema = new mongoose.Schema({
   payOutTPAmount: { type: Number, trim: true },
   payInCommission: { type: Number, trim: true }, // payInOD + payInTP
   payOutCommission: { type: Number, trim: true }, // payOutOD + payOutTP
-  policyDate:{type:String},
+  policyDate:{ type: Date},
+  issueDate:{ type: Date},
   createdBy: { type: String },
   updatedBy: { type: String, default: null },
   createdOn: { type: Date, default: Date.now },
