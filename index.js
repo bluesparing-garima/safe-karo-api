@@ -9,7 +9,6 @@ import {
   requestLogger,
   handleInvalidRoutes,
 } from "./middlewares/requestLogger.js";
-
 import assigneeRolesRouters from "./routes/adminRoutes/userRolesRoutes.js";
 import policyTypeRoutes from "./routes/adminRoutes/policyTypeRoutes.js";
 import caseTypeRoutes from "./routes/adminRoutes/caseTypeRoutes.js";
@@ -63,13 +62,11 @@ app.get("/", (req, res) => {
   res.send("backend api deployed successfully!!!!!");
 });
 
-app.use(fileUpload({
-  createParentPath: true
-}));
 
 // JSON
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
 
 // userProfile
 app.use("/api/user-profile", userProfile);
@@ -98,6 +95,9 @@ app.use("/api/lead-payment", leadPayment);
 // testing
 // app.use("/api", testRoutes);
 
+app.use(fileUpload({
+  createParentPath: true
+}));
 
 // Load Routes
 app.use("/api/user", userRoutes);

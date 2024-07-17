@@ -40,7 +40,7 @@ const userProfileSchema = new mongoose.Schema({
   bankProof: { type: String, trim: true },
   experience: { type: String, trim: true },
   other: { type: String, trim: true },
-  joiningDate: { type: String, trim: true },
+  joiningDate: { type: Date, trim: true },
   createdBy: { type: String, trim: true },
   updatedBy: { type: String, default: null },
   createdOn: { type: Date, default: Date.now },

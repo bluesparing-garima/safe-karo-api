@@ -45,7 +45,7 @@ const hashPassword = async (password) => {
 export const createUserProfile = (req, res) => {
   upload(req, res, async (err) => {
     if (err) {
-      return res.status(400).json({ message: err.message });
+      return res.status(400).json({ message: err.message});
     }
     if (!req.files || Object.keys(req.files).length === 0) {
       return res.status(400).json({ message: "No files selected!" });
