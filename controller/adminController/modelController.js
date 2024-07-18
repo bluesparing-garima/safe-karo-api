@@ -3,15 +3,30 @@ import mongoose from "mongoose";
 // Endpoint to check if a model exists
 const createModel = async (req, res) => {
   try {
-    const { modelName } = req.query;
-    const normalizedModelName = modelName.toLowerCase();
+    const { modelName,makeId,makeName,createdBy,isActive } = req.body;
 
     const modelExists = await Model.exists({
-      modelName: { $regex: new RegExp(`^${normalizedModelName}$`, "i") },
+      modelName,
     });
+    if (modelExists) {
+      return res.status(409).json({
+        status: "failed",
+        message: "Make with the same makeName already exists",
+      });
+    }
+    const newModel = new Model({
+      makeId,
+      makeName,
+      modelName,
+      createdBy,
+      updatedBy: null,
+      updatedOn: null,
+      isActive: isActive !== undefined ? isActive : true,
+    });
+    await newModel.save();
     res.status(200).json({
-      message: modelExists ? "Model already exists" : "Model does not exist",
-      exists: modelExists,
+      message: "New Model created successfully",
+      data: newModel,
       status: "success",
     });
   } catch (error) {
