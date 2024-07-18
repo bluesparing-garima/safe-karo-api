@@ -12,6 +12,15 @@ const createModel = async (req, res) => {
         .status(400)
         .json({ status: "failed", message: "Required fields are missing" });
     }
+    const existingModel = await Model.findOne({ modelName });
+    if (existingModel) {
+      return res
+        .status(409)
+        .json({
+          status: "failed",
+          message: "Model with the same ModelName already exists",
+        });
+    }
 
     const newmodel = new Model({
       makeId,
