@@ -12,10 +12,8 @@ const createMake = async (req, res) => {
         .json({ status: "failed", message: "Required fields are missing" });
     }
 
-    const normalizedMakeName = makeName.toLowerCase();
-
     const existingMake = await Make.findOne({
-      makeName: { $regex: new RegExp(`^${normalizedMakeName}$`, "i") },
+      makeName,
     });
     if (existingMake) {
       return res.status(409).json({
