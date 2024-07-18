@@ -17,7 +17,7 @@ router.post("/", logActivity, createMake);
 router.get("/", logActivity, getAllMakes);
 
 // Check make exist or not.
-router.get('/validate-make/:make',logActivity,validateMake);
+router.get("/validate-make/:make", logActivity, validateMake);
 // Get maker name by ID
 router.get("/:id", logActivity, getMakeById);
 
