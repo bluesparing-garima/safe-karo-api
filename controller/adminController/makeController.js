@@ -1,5 +1,5 @@
 import Make from "../../models/adminModels/makeSchema.js";
-
+import mongoose from "mongoose";
 // Create a new make
 const createMake = async (req, res) => {
   try {
@@ -7,12 +7,16 @@ const createMake = async (req, res) => {
 
     // Check if all required fields are provided
     if (!makeName || !createdBy) {
-      return res.status(400).json({ status: "failed", message: "Required fields are missing" });
+      return res
+        .status(400)
+        .json({ status: "failed", message: "Required fields are missing" });
     }
 
     const normalizedMakeName = makeName.toLowerCase();
 
-    const existingMake = await Make.findOne({ makeName: { $regex: new RegExp(`^${normalizedMakeName}$`, 'i') } });
+    const existingMake = await Make.findOne({
+      makeName: { $regex: new RegExp(`^${normalizedMakeName}$`, "i") },
+    });
     if (existingMake) {
       return res.status(409).json({
         status: "failed",
@@ -21,7 +25,7 @@ const createMake = async (req, res) => {
     }
 
     const newMake = new Make({
-      makeName: normalizedMakeName,
+      makeName,
       createdBy,
       updatedBy: null,
       updatedOn: null,
@@ -55,7 +59,9 @@ const getAllMakes = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ status: "failed", message: "Unable to retrieve makes" });
+    res
+      .status(500)
+      .json({ status: "failed", message: "Unable to retrieve makes" });
   }
 };
 
@@ -65,7 +71,10 @@ const validateMake = async (req, res) => {
     const { make } = req.params;
     const normalizedMake = make.toLowerCase();
 
-    const makeExists = await Make.exists({ makeName: normalizedMake });
+    // const makeExists = await Make.exists({ makeName: normalizedMake });
+    const makeExists = await Make.findOne({
+      makeName: { $regex: new RegExp(`^${normalizedMake}$`, "i") },
+    });
     if (makeExists) {
       return res.status(200).json({
         message: "Make already exists",
@@ -91,11 +100,19 @@ const validateMake = async (req, res) => {
 const getMakeById = async (req, res) => {
   try {
     const { id } = req.params;
-
+    // Check if the id is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        message: "Invalid Make ID",
+        status: "error",
+      });
+    }
     // Check if make exists
     const existingMake = await Make.findById(id);
     if (!existingMake) {
-      return res.status(404).json({ status: "failed", message: "Make name not found" });
+      return res
+        .status(404)
+        .json({ status: "failed", message: "Make name not found" });
     }
     res.status(200).json({
       message: "Success! Here is the make with ID",
@@ -104,7 +121,9 @@ const getMakeById = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ status: "failed", message: "Unable to retrieve make" });
+    res
+      .status(500)
+      .json({ status: "failed", message: "Unable to retrieve make" });
   }
 };
 
@@ -117,7 +136,9 @@ const updateMake = async (req, res) => {
     // Check if make exists
     const existingMake = await Make.findById(id);
     if (!existingMake) {
-      return res.status(404).json({ status: "failed", message: "Make name not found" });
+      return res
+        .status(404)
+        .json({ status: "failed", message: "Make name not found" });
     }
 
     // Update the make
@@ -171,4 +192,11 @@ const deleteMake = async (req, res) => {
   }
 };
 
-export { createMake, getAllMakes, getMakeById, updateMake, deleteMake,validateMake };
+export {
+  createMake,
+  getAllMakes,
+  getMakeById,
+  updateMake,
+  deleteMake,
+  validateMake,
+};

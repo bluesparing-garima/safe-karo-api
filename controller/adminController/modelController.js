@@ -1,48 +1,24 @@
 import Model from "../../models/adminModels/modelSchema.js";
-
-// Create a new model
+import mongoose from "mongoose";
+// Endpoint to check if a model exists
 const createModel = async (req, res) => {
   try {
-    const { makeId, makeName, modelName, createdBy, isActive } = req.body;
-    // Check if all required fields are provided
-    if (!makeId || !makeName || !modelName || !createdBy) {
-      return res
-        .status(400)
-        .json({ status: "failed", message: "Required fields are missing" });
-    }
+    const { modelName } = req.query;
     const normalizedModelName = modelName.toLowerCase();
 
-    const existingModel = await Model.findOne({ modelName: { $regex: new RegExp(`^${normalizedModelName}$`, 'i') } });
-    if (existingModel) {
-      return res
-        .status(409)
-        .json({
-          status: "failed",
-          message: "Model with the same ModelName already exists",
-        });
-    }
-   
-    const newmodel = new Model({
-      makeId,
-      makeName,
-      modelName:normalizedModelName,
-      createdBy,
-      updatedBy: null, 
-      updatedOn: null, 
-      isActive: isActive !== undefined ? isActive : true, // Set default value to true if not provided
+    const modelExists = await Model.exists({
+      modelName: { $regex: new RegExp(`^${normalizedModelName}$`, "i") },
     });
-
-    await newmodel.save();
     res.status(200).json({
-      message: "New model created successfully",
-      data: newmodel,
+      message: modelExists ? "Model already exists" : "Model does not exist",
+      exists: modelExists,
       status: "success",
     });
   } catch (error) {
-    console.error("Error creating model:", error);
+    console.error("Error checking model existence:", error);
     res.status(500).json({
       status: "failed",
-      message: "Unable to create new model",
+      message: "Unable to check model existence",
       error: error.message,
     });
   }
@@ -71,8 +47,10 @@ const validateModel = async (req, res) => {
     const { model } = req.params;
     const normalizedModel = model.toLowerCase();
 
-    const makeExists = await Make.exists({ modelName: normalizedModel });
-    if (makeExists) {
+    const modelExists = await Model.findOne({
+      modelName: { $regex: new RegExp(`^${normalizedModel}$`, "i") },
+    });
+    if (modelExists) {
       return res.status(200).json({
         message: "Model already exists",
         exist: true,
@@ -97,7 +75,13 @@ const validateModel = async (req, res) => {
 const getModelById = async (req, res) => {
   try {
     const { id } = req.params;
-
+    // Check if the id is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        message: "Invalid Make ID",
+        status: "error",
+      });
+    }
     // Check if model exists
     const existingmodel = await Model.findById(id);
     if (!existingmodel) {
@@ -185,4 +169,11 @@ const deleteModel = async (req, res) => {
   }
 };
 
-export { createModel, getAllModels, getModelById, updateModel, deleteModel,validateModel };
+export {
+  createModel,
+  getAllModels,
+  getModelById,
+  updateModel,
+  deleteModel,
+  validateModel,
+};
