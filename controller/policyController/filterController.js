@@ -140,49 +140,28 @@ export const getAllMatchingRecords = async (req, res) => {
       broker,
     } = req.query;
 
-    const missingFields = [];
-    if (!rto) missingFields.push("rto");
-    if (!policyType) missingFields.push("policyType");
-    if (!caseType) missingFields.push("caseType");
-    if (!productType) missingFields.push("productType");
-    if (!companyName) missingFields.push("companyName");
-    if (!make) missingFields.push("make");
-    if (!model) missingFields.push("model");
-    if (!fuelType) missingFields.push("fuelType");
-    if (!cc) missingFields.push("cc");
-    if (!ncb) missingFields.push("ncb");
-    if (!vehicleAge) missingFields.push("vehicleAge");
-    if (!broker) missingFields.push("broker");
-    if (missingFields.length > 0) {
+    const dbQuery = [];
+    if (rto) dbQuery.push({ rto });
+    if (policyType) dbQuery.push({ policyType });
+    if (caseType) dbQuery.push({ caseType });
+    if (productType) dbQuery.push({ productType });
+    if (companyName) dbQuery.push({ companyName });
+    if (make) dbQuery.push({ make });
+    if (model) dbQuery.push({ model });
+    if (fuelType) dbQuery.push({ fuelType });
+    if (cc) dbQuery.push({ cc });
+    if (ncb) dbQuery.push({ ncb });
+    if (vehicleAge) dbQuery.push({ vehicleAge });
+    if (broker) dbQuery.push({ broker });
+
+    if (dbQuery.length === 0) {
       return res.status(400).json({
-        message: "Missing required query parameters",
-        missingFields,
+        message: "At least one query parameter is required",
         status: "Failed",
       });
     }
 
-    const dbQuery = {
-      fuelType: fuelType,
-      productType: productType,
-      cc: cc,
-      ncb: ncb,
-      policyType: policyType,
-      rto: rto,
-      caseType: caseType,
-      companyName: companyName,
-      make: make,
-      model: model,
-      vehicleAge: vehicleAge,
-      broker: broker,
-    };
-
-    Object.keys(dbQuery).forEach((key) => {
-      if (dbQuery[key] === undefined || dbQuery[key] === null) {
-        delete dbQuery[key];
-      }
-    });
-
-    const matchedRecords = await MotorPolicyModel.find(dbQuery);
+    const matchedRecords = await MotorPolicyModel.find({ $or: dbQuery });
     const policyIds = matchedRecords.map((policy) => policy._id);
     const payments = await MotorPolicyPaymentModel.find({
       policyId: { $in: policyIds },
@@ -328,7 +307,6 @@ export const updateODTPByDateRange = async (req, res) => {
     });
   }
 };
-;
 
 // update payIn and payOut commission
 export const updateCommissionByDateRange = async (req, res) => {
