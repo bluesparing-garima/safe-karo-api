@@ -1,5 +1,4 @@
-import MakeModel from "../../models/adminModels/makeSchema.js";
-import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
+import Make from "../../models/adminModels/makeSchema.js";
 // Create a new make
 const createMake = async (req, res) => {
   try {
@@ -12,7 +11,16 @@ const createMake = async (req, res) => {
         .json({ status: "failed", message: "Required fields are missing" });
     }
 
-    const newmake = new MakeModel({
+    const existingModel = await Make.findOne({ makeName });
+    if (existingModel) {
+      return res
+        .status(409)
+        .json({
+          status: "failed",
+          message: "Make with the same makeName already exists",
+        });
+    }
+    const newmake = new Make({
       makeName,
       createdBy,
       updatedBy: null, // Set updatedBy to null initially
@@ -39,7 +47,7 @@ const createMake = async (req, res) => {
 // Get all makes
 const getAllMakes = async (req, res) => {
   try {
-    const Makes = await MakeModel.find();
+    const Makes = await Make.find();
     res.status(200).json({
       message: "Success! Here are all makes",
       data: Makes,
@@ -57,7 +65,7 @@ const getAllMakes = async (req, res) => {
 export const validateMake = async (req, res) => {
   try {
     const { make } = req.params;
-    const makeExists = await MotorPolicyModel.exists({
+    const makeExists = await Make.exists({
       make,
     });
     if (makeExists) {
@@ -80,13 +88,14 @@ export const validateMake = async (req, res) => {
     });
   }
 };
+
 // Get make by ID
 const getMakeById = async (req, res) => {
   try {
     const { id } = req.params;
 
     // Check if make exists
-    const existingmake = await MakeModel.findById(id);
+    const existingmake = await Make.findById(id);
     if (!existingmake) {
       return res
         .status(404)
@@ -112,7 +121,7 @@ const updateMake = async (req, res) => {
     const { makeName, updatedBy, isActive } = req.body;
 
     // Check if make exists
-    const existingMake = await MakeModel.findById(id);
+    const existingMake = await Make.findById(id);
     if (!existingMake) {
       return res
         .status(404)
@@ -149,7 +158,7 @@ const deleteMake = async (req, res) => {
     const { id } = req.params;
 
     // Check if make exists
-    const existingmake = await MakeModel.findById(id);
+    const existingmake = await Make.findById(id);
     if (!existingmake) {
       return res
         .status(404)
@@ -157,7 +166,7 @@ const deleteMake = async (req, res) => {
     }
 
     // Delete the make
-    await MakeModel.findByIdAndDelete(id);
+    await Make.findByIdAndDelete(id);
     res.status(200).json({
       status: "success",
       message: "Make name deleted successfully",

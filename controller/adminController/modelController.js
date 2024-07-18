@@ -1,5 +1,4 @@
 import Model from "../../models/adminModels/modelSchema.js";
-import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
 
 // Create a new model
 const createModel = async (req, res) => {
@@ -11,6 +10,15 @@ const createModel = async (req, res) => {
       return res
         .status(400)
         .json({ status: "failed", message: "Required fields are missing" });
+    }
+    const existingModel = await Model.findOne({ modelName });
+    if (existingModel) {
+      return res
+        .status(409)
+        .json({
+          status: "failed",
+          message: "Model with the same ModelName already exists",
+        });
     }
 
     const newmodel = new Model({
@@ -60,7 +68,7 @@ const getAllModels = async (req, res) => {
 export const validateModel = async (req, res) => {
   try {
     const { model } = req.params;
-    const modelExists = await MotorPolicyModel.exists({
+    const modelExists = await Model.exists({
       model,
     });
     if (modelExists) {
