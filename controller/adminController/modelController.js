@@ -12,7 +12,7 @@ const createModel = async (req, res) => {
     }
     const normalizedModelName = modelName.toLowerCase();
 
-    const existingModel = await Model.findOne({ modelName:normalizedModelName });
+    const existingModel = await Model.findOne({ modelName: { $regex: new RegExp(`^${normalizedModelName}$`, 'i') } });
     if (existingModel) {
       return res
         .status(409)

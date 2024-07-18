@@ -12,8 +12,8 @@ const createMake = async (req, res) => {
 
     const normalizedMakeName = makeName.toLowerCase();
 
-    const existingModel = await Make.findOne({ makeName: normalizedMakeName });
-    if (existingModel) {
+    const existingMake = await Make.findOne({ makeName: { $regex: new RegExp(`^${normalizedMakeName}$`, 'i') } });
+    if (existingMake) {
       return res.status(409).json({
         status: "failed",
         message: "Make with the same makeName already exists",
