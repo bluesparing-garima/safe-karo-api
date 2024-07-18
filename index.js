@@ -78,6 +78,10 @@ app.use("/api/user-profile", userProfile);
 // Booking request
 app.use("/api/booking-request", bookingRequestRoute);
 
+app.use(fileUpload({
+  createParentPath: true
+}));
+
 // motor policy Routes
 app.use("/api/policy/motor", motorPolicyRoutes);
 
@@ -99,9 +103,7 @@ app.use("/api/lead-payment", leadPayment);
 // testing
 // app.use("/api", testRoutes);
 
-app.use(fileUpload({
-  createParentPath: true
-}));
+
 
 // Load Routes
 app.use("/api/user", userRoutes);

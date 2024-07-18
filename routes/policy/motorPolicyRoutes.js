@@ -11,13 +11,14 @@ import {
   getMotorPolicyWithPaymentDetails,
   getMotorPolicyByPolicyId,
   getMotorPolicyByPolicyCompletedBy,
+  uploadMotorPolicy
 } from "../../controller/policyController/motorPolicyController.js";
 const router = express.Router();
 
 router.post("/", logActivity, createMotorPolicy);
 router.get("/", logActivity, getMotorPolicies);
 router.get("/validatePolicyNumber", logActivity, validatePolicyNumber);
-
+router.post('/upload',logActivity,uploadMotorPolicy);
 router.get("/policyId/:policyId", logActivity, getMotorPolicyByPolicyId);
 router.get("/partner/:partnerId", logActivity, getMotorPolicyByPartnerId);
 router.get("/policy-completed-by/:policyCompletedBy", logActivity,getMotorPolicyByPolicyCompletedBy);
