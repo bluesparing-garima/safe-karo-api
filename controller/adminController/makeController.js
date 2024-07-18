@@ -1,4 +1,5 @@
 import Make from "../../models/adminModels/makeSchema.js";
+
 // Create a new make
 const createMake = async (req, res) => {
   try {
@@ -6,32 +7,31 @@ const createMake = async (req, res) => {
 
     // Check if all required fields are provided
     if (!makeName || !createdBy) {
-      return res
-        .status(400)
-        .json({ status: "failed", message: "Required fields are missing" });
+      return res.status(400).json({ status: "failed", message: "Required fields are missing" });
     }
 
-    const existingModel = await Make.findOne({ makeName });
+    const normalizedMakeName = makeName.toLowerCase();
+
+    const existingModel = await Make.findOne({ makeName: normalizedMakeName });
     if (existingModel) {
-      return res
-        .status(409)
-        .json({
-          status: "failed",
-          message: "Make with the same makeName already exists",
-        });
+      return res.status(409).json({
+        status: "failed",
+        message: "Make with the same makeName already exists",
+      });
     }
-    const newmake = new Make({
-      makeName,
+
+    const newMake = new Make({
+      makeName: normalizedMakeName,
       createdBy,
-      updatedBy: null, // Set updatedBy to null initially
-      updatedOn: null, // Set updatedOn to null initially
-      isActive: isActive !== undefined ? isActive : true, // Set default value to true if not provided
+      updatedBy: null,
+      updatedOn: null,
+      isActive: isActive !== undefined ? isActive : true,
     });
 
-    await newmake.save();
+    await newMake.save();
     res.status(200).json({
       message: "New make created successfully",
-      data: newmake,
+      data: newMake,
       status: "success",
     });
   } catch (error) {
@@ -47,36 +47,34 @@ const createMake = async (req, res) => {
 // Get all makes
 const getAllMakes = async (req, res) => {
   try {
-    const Makes = await Make.find();
+    const makes = await Make.find();
     res.status(200).json({
       message: "Success! Here are all makes",
-      data: Makes,
+      data: makes,
       status: "success",
     });
   } catch (error) {
     console.error(error);
-    res
-      .status(500)
-      .json({ status: "failed", message: "Unable to retrieve make" });
+    res.status(500).json({ status: "failed", message: "Unable to retrieve makes" });
   }
 };
 
-// Check make exist or not.
-export const validateMake = async (req, res) => {
+// Check if make exists or not
+const validateMake = async (req, res) => {
   try {
     const { make } = req.params;
-    const makeExists = await Make.exists({
-      make,
-    });
+    const normalizedMake = make.toLowerCase();
+
+    const makeExists = await Make.exists({ makeName: normalizedMake });
     if (makeExists) {
       return res.status(200).json({
-        message: `make already exists`,
+        message: "Make already exists",
         exist: true,
         status: "error",
       });
     } else {
       return res.status(200).json({
-        message: `make does not exist`,
+        message: "Make does not exist",
         exist: false,
         status: "success",
       });
@@ -95,22 +93,18 @@ const getMakeById = async (req, res) => {
     const { id } = req.params;
 
     // Check if make exists
-    const existingmake = await Make.findById(id);
-    if (!existingmake) {
-      return res
-        .status(404)
-        .json({ status: "failed", message: "Make name not found" });
+    const existingMake = await Make.findById(id);
+    if (!existingMake) {
+      return res.status(404).json({ status: "failed", message: "Make name not found" });
     }
     res.status(200).json({
       message: "Success! Here is the make with ID",
-      data: existingmake,
+      data: existingMake,
       status: "success",
     });
   } catch (error) {
     console.error(error);
-    res
-      .status(500)
-      .json({ status: "failed", message: "Unable to retrieve make" });
+    res.status(500).json({ status: "failed", message: "Unable to retrieve make" });
   }
 };
 
@@ -123,13 +117,11 @@ const updateMake = async (req, res) => {
     // Check if make exists
     const existingMake = await Make.findById(id);
     if (!existingMake) {
-      return res
-        .status(404)
-        .json({ status: "failed", message: "Make name not found" });
+      return res.status(404).json({ status: "failed", message: "Make name not found" });
     }
 
     // Update the make
-    existingMake.makeName = makeName;
+    existingMake.makeName = makeName.toLowerCase();
     existingMake.updatedBy = updatedBy;
     existingMake.updatedOn = new Date();
     if (isActive !== undefined) {
@@ -179,4 +171,4 @@ const deleteMake = async (req, res) => {
   }
 };
 
-export { createMake, getAllMakes, getMakeById, updateMake, deleteMake };
+export { createMake, getAllMakes, getMakeById, updateMake, deleteMake,validateMake };

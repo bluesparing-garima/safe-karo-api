@@ -4,14 +4,15 @@ import Model from "../../models/adminModels/modelSchema.js";
 const createModel = async (req, res) => {
   try {
     const { makeId, makeName, modelName, createdBy, isActive } = req.body;
-
     // Check if all required fields are provided
     if (!makeId || !makeName || !modelName || !createdBy) {
       return res
         .status(400)
         .json({ status: "failed", message: "Required fields are missing" });
     }
-    const existingModel = await Model.findOne({ modelName });
+    const normalizedModelName = modelName.toLowerCase();
+
+    const existingModel = await Model.findOne({ modelName:normalizedModelName });
     if (existingModel) {
       return res
         .status(409)
@@ -20,14 +21,14 @@ const createModel = async (req, res) => {
           message: "Model with the same ModelName already exists",
         });
     }
-
+   
     const newmodel = new Model({
       makeId,
       makeName,
-      modelName,
+      modelName:normalizedModelName,
       createdBy,
-      updatedBy: null, // Set updatedBy to null initially
-      updatedOn: null, // Set updatedOn to null initially
+      updatedBy: null, 
+      updatedOn: null, 
       isActive: isActive !== undefined ? isActive : true, // Set default value to true if not provided
     });
 
@@ -65,28 +66,28 @@ const getAllModels = async (req, res) => {
 };
 
 // Check Model exist or not.
-export const validateModel = async (req, res) => {
+const validateModel = async (req, res) => {
   try {
     const { model } = req.params;
-    const modelExists = await Model.exists({
-      model,
-    });
-    if (modelExists) {
+    const normalizedModel = model.toLowerCase();
+
+    const makeExists = await Make.exists({ modelName: normalizedModel });
+    if (makeExists) {
       return res.status(200).json({
-        message: `model already exists`,
+        message: "Model already exists",
         exist: true,
-        status: "success",
+        status: "error",
       });
     } else {
       return res.status(200).json({
-        message: `model does not exist`,
+        message: "Model does not exist",
         exist: false,
         status: "success",
       });
     }
   } catch (error) {
     res.status(500).json({
-      message: "Error checking model",
+      message: "Error checking Model",
       error: error.message,
     });
   }
@@ -184,4 +185,4 @@ const deleteModel = async (req, res) => {
   }
 };
 
-export { createModel, getAllModels, getModelById, updateModel, deleteModel };
+export { createModel, getAllModels, getModelById, updateModel, deleteModel,validateModel };
