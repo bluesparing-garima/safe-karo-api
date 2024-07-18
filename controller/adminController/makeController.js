@@ -1,5 +1,4 @@
 import Make from "../../models/adminModels/makeSchema.js";
-import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
 // Create a new make
 const createMake = async (req, res) => {
   try {
@@ -66,7 +65,7 @@ const getAllMakes = async (req, res) => {
 export const validateMake = async (req, res) => {
   try {
     const { make } = req.params;
-    const makeExists = await MotorPolicyModel.exists({
+    const makeExists = await Make.exists({
       make,
     });
     if (makeExists) {

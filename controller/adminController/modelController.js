@@ -1,5 +1,4 @@
 import Model from "../../models/adminModels/modelSchema.js";
-import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
 
 // Create a new model
 const createModel = async (req, res) => {
@@ -69,7 +68,7 @@ const getAllModels = async (req, res) => {
 export const validateModel = async (req, res) => {
   try {
     const { model } = req.params;
-    const modelExists = await MotorPolicyModel.exists({
+    const modelExists = await Model.exists({
       model,
     });
     if (modelExists) {
