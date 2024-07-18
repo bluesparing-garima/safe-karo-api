@@ -2,8 +2,15 @@ import UserProfileModel from "../../models/adminModels/userProfileSchema.js";
 import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
 import MotorPolicyPaymentModel from "../../models/policyModel/motorPolicyPaymentSchema.js";
 import BookingRequest from "../../models/bookingModel/bookingRequestSchema.js";
-import Lead from '../../models/partnerModels/leadGenerateSchema.js';
-
+import Lead from "../../models/partnerModels/leadGenerateSchema.js";
+import Broker from "../../models/adminModels/brokerSchema.js";
+import Make from "../../models/adminModels/makeSchema.js";
+import Model from "../../models/adminModels/modelSchema.js";
+import Category from "../../models/adminModels/categorySchema.js";
+import Company from "../../models/adminModels/companySchema.js";
+import ProductType from "../../models/adminModels/productSchema.js";
+import SubProductType from "../../models/adminModels/productSubTypeSchema.js";
+import Roles from '../../models/adminModels/roleSchema.js';
 // Controller function to get dashboard count
 export const getDashboardCount = async (req, res) => {
   try {
@@ -113,21 +120,47 @@ export const getDashboardCount = async (req, res) => {
       formattedLeadCounts[lead._id] = lead.count;
       totalLead += lead.count;
     });
+    // Count Roles
+    const roleCount = await Roles.countDocuments(); 
+    // Count brokers
+    const brokerCount = await Broker.countDocuments();
+
+    // Count makes
+    const makeCount = await Make.countDocuments();
+
+    // Count models
+    const modelCount = await Model.countDocuments();
+
+    // Count categories
+    const categoryCount = await Category.countDocuments();
+
+    // Count companies
+    const companyCount = await Company.countDocuments();
+
+    // Count product types
+    const productTypeCount = await ProductType.countDocuments();
+
+    // Count sub-product types
+    const subProductTypeCount = await SubProductType.countDocuments();
 
     // Prepare bookingRequests dynamically
     const bookingRequests = {
       "Total Booking": totalBookingRequest,
     };
-    Object.keys(formattedBookingCounts).forEach(key => {
-      bookingRequests[`${key.charAt(0).toUpperCase()}${key.slice(1)} Booking`] = formattedBookingCounts[key];
+    Object.keys(formattedBookingCounts).forEach((key) => {
+      bookingRequests[
+        `${key.charAt(0).toUpperCase()}${key.slice(1)} Booking`
+      ] = formattedBookingCounts[key];
     });
 
     // Prepare leadCounts dynamically
     const leadRequests = {
       "Total Lead": totalLead,
     };
-    Object.keys(formattedLeadCounts).forEach(key => {
-      leadRequests[`${key.charAt(0).toUpperCase()}${key.slice(1)} Lead`] = formattedLeadCounts[key];
+    Object.keys(formattedLeadCounts).forEach((key) => {
+      leadRequests[
+        `${key.charAt(0).toUpperCase()}${key.slice(1)} Lead`
+      ] = formattedLeadCounts[key];
     });
 
     // Prepare final response data
@@ -147,6 +180,16 @@ export const getDashboardCount = async (req, res) => {
           },
           bookingRequests: bookingRequests,
           leadCounts: leadRequests,
+          adminCounts: {
+            Roles:roleCount,
+            Brokers: brokerCount,
+            Makes: makeCount,
+            Models: modelCount,
+            Categories: categoryCount,
+            Companies: companyCount,
+            "Product Types": productTypeCount,
+            "SubProduct Types": subProductTypeCount,
+          },
         },
       ],
       status: "success",
