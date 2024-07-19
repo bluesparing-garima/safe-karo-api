@@ -8,12 +8,10 @@ export const createAccount = async (req, res) => {
       accountHolderName,
       IFSCCode,
       amount,
+      accountCode,
       bankName,
       createdBy,
     } = req.body;
-
-    // Generate accountCode
-    const accountCode = `${accountHolderName.substring(0, 3)}${bankName.substring(0, 3)}${accountNumber.slice(-4)}`;
 
     // Create a new account object
     const newAccount = new accountSchema({
