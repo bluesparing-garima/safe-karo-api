@@ -109,7 +109,7 @@ export const uploadMotorPolicy = async (req, res) => {
       createdBy: "excel",
       updatedBy: null,
       updatedOn: null,
-      createdOn: row.createdOn || row["Created On"] || " ",
+      createdOn: Date.now(),
       weight: row.weight || row["Weight"] || "",
     }));
 
