@@ -79,9 +79,9 @@ app.use("/api/user-profile", userProfile);
 // Booking request
 app.use("/api/booking-request", bookingRequestRoute);
 
-app.use(fileUpload({
-  createParentPath: true
-}));
+// app.use(fileUpload({
+//   createParentPath: true
+// }));
 
 // motor policy Routes
 app.use("/api/policy/motor", motorPolicyRoutes);
