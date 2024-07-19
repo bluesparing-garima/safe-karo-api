@@ -1,5 +1,7 @@
 import Model from "../../models/adminModels/modelSchema.js";
 import mongoose from "mongoose";
+import Make from '../../models/adminModels/modelSchema.js';
+import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
 // Endpoint to check if a model exists
 const createModel = async (req, res) => {
   try {
@@ -11,7 +13,7 @@ const createModel = async (req, res) => {
     if (modelExists) {
       return res.status(409).json({
         status: "failed",
-        message: "Make with the same makeName already exists",
+        message: "Model with the same modelName already exists",
       });
     }
     const newModel = new Model({
@@ -121,7 +123,7 @@ const getModelById = async (req, res) => {
 const updateModel = async (req, res) => {
   try {
     const { id } = req.params;
-    const { makeId, makeName, modelName, updatedBy, isActive } = req.body;
+    const { makeId, modelName, updatedBy, isActive } = req.body;
 
     // Check if model exists
     const existingModel = await Model.findById(id);
@@ -129,6 +131,25 @@ const updateModel = async (req, res) => {
       return res
         .status(404)
         .json({ status: "failed", message: "Model name not found" });
+    }
+
+    const previousModelName = existingModel.modelName;
+    const previousMakeName = existingModel.makeName;
+
+    let makeName;
+
+    // Check if makeName is provided in the request body
+    if (req.body.makeName) {
+      makeName = req.body.makeName;
+    } else {
+      // Fetch the make name using makeId
+      const make = await Make.findById(makeId);
+      if (!make) {
+        return res
+          .status(404)
+          .json({ status: "failed", message: "Make name not found" });
+      }
+      makeName = make.makeName;
     }
 
     // Update the model
@@ -143,8 +164,21 @@ const updateModel = async (req, res) => {
 
     const updatedModel = await existingModel.save();
 
+    // Find all motor policies that reference the previous model and make
+    const motorPoliciesWithModel = await MotorPolicyModel.find({
+      model: previousModelName,
+      make: previousMakeName,
+    });
+
+    // Update the model and make reference in each motor policy
+    for (let motorPolicy of motorPoliciesWithModel) {
+      motorPolicy.model = modelName;
+      motorPolicy.make = makeName;
+      await motorPolicy.save();
+    }
+
     res.status(200).json({
-      message: `Model name ${id} updated successfully`,
+      message: `Model name ${id} updated successfully and referenced motor policies updated`,
       data: updatedModel,
       status: "success",
     });
