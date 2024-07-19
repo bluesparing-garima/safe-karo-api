@@ -1,5 +1,7 @@
 import Make from "../../models/adminModels/makeSchema.js";
 import mongoose from "mongoose";
+import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
+import Model from "../../models/adminModels/modelSchema.js";
 // Create a new make
 const createMake = async (req, res) => {
   try {
@@ -139,8 +141,11 @@ const updateMake = async (req, res) => {
         .json({ status: "failed", message: "Make name not found" });
     }
 
+    // Get the previous name of make
+    const previousMakeName = existingMake.makeName;
+
     // Update the make
-    existingMake.makeName = makeName.toLowerCase();
+    existingMake.makeName = makeName;
     existingMake.updatedBy = updatedBy;
     existingMake.updatedOn = new Date();
     if (isActive !== undefined) {
@@ -149,8 +154,30 @@ const updateMake = async (req, res) => {
 
     const updatedMake = await existingMake.save();
 
+    // Find all motor policies that reference the previous make
+    const motorPoliciesWithMake = await MotorPolicyModel.find({
+      make: previousMakeName,
+    });
+
+    // Update the make reference in each motor policy
+    for (let motorPolicy of motorPoliciesWithMake) {
+      motorPolicy.make = makeName;
+      await motorPolicy.save();
+    }
+
+    // Find all models that reference the previous make
+    const modelsWithMake = await Model.find({
+      makeName: previousMakeName,
+    });
+
+    // Update the make reference in each model
+    for (let model of modelsWithMake) {
+      model.makeName = makeName;
+      await model.save();
+    }
+
     res.status(200).json({
-      message: `Make name ${id} updated successfully`,
+      message: `Make name ${id} updated successfully and referenced motor policies and models updated`,
       data: updatedMake,
       status: "success",
     });
