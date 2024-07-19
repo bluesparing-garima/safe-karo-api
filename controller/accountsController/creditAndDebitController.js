@@ -4,24 +4,34 @@ import creditAndDebit from '../../models/accountsModels/creditAndDebitSchema.js'
 export const createCreditAndDebit = async (req, res) => {
     try {
         const {
+            accountType,
             type,
             accountId,
             accountCode,
             amount,
             userName,
             userId,
+            partnerId,
+            partnerName,
+            brokerId,
+            brokerName,
             remarks,
             createdBy,
             createdOn
         } = req.body;
 
         const newCreditAndDebit = new creditAndDebit({
+            accountType,
             type,
             accountId,
             accountCode,
             amount,
             userName,
             userId,
+            partnerId,
+            partnerName,
+            brokerId,
+            brokerName,
             remarks,
             createdBy,
             createdOn
