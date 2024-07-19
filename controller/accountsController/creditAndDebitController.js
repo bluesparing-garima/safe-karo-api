@@ -1,14 +1,15 @@
 import creditAndDebit from '../../models/accountsModels/creditAndDebitSchema.js';
 
 // Create a new credit and debit transaction
-export const createCredit = async (req, res) => {
+export const createCreditAndDebit = async (req, res) => {
     try {
         const {
             type,
-            account,
+            accountId,
             accountCode,
             amount,
             userName,
+            userId,
             remarks,
             createdBy,
             createdOn
@@ -16,10 +17,11 @@ export const createCredit = async (req, res) => {
 
         const newCreditAndDebit = new creditAndDebit({
             type,
-            account,
+            accountId,
             accountCode,
             amount,
             userName,
+            userId,
             remarks,
             createdBy,
             createdOn
@@ -41,7 +43,7 @@ export const createCredit = async (req, res) => {
 };
 
 // Get all credit and debit transactions
-export const getCredits = async (req, res) => {
+export const getCreditAndDebit = async (req, res) => {
     try {
         const credits = await creditAndDebit.find();
         res.status(200).json({
@@ -59,7 +61,7 @@ export const getCredits = async (req, res) => {
 };
 
 // Get a credit and debit transaction by ID
-export const getCreditById = async (req, res) => {
+export const getCreditAndDebitById = async (req, res) => {
     try {
         const { id } = req.params;
         const credit = await creditAndDebit.findById(id);
@@ -86,7 +88,7 @@ export const getCreditById = async (req, res) => {
 };
 
 // Update a credit and debit transaction by ID
-export const updateCreditById = async (req, res) => {
+export const updateCreditAndDebitById = async (req, res) => {
     try {
         const { id } = req.params;
         const updatedData = req.body;
@@ -115,7 +117,7 @@ export const updateCreditById = async (req, res) => {
 };
 
 // Delete a credit and debit transaction by ID
-export const deleteCreditById = async (req, res) => {
+export const deleteCreditAndDebitById = async (req, res) => {
     try {
         const { id } = req.params;
 

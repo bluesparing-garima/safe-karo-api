@@ -49,7 +49,7 @@ import leadPayment from "./routes/partnerRoutes/leadPaymentRoutes.js";
 
 // Accounts 
 import accountRoute from "./routes/accountRoutes/accountRoute.js";
-
+import creditAndDebit from './routes/accountRoutes/creditAndDebitRoute.js';
 import testRoutes from "./routes/testRoutes.js";
 import path from "path"; // Import path to resolve the directory path
 const app = express();
@@ -182,6 +182,9 @@ app.use("/api/activityLog", activityLogRoutes);
 
 // Account routes
 app.use('/api/account',accountRoute);
+
+// Credit and Debit
+app.use('/api/credit-debit',creditAndDebit);
 
 // Handle invalid routes
 //app.use(handleInvalidRoutes);

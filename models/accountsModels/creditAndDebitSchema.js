@@ -5,7 +5,7 @@ const creditAndDebitSchema = new mongoose.Schema({
         type:String,
         trim:true
     },
-    account:{
+    accountId:{
         type:String,
         trim:true
     },
@@ -20,6 +20,10 @@ const creditAndDebitSchema = new mongoose.Schema({
     userName:{
         type:String,
         trim:true
+    },
+    userId:{
+        type: String,
+        trim: true
     },
     remarks:{
         type:String,
