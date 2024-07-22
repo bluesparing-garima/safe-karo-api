@@ -46,7 +46,7 @@ export const createCreditAndDebit = async (req, res) => {
     await newCreditAndDebit.save();
 
     // Update the account balance
-    const account = await Account.findById(accountId);
+    let account = await Account.findById(accountId);
     if (!account) {
       return res.status(404).json({
         message: "Account not found",
