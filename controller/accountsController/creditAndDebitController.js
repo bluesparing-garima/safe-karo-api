@@ -45,7 +45,7 @@ export const createCreditAndDebit = async (req, res) => {
     await newCreditAndDebit.save();
 
     // Update the account balance
-    const account = await Account.findOne({ accountCode: accountCode.toString() });
+    const account = await Account.findById(accountId);
     if (!account) {
       return res.status(404).json({
         message: "Account not found",
@@ -54,9 +54,9 @@ export const createCreditAndDebit = async (req, res) => {
     }
 
     if (type === "credit") {
-      account.balance += amount;
+      account.amount += amount;
     } else if (type === "debit") {
-      account.balance -= amount;
+      account.amount -= amount;
     }
 
     await account.save();
@@ -74,7 +74,6 @@ export const createCreditAndDebit = async (req, res) => {
     });
   }
 };
-
 
 // Get all credit and debit transactions
 export const getCreditAndDebit = async (req, res) => {
@@ -123,62 +122,61 @@ export const getCreditAndDebitById = async (req, res) => {
 
 // Update a credit and debit transaction by ID
 export const updateCreditAndDebitById = async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { amount, type, accountId, accountCode } = req.body;
-  
-      const existingTransaction = await creditAndDebit.findById(id);
-      if (!existingTransaction) {
-        return res.status(404).json({
-          message: "Transaction not found",
-          status: "error",
-        });
-      }
-  
-      const account = await Account.findOne({ accountCode: accountCode.toString() });
-      if (!account) {
-        return res.status(404).json({
-          message: "Account not found",
-          status: "error",
-        });
-      }
-  
-      // Revert the balance change of the existing transaction
-      if (existingTransaction.type === "credit") {
-        account.balance -= existingTransaction.amount;
-      } else if (existingTransaction.type === "debit") {
-        account.balance += existingTransaction.amount;
-      }
-  
-      // Apply the new balance change
-      if (type === "credit") {
-        account.balance += amount;
-      } else if (type === "debit") {
-        account.balance -= amount;
-      }
-  
-      await account.save();
-  
-      const updatedCredit = await creditAndDebit.findByIdAndUpdate(
-        id,
-        req.body,
-        { new: true }
-      );
-  
-      res.status(200).json({
-        message: "Transaction updated successfully",
-        data: updatedCredit,
-        status: "success",
-      });
-    } catch (error) {
-      res.status(500).json({
-        message: "Error updating transaction",
-        error: error.message,
+  try {
+    const { id } = req.params;
+    const { amount, type, accountId, accountCode } = req.body;
+
+    const existingTransaction = await creditAndDebit.findById(id);
+    if (!existingTransaction) {
+      return res.status(404).json({
+        message: "Transaction not found",
         status: "error",
       });
     }
-  };
-  
+
+    const account = await Account.findOne({
+      accountCode: accountCode.toString(),
+    });
+    if (!account) {
+      return res.status(404).json({
+        message: "Account not found",
+        status: "error",
+      });
+    }
+
+    // Revert the balance change of the existing transaction
+    if (existingTransaction.type === "credit") {
+      account.balance -= existingTransaction.amount;
+    } else if (existingTransaction.type === "debit") {
+      account.balance += existingTransaction.amount;
+    }
+
+    // Apply the new balance change
+    if (type === "credit") {
+      account.balance += amount;
+    } else if (type === "debit") {
+      account.balance -= amount;
+    }
+
+    await account.save();
+
+    const updatedCredit = await creditAndDebit.findByIdAndUpdate(id, req.body, {
+      new: true,
+    });
+
+    res.status(200).json({
+      message: "Transaction updated successfully",
+      data: updatedCredit,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error updating transaction",
+      error: error.message,
+      status: "error",
+    });
+  }
+};
 
 // Delete a credit and debit transaction by ID
 export const deleteCreditAndDebitById = async (req, res) => {
