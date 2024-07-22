@@ -77,7 +77,6 @@ export const getAccountDashboard = async (req, res) => {
     const totalPayOutCommission =
       commissionSums.length > 0 ? commissionSums[0].totalPayOutCommission : 0;
 
-    // Count the total number of policies
     const totalPolicies = await motorPolicy.countDocuments();
 
     // Prepare final response data
