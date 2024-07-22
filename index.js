@@ -35,6 +35,7 @@ import bookingRequestRoute from "./routes/bookingRequestRoutes/bookingRequestRou
 import adminDashboard from "./routes/dashboardRoutes/adminDashboardRoute.js";
 import partnerDashboardRoutes from "./routes/dashboardRoutes/partnerDashboardRoutes.js";
 import bookingDashboardRoutes from "./routes/dashboardRoutes/bookingDashboardRoute.js";
+import accountDashboardRoutes from './routes/dashboardRoutes/accountDashboardRoute.js';
 
 // import policyTimerManageRoutes from './routes/policyTimerManageRoute.js';
 import activityLogRoutes from "./routes/adminRoutes/activityLogRoutes.js";
@@ -174,6 +175,9 @@ app.use("/api/dashboard", partnerDashboardRoutes);
 
 // partner dashboard
 app.use("/api/booking-dashboard", bookingDashboardRoutes);
+
+// account dashboard
+app.use('/api/account-dashboard', accountDashboardRoutes);
 
 // timeManager
 // app.use('/api/policyTimerManage',policyTimerManageRoutes);
