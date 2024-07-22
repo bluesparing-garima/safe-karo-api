@@ -10,7 +10,8 @@ import Category from "../../models/adminModels/categorySchema.js";
 import Company from "../../models/adminModels/companySchema.js";
 import ProductType from "../../models/adminModels/productSchema.js";
 import SubProductType from "../../models/adminModels/productSubTypeSchema.js";
-import Roles from '../../models/adminModels/roleSchema.js';
+import Roles from "../../models/adminModels/roleSchema.js";
+import Account from "../../models/accountsModels/accountSchema.js";
 // Controller function to get dashboard count
 export const getDashboardCount = async (req, res) => {
   try {
@@ -94,8 +95,10 @@ export const getDashboardCount = async (req, res) => {
       },
     ]);
 
-    const totalPayInCommission = commissionSums.length > 0 ? commissionSums[0].totalPayInCommission : 0;
-    const totalPayOutCommission = commissionSums.length > 0 ? commissionSums[0].totalPayOutCommission : 0;
+    const totalPayInCommission =
+      commissionSums.length > 0 ? commissionSums[0].totalPayInCommission : 0;
+    const totalPayOutCommission =
+      commissionSums.length > 0 ? commissionSums[0].totalPayOutCommission : 0;
 
     // Count booking requests by status
     const bookingCounts = await BookingRequest.aggregate([
@@ -121,7 +124,7 @@ export const getDashboardCount = async (req, res) => {
       totalLead += lead.count;
     });
     // Count Roles
-    const roleCount = await Roles.countDocuments(); 
+    const roleCount = await Roles.countDocuments();
     // Count brokers
     const brokerCount = await Broker.countDocuments();
 
@@ -148,9 +151,8 @@ export const getDashboardCount = async (req, res) => {
       "Total Booking": totalBookingRequest,
     };
     Object.keys(formattedBookingCounts).forEach((key) => {
-      bookingRequests[
-        `${key.charAt(0).toUpperCase()}${key.slice(1)} Booking`
-      ] = formattedBookingCounts[key];
+      bookingRequests[`${key.charAt(0).toUpperCase()}${key.slice(1)} Booking`] =
+        formattedBookingCounts[key];
     });
 
     // Prepare leadCounts dynamically
@@ -158,10 +160,23 @@ export const getDashboardCount = async (req, res) => {
       "Total Lead": totalLead,
     };
     Object.keys(formattedLeadCounts).forEach((key) => {
-      leadRequests[
-        `${key.charAt(0).toUpperCase()}${key.slice(1)} Lead`
-      ] = formattedLeadCounts[key];
+      leadRequests[`${key.charAt(0).toUpperCase()}${key.slice(1)} Lead`] =
+        formattedLeadCounts[key];
     });
+    // Count the number of accounts
+    const totalAccounts = await Account.countDocuments();
+
+    // Sum the total amount across all accounts
+    const totalAmountData = await Account.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalAmount: { $sum: "$amount" },
+        },
+      },
+    ]);
+    const totalAmount =
+      totalAmountData.length > 0 ? totalAmountData[0].totalAmount : 0;
 
     // Prepare final response data
     const data = {
@@ -181,7 +196,7 @@ export const getDashboardCount = async (req, res) => {
           bookingRequests: bookingRequests,
           leadCounts: leadRequests,
           adminCounts: {
-            Roles:roleCount,
+            Roles: roleCount,
             Brokers: brokerCount,
             Makes: makeCount,
             Models: modelCount,
@@ -190,6 +205,8 @@ export const getDashboardCount = async (req, res) => {
             "Product Types": productTypeCount,
             "SubProduct Types": subProductTypeCount,
           },
+          totalAccounts,
+          totalAmount,
         },
       ],
       status: "success",
