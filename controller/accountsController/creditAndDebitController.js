@@ -76,7 +76,6 @@ export const createCreditAndDebit = async (req, res) => {
   }
 };
 
-
 // Get all credit and debit transactions
 export const getCreditAndDebit = async (req, res) => {
   try {
