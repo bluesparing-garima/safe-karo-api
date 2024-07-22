@@ -175,6 +175,10 @@ export const getDashboardCount = async (req, res) => {
         },
       },
     ]);
+
+     // Get individual accounts and their amounts
+     const accounts = await Account.find({}, "accountCode amount");
+
     const totalAmount =
       totalAmountData.length > 0 ? totalAmountData[0].totalAmount : 0;
 
@@ -207,6 +211,10 @@ export const getDashboardCount = async (req, res) => {
           },
           totalAccounts,
           totalAmount,
+          accounts: accounts.map((acc) => ({
+            accountCode: acc.accountCode,
+            amount: acc.amount,
+          })),
         },
       ],
       status: "success",
