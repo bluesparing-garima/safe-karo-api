@@ -49,6 +49,14 @@ const creditAndDebitSchema = new mongoose.Schema({
     type: String,
     trim: false,
   },
+  policyNumber: {
+    type: String,
+    trim: true,
+  },
+  date: {
+    type: Date,
+    trim: true,
+  },
   createdOn: {
     type: Date,
     default: Date.now,
