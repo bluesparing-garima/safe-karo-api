@@ -23,9 +23,11 @@ export const createCreditAndDebit = async (req, res) => {
       createdOn,
     } = req.body;
 
+    const lowerCaseType = type.toLowerCase();
+
     const newCreditAndDebit = new creditAndDebit({
       accountType,
-      type,
+      type: lowerCaseType,
       accountId,
       accountCode,
       amount,
@@ -41,7 +43,6 @@ export const createCreditAndDebit = async (req, res) => {
       createdBy,
       createdOn,
     });
-
     await newCreditAndDebit.save();
 
     // Update the account balance
@@ -53,9 +54,9 @@ export const createCreditAndDebit = async (req, res) => {
       });
     }
 
-    if (type === "credit") {
+    if (lowerCaseType === "credit") {
       account.amount += amount;
-    } else if (type === "debit") {
+    } else if (lowerCaseType === "debit") {
       account.amount -= amount;
     }
 
@@ -74,6 +75,7 @@ export const createCreditAndDebit = async (req, res) => {
     });
   }
 };
+
 
 // Get all credit and debit transactions
 export const getCreditAndDebit = async (req, res) => {
@@ -124,7 +126,7 @@ export const getCreditAndDebitById = async (req, res) => {
 export const updateCreditAndDebitById = async (req, res) => {
   try {
     const { id } = req.params;
-    const { amount, type, accountId, accountCode } = req.body;
+    const { amount, type, accountId } = req.body;
 
     const existingTransaction = await creditAndDebit.findById(id);
     if (!existingTransaction) {
@@ -134,9 +136,7 @@ export const updateCreditAndDebitById = async (req, res) => {
       });
     }
 
-    const account = await Account.findOne({
-      accountCode: accountCode.toString(),
-    });
+    const account = await Account.findById(accountId);
     if (!account) {
       return res.status(404).json({
         message: "Account not found",
@@ -146,27 +146,30 @@ export const updateCreditAndDebitById = async (req, res) => {
 
     // Revert the balance change of the existing transaction
     if (existingTransaction.type === "credit") {
-      account.balance -= existingTransaction.amount;
+      account.amount -= existingTransaction.amount;
     } else if (existingTransaction.type === "debit") {
-      account.balance += existingTransaction.amount;
+      account.amount += existingTransaction.amount;
     }
 
     // Apply the new balance change
-    if (type === "credit") {
-      account.balance += amount;
-    } else if (type === "debit") {
-      account.balance -= amount;
+    const lowerCaseType = type.toLowerCase();
+    if (lowerCaseType === "credit") {
+      account.amount += amount;
+    } else if (lowerCaseType === "debit") {
+      account.amount -= amount;
     }
 
     await account.save();
 
-    const updatedCredit = await creditAndDebit.findByIdAndUpdate(id, req.body, {
-      new: true,
-    });
+    const updatedCreditAndDebit = await creditAndDebit.findByIdAndUpdate(
+      id,
+      { ...req.body, type: lowerCaseType },
+      { new: true }
+    );
 
     res.status(200).json({
       message: "Transaction updated successfully",
-      data: updatedCredit,
+      data: updatedCreditAndDebit,
       status: "success",
     });
   } catch (error) {
