@@ -159,9 +159,6 @@ const updateQuotation = async (req, res) => {
     if (err) {
       return res.status(400).json({ message: err.message });
     }
-    if (!req.files) {
-      return res.status(400).json({ message: "No file selected!" });
-    }
     try {
       const { id } = req.params;
       const updateData = req.body;
