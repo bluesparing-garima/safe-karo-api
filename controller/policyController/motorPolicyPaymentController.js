@@ -86,6 +86,57 @@ export const createMotorPolicyPayment = async (req, res) => {
   }
 };
 
+// Policy status manage
+export const policyStatusManage = async (req, res) => {
+  const {
+    policyNumber,
+    payInAmount,
+    payOutAmount,
+    payInPaymentStatus,
+    payOutPaymentStatus,
+    balance
+  } = req.body;
+
+  try {
+    // Fetch the existing payment record by policyNumber
+    let existingPayment = await motorPolicyPayment.findOne({ policyNumber });
+
+    if (!existingPayment) {
+      // Create a new payment record
+      existingPayment = new motorPolicyPayment({
+        policyNumber,
+        payInAmount,
+        payOutAmount,
+        payInPaymentStatus,
+        payOutPaymentStatus,
+        balance,
+      });
+    } else {
+      existingPayment.payInAmount = payInAmount;
+      existingPayment.payInPaymentStatus = payInPaymentStatus;
+      existingPayment.payOutAmount = payOutAmount;
+      existingPayment.payOutPaymentStatus = payOutPaymentStatus;
+      existingPayment.balance = balance;
+      existingPayment.updatedOn = Date.now();
+    }
+
+    const savedPayment = await existingPayment.save();
+
+    res.status(200).json({
+      message: "Motor Policy Payment created or updated successfully",
+      data: savedPayment,
+      success: true,
+      status: "success",
+    });
+  } catch (err) {
+    res.status(400).json({
+      message: err.message,
+      success: false,
+      status: "error",
+    });
+  }
+};
+
 // Get all motor policy payments
 export const getAllMotorPolicyPayments = async (req, res) => {
   try {
