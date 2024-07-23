@@ -4,6 +4,7 @@ import express from "express";
 import cors from "cors";
 import connectDB from "./config/connectdb.js";
 import userRoutes from "./routes/userRoutes.js";
+import path from "path";
 // middleware
 import {
   requestLogger,
@@ -52,8 +53,13 @@ import leadPayment from "./routes/partnerRoutes/leadPaymentRoutes.js";
 // Accounts 
 import accountRoute from "./routes/accountRoutes/accountRoute.js";
 import creditAndDebit from './routes/accountRoutes/creditAndDebitRoute.js';
+
+// Excel Compare
+import excelCompare  from "./routes/excelCompareRoutes.js";
+
 import testRoutes from "./routes/testRoutes.js";
-import path from "path"; // Import path to resolve the directory path
+
+
 const app = express();
 const port = process.env.PORT;
 const DATABASE_URL = process.env.DATEBASE_URL;
@@ -80,9 +86,9 @@ app.use("/api/user-profile", userProfile);
 // Booking request
 app.use("/api/booking-request", bookingRequestRoute);
 
-// app.use(fileUpload({
-//   createParentPath: true
-// }));
+app.use(fileUpload({
+  createParentPath: true
+}));
 
 // motor policy Routes
 app.use("/api/policy/motor", motorPolicyRoutes);
@@ -193,10 +199,8 @@ app.use('/api/account',accountRoute);
 // Credit and Debit
 app.use('/api/credit-debit',creditAndDebit);
 
-// Handle invalid routes
-//app.use(handleInvalidRoutes);
-
-//Add for acess the folder
+// excel compare
+app.use('/api/compare-excel',excelCompare);
 
 // Serve static files from the uploads directory
 const __dirname = path.resolve();
