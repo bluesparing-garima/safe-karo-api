@@ -26,7 +26,6 @@ const computeHash = (data) => {
 
 // upload excel
 export const uploadMotorPolicy = async (req, res) => {
-  console.log(req.files);
   try {
     if (!req.files || !req.files.excel) {
       return res.status(400).send("No files were uploaded.");

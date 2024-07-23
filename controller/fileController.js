@@ -11,7 +11,6 @@ const checkPolicyNumberExist = async (policyNumber) => {
 
 // Create Booking Request.
 export const createBookingRequest = async (req, res) => {
-  console.log("req.files", req.files);
   upload(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ message: err });
@@ -297,7 +296,6 @@ export const createMotorPolicy = async (req, res) => {
 export const uploadFilesAndData = (req, res) => {
   // upload.array('rcback', 10)(req, res, (err) => {
   upload(req, res, (err) => {
-    console.log
     if (err) {
       return res.status(400).json({ message: err });
     }

@@ -48,7 +48,6 @@ const createNewQuotation = async (req, res) => {
         partnerName,
         createdBy,
       });
-      console.log(newQuotation);
 
       await newQuotation.save();
       if (newQuotation) {
