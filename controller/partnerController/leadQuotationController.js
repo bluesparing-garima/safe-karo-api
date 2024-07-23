@@ -48,7 +48,6 @@ const createNewQuotation = async (req, res) => {
         partnerName,
         createdBy,
       });
-      console.log(newQuotation);
 
       await newQuotation.save();
       if (newQuotation) {
@@ -159,9 +158,6 @@ const updateQuotation = async (req, res) => {
   upload(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ message: err.message });
-    }
-    if (!req.files) {
-      return res.status(400).json({ message: "No file selected!" });
     }
     try {
       const { id } = req.params;

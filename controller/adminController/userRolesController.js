@@ -2,7 +2,6 @@ import RoleModel from "../../models/adminModels/userRoleSchema.js";
 
 // Create a new role
 const createRoles = async (req, res) => {
-  console.log("Received Request", req.body);
   try {
     const { name, description, createdBy, phoneNumber, assignedRole, email } =
       req.body;
@@ -42,7 +41,6 @@ const createRoles = async (req, res) => {
 
 // Get user roles by email
 const getUserRoles = async (req, res) => {
-  console.log("Received Request", req.params);
   try {
     const { email } = req.params;
 
@@ -66,7 +64,6 @@ const getUserRoles = async (req, res) => {
 
 // Get all active users
 const getAllUser = async (req, res) => {
-  console.log("Received Request");
   try {
     // Query the roles collection to fetch all active users
     const data = await RoleModel.find({ isActive: true });
@@ -92,7 +89,6 @@ const getAllUser = async (req, res) => {
 
 // Get users by role
 const getUsersByRole = async (req, res) => {
-  console.log("Received Request", req.params);
   try {
     const { roleName } = req.params;
 
@@ -121,7 +117,6 @@ const getUsersByRole = async (req, res) => {
 
 // Delete user by email (soft delete by setting isActive to false)
 const deleteUserByEmail = async (req, res) => {
-  console.log("Received Request", req.params);
   try {
     const { email } = req.params;
 
@@ -149,7 +144,6 @@ const deleteUserByEmail = async (req, res) => {
 
 // Update user by email
 const updateUserByEmail = async (req, res) => {
-  console.log("Received Request", req.body, req.params);
   try {
     const { email } = req.params;
     const { updatedBy, ...updateData } = req.body;

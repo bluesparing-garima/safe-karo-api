@@ -26,7 +26,6 @@ const computeHash = (data) => {
 
 // upload excel
 export const uploadMotorPolicy = async (req, res) => {
-  console.log(req.files);
   try {
     if (!req.files || !req.files.excel) {
       return res.status(400).send("No files were uploaded.");
@@ -742,9 +741,6 @@ export const updateMotorPolicy = async (req, res) => {
     if (err) {
       return res.status(400).json({ message: err.message });
     }
-    if (!req.files || Object.keys(req.files).length === 0) {
-      return res.status(400).json({ message: "No files selected!" });
-    }
 
     try {
       const {
@@ -786,15 +782,6 @@ export const updateMotorPolicy = async (req, res) => {
         finalPremium,
         paymentMode,
         policyCreatedBy,
-        rcFront,
-        rcBack,
-        survey,
-        previosPolicy,
-        puc,
-        fitness,
-        proposal,
-        currentPolicy,
-        other,
         productType,
         isActive,
         updatedBy,
@@ -834,19 +821,10 @@ export const updateMotorPolicy = async (req, res) => {
         finalPremium,
         paymentMode,
         policyCreatedBy,
-        rcFront,
-        rcBack,
-        survey,
-        previosPolicy,
-        puc,
-        fitness,
-        proposal,
-        currentPolicy,
-        other,
-        productType,
         relationshipManagerId,
         relationshipManagerName,
         paymentDetails,
+        productType,
         isActive: isActive !== undefined ? isActive : true,
         updatedBy: updatedBy || "system",
         updatedOn: new Date(),
@@ -863,7 +841,7 @@ export const updateMotorPolicy = async (req, res) => {
       const fileDetails = {};
 
       // Process uploaded files if available
-      if (req.files) {
+      if (req.files && Object.keys(req.files).length > 0) {
         Object.keys(req.files).forEach((key) => {
           fileDetails[key] = req.files[key][0].filename;
         });

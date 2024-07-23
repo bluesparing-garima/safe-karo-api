@@ -28,7 +28,6 @@
 // // Multer storage configuration
 // const storage = multer.diskStorage({
 //   destination: (req, file, cb) => {
-//     console.log("Multer", req.body);
 //     const { document } = req.body;
 //     const folder = getFolderName(document);
 //     ensureDirExists(folder);
@@ -45,7 +44,6 @@
 
 // // File filter function
 // const fileFilter = (req, file, cb) => {
-//   console.log("filter");
 //   if (
 //     file.mimetype.startsWith("image/") ||
 //     file.mimetype === "application/pdf" ||
@@ -63,7 +61,6 @@
 //     );
 //   }
 // };
-// console.log("sdhfjhsd");
 // // Multer upload instance
 // const upload = multer({ dest: '../uploads/' })
 
@@ -89,7 +86,6 @@
 // const PORT = process.env.PORT || 3000;
 
 // app.listen(PORT, () => {
-//   console.log(`Server is running on port ${PORT}`);
 // });
 
 // export default upload;

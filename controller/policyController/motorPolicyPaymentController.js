@@ -175,7 +175,6 @@ export const updateMotorPolicyPayment = async (req, res) => {
           req.body,
           { new: true }
         );
-      console.log("updatedMotorPolicyPayment", updatedMotorPolicyPayment);
       if (!updatedMotorPolicyPayment) {
         return res.status(404).json({
           message: "Motor Policy Payment not found",

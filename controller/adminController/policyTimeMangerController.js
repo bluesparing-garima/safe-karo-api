@@ -48,12 +48,10 @@ cron.schedule('*/10 * * * *', async () => {
       const policyTimerManage = await PolicyTimerManageModel.findOne({ policyId: policy._id });
 
       if (policyTimerManage) {
-        console.log(`Updating timer for policyId: ${policy._id}`);
         policyTimerManage.timer = timer;
         policyTimerManage.updatedOn = new Date();
         await policyTimerManage.save();
       } else {
-        console.log(`Creating new timer for policyId: ${policy._id}`);
         const newPolicyTimerManage = new PolicyTimerManageModel({
           policyId: policy._id,
           createdOn: policy.createdOn,
@@ -62,7 +60,6 @@ cron.schedule('*/10 * * * *', async () => {
         await newPolicyTimerManage.save();
       }
     }
-    console.log('Policy timer updated');
   } catch (error) {
     console.error('Error updating policy timers:', error);
   }

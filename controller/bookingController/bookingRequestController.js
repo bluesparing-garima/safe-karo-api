@@ -241,7 +241,6 @@ export const acceptBookingRequest = async (req, res) => {
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    console.log("req.body", req.body);
     const updatedBooking = await BookingRequestModel.findByIdAndUpdate(
       req.params.id,
       req.body,

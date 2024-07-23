@@ -279,9 +279,7 @@ export const updateUserProfile = (req, res) => {
     if (err) {
       return res.status(400).json({ message: err.message });
     }
-    if (!req.files || Object.keys(req.files).length === 0) {
-      return res.status(400).json({ message: "No files selected!" });
-    }
+
     try {
       const { password, ...rest } = req.body;
       let updatedData = { ...rest };
@@ -297,17 +295,18 @@ export const updateUserProfile = (req, res) => {
         }
       }
 
-      const fileDetails = Object.keys(req.files).reduce((acc, key) => {
-        req.files[key].forEach((file) => {
-          acc[file.fieldname] = file.filename;
-        });
-        return acc;
-      }, {});
-
-      // Assuming `existingBooking` context is clarified or removed
+      let fileDetails = {};
+      if (req.files && Object.keys(req.files).length > 0) {
+        fileDetails = Object.keys(req.files).reduce((acc, key) => {
+          req.files[key].forEach((file) => {
+            acc[file.fieldname] = file.filename;
+          });
+          return acc;
+        }, {});
+      }
 
       const updateData = {
-        ...req.body,
+        ...updatedData,
         ...fileDetails,
       };
 
@@ -317,7 +316,7 @@ export const updateUserProfile = (req, res) => {
         { new: true }
       );
 
-      const updatedUserData = { ...updateData };
+      const updatedUserData = { ...updatedData };
       delete updatedUserData.partnerId;
 
       const updatedUser = await UserModel.findOneAndUpdate(
