@@ -1,5 +1,5 @@
 import express from 'express';
-import {createCreditAndDebit,getCreditAndDebit,getCreditAndDebitById,updateCreditAndDebitById,deleteCreditAndDebitById} from '../../controller/accountsController/creditAndDebitController.js';
+import {createCreditAndDebit,getCreditAndDebit,getCreditAndDebitById,updateCreditAndDebitById,deleteCreditAndDebitById,getCreditAndDebitByDateRangeAndBrokerName} from '../../controller/accountsController/creditAndDebitController.js';
 import logActivity from '../../middlewares/logActivity.js';
 
 const router = express.Router();
@@ -7,6 +7,9 @@ const router = express.Router();
 
 // Create Account
 router.post('/', logActivity, createCreditAndDebit);
+
+// Filter
+router.get('/broker-name',logActivity,getCreditAndDebitByDateRangeAndBrokerName);
 
 // Get All Account details
 router.get('/', logActivity, getCreditAndDebit);
