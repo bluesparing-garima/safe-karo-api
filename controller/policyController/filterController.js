@@ -88,7 +88,7 @@ export const getPoliciesByDateRange = async (req, res) => {
         updatedOn: policy.updatedOn,
         isActive: policy.isActive,
         createdOn: policy.createdOn,
-        issueDate:policy.issueDate,
+        issueDate: policy.issueDate,
         paymentId: payment ? payment._id : null,
         payInODPercentage: payment ? payment.payInODPercentage : null,
         payInTPPercentage: payment ? payment.payInTPPercentage : null,
@@ -251,7 +251,8 @@ export const updateODTPByDateRange = async (req, res) => {
     return res.status(400).json({
       status: "error",
       success: false,
-      message: "Start date, end date, and at least one of OD or TP are required.",
+      message:
+        "Start date, end date, and at least one of OD or TP are required.",
     });
   }
 
@@ -285,7 +286,7 @@ export const updateODTPByDateRange = async (req, res) => {
       { policyNumber: 1 }
     );
 
-    const policyNumbers = paymentPolicies.map(policy => policy.policyNumber);
+    const policyNumbers = paymentPolicies.map((policy) => policy.policyNumber);
 
     const updatePolicyResult = await MotorPolicyModel.updateMany(
       { policyNumber: { $in: policyNumbers } },
@@ -321,9 +322,9 @@ export const updateCommissionByDateRange = async (req, res) => {
 
   if (!startDate || !endDate) {
     return res.status(400).json({
-      status: 'error',
+      status: "error",
       success: false,
-      message: 'Start date and end date are required.',
+      message: "Start date and end date are required.",
     });
   }
 
@@ -334,9 +335,9 @@ export const updateCommissionByDateRange = async (req, res) => {
     payOutTPPercentage === undefined
   ) {
     return res.status(400).json({
-      status: 'error',
+      status: "error",
       success: false,
-      message: 'At least one of pay-in or pay-out percentages is required.',
+      message: "At least one of pay-in or pay-out percentages is required.",
     });
   }
 
@@ -356,9 +357,9 @@ export const updateCommissionByDateRange = async (req, res) => {
 
     if (documentsToUpdate.length === 0) {
       return res.status(404).json({
-        status: 'error',
+        status: "error",
         success: false,
-        message: 'No documents found in the specified date range.',
+        message: "No documents found in the specified date range.",
       });
     }
 
@@ -371,7 +372,10 @@ export const updateCommissionByDateRange = async (req, res) => {
         let payInCommission = 0;
         let payOutCommission = 0;
 
-        if (payInODPercentage !== undefined && payInTPPercentage !== undefined) {
+        if (
+          payInODPercentage !== undefined &&
+          payInTPPercentage !== undefined
+        ) {
           const calculatedPayInODAmount = (od * payInODPercentage) / 100;
           const calculatedPayInTPAmount = (tp * payInTPPercentage) / 100;
           payInCommission = calculatedPayInODAmount + calculatedPayInTPAmount;
@@ -386,10 +390,14 @@ export const updateCommissionByDateRange = async (req, res) => {
           };
         }
 
-        if (payOutODPercentage !== undefined && payOutTPPercentage !== undefined) {
+        if (
+          payOutODPercentage !== undefined &&
+          payOutTPPercentage !== undefined
+        ) {
           const calculatedPayOutODAmount = (od * payOutODPercentage) / 100;
           const calculatedPayOutTPAmount = (tp * payOutTPPercentage) / 100;
-          payOutCommission = calculatedPayOutODAmount + calculatedPayOutTPAmount;
+          payOutCommission =
+            calculatedPayOutODAmount + calculatedPayOutTPAmount;
 
           updatedFields = {
             ...updatedFields,
@@ -415,7 +423,7 @@ export const updateCommissionByDateRange = async (req, res) => {
     res.status(200).json({
       message: `Commission fields updated successfully.`,
       success: true,
-      status: 'success',
+      status: "success",
       updatedDocumentsWithCommission,
     });
   } catch (error) {
@@ -456,7 +464,8 @@ export const getPoliciesByDateRangeAndBrokerName = async (req, res) => {
 
     if (policies.length === 0) {
       return res.status(404).json({
-        message: "No policies found within the specified date range and broker name.",
+        message:
+          "No policies found within the specified date range and broker name.",
         success: false,
         status: "error",
       });
@@ -467,70 +476,73 @@ export const getPoliciesByDateRangeAndBrokerName = async (req, res) => {
       policyId: { $in: policyIds },
     });
 
-    const policyData = policies.map((policy) => {
-      const payment = payments.find(
-        (payment) => payment.policyId.toString() === policy._id.toString()
-      );
-      return {
-        policyType: policy.policyType,
-        caseType: policy.caseType,
-        category: policy.category,
-        subCategory: policy.subCategory,
-        companyName: policy.companyName,
-        broker: policy.broker,
-        vehicleAge: policy.vehicleAge,
-        make: policy.make,
-        model: policy.model,
-        fuelType: policy.fuelType,
-        rto: policy.rto,
-        vehicleNumber: policy.vehicleNumber,
-        weight: policy.weight,
-        cc: policy.cc,
-        ncb: policy.ncb,
-        policyNumber: policy.policyNumber,
-        fullName: policy.fullName,
-        emailId: policy.emailId,
-        phoneNumber: policy.phoneNumber,
-        mfgYear: policy.mfgYear,
-        tenure: policy.tenure,
-        idv: policy.idv,
-        od: policy.od,
-        tp: policy.tp,
-        netPremium: policy.netPremium,
-        finalPremium: policy.finalPremium,
-        paymentMode: policy.paymentMode,
-        partnerId: policy.partnerId,
-        partnerName: policy.partnerName,
-        relationshipManagerId: policy.relationshipManagerId,
-        relationshipManagerName: policy.relationshipManagerName,
-        bookingId: policy.bookingId,
-        policyCompletedBy: policy.policyCompletedBy,
-        paymentDetails: policy.paymentDetails,
-        productType: policy.productType,
-        createdBy: policy.createdBy,
-        updatedBy: policy.updatedBy,
-        updatedOn: policy.updatedOn,
-        isActive: policy.isActive,
-        createdOn: policy.createdOn,
-        issueDate: policy.issueDate,
-        paymentId: payment ? payment._id : null,
-        payInODPercentage: payment ? payment.payInODPercentage : null,
-        payInTPPercentage: payment ? payment.payInTPPercentage : null,
-        payInODAmount: payment ? payment.payInODAmount : null,
-        payInTPAmount: payment ? payment.payInTPAmount : null,
-        payOutODPercentage: payment ? payment.payOutODPercentage : null,
-        payOutTPPercentage: payment ? payment.payOutTPPercentage : null,
-        payOutODAmount: payment ? payment.payOutODAmount : null,
-        payOutTPAmount: payment ? payment.payOutTPAmount : null,
-        payInCommission: payment ? payment.payInCommission : null,
-        payOutCommission: payment ? payment.payOutCommission : null,
-        paymentCreatedBy: payment ? payment.createdBy : null,
-        paymentCreatedOn: payment ? payment.createdOn : null,
-        paymentUpdatedBy: payment ? payment.updatedBy : null,
-        paymentUpdatedOn: payment ? payment.updatedOn : null,
-      };
-    });
+    const policyData = await Promise.all(
+      policies.map(async (policy) => {
+        const payment = await MotorPolicyPaymentModel.findOne({
+          policyId: policy._id,
+        }).exec();
 
+        return {
+          policyId: policy._id,
+          policyType: policy.policyType,
+          caseType: policy.caseType,
+          category: policy.category,
+          subCategory: policy.subCategory,
+          companyName: policy.companyName,
+          broker: policy.broker,
+          vehicleAge: policy.vehicleAge,
+          make: policy.make,
+          model: policy.model,
+          fuelType: policy.fuelType,
+          rto: policy.rto,
+          vehicleNumber: policy.vehicleNumber,
+          weight: policy.weight,
+          cc: policy.cc,
+          ncb: policy.ncb,
+          policyNumber: policy.policyNumber,
+          fullName: policy.fullName,
+          emailId: policy.emailId,
+          phoneNumber: policy.phoneNumber,
+          mfgYear: policy.mfgYear,
+          tenure: policy.tenure,
+          idv: policy.idv,
+          od: policy.od,
+          tp: policy.tp,
+          netPremium: policy.netPremium,
+          finalPremium: policy.finalPremium,
+          paymentMode: policy.paymentMode,
+          partnerId: policy.partnerId,
+          partnerName: policy.partnerName,
+          relationshipManagerId: policy.relationshipManagerId,
+          relationshipManagerName: policy.relationshipManagerName,
+          bookingId: policy.bookingId,
+          policyCompletedBy: policy.policyCompletedBy,
+          paymentDetails: policy.paymentDetails,
+          productType: policy.productType,
+          createdBy: policy.createdBy,
+          updatedBy: policy.updatedBy,
+          updatedOn: policy.updatedOn,
+          isActive: policy.isActive,
+          createdOn: policy.createdOn,
+          issueDate: policy.issueDate,
+          paymentId: payment ? payment._id : null,
+          payInODPercentage: payment ? payment.payInODPercentage : 0,
+          payInTPPercentage: payment ? payment.payInTPPercentage : 0,
+          payInODAmount: payment ? payment.payInODAmount : 0,
+          payInTPAmount: payment ? payment.payInTPAmount : 0,
+          payOutODPercentage: payment ? payment.payOutODPercentage : 0,
+          payOutTPPercentage: payment ? payment.payOutTPPercentage : 0,
+          payOutODAmount: payment ? payment.payOutODAmount : 0,
+          payOutTPAmount: payment ? payment.payOutTPAmount : 0,
+          payInCommission: payment ? payment.payInCommission : 0,
+          payOutCommission: payment ? payment.payOutCommission : 0,
+          paymentCreatedBy: payment ? payment.createdBy : 0,
+          paymentCreatedOn: payment ? payment.createdOn : 0,
+          paymentUpdatedBy: payment ? payment.updatedBy : 0,
+          paymentUpdatedOn: payment ? payment.updatedOn : 0,
+        };
+      })
+    );
     res.status(200).json({
       message: "Motor Policy with Payment Details retrieved successfully.",
       data: policyData,
@@ -575,7 +587,8 @@ export const getPoliciesByDateRangeAndPartnerName = async (req, res) => {
 
     if (policies.length === 0) {
       return res.status(404).json({
-        message: "No policies found within the specified date range and partner name.",
+        message:
+          "No policies found within the specified date range and partner name.",
         success: false,
         status: "error",
       });
@@ -586,11 +599,14 @@ export const getPoliciesByDateRangeAndPartnerName = async (req, res) => {
       policyId: { $in: policyIds },
     });
 
-    const policyData = policies.map((policy) => {
-      const payment = payments.find(
-        (payment) => payment.policyId.toString() === policy._id.toString()
-      );
+    const policyData = await Promise.all(
+      policies.map(async (policy) => {
+        const payment = await MotorPolicyPaymentModel.findOne({
+          policyId: policy._id,
+        }).exec();
+
       return {
+        policyId: policy._id,
         policyType: policy.policyType,
         caseType: policy.caseType,
         category: policy.category,
@@ -648,7 +664,7 @@ export const getPoliciesByDateRangeAndPartnerName = async (req, res) => {
         paymentUpdatedBy: payment ? payment.updatedBy : null,
         paymentUpdatedOn: payment ? payment.updatedOn : null,
       };
-    });
+    }));
 
     res.status(200).json({
       message: "Motor Policy with Payment Details retrieved successfully.",
