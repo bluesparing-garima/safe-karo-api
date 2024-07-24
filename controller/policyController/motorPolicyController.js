@@ -895,60 +895,6 @@ export const updateMotorPolicy = async (req, res) => {
   });
 };
 
-// Update Payment Status and Amount
-export const updatePaymentStatusAndAmount = async (req, res) => {
-  const { policyNumber, amount, status, startDate, endDate } = req.body;
-
-  try {
-    const motorPolicies = await MotorPolicyModel.find({
-      policyNumber,
-      issueDate: { $gte: new Date(startDate), $lte: new Date(endDate) }
-    });
-
-    if (motorPolicies.length === 0) {
-      return res.status(404).json({
-        message: `No Motor Policy found for policyNumber ${policyNumber} in the given date range.`,
-        success: false,
-        status: "error",
-      });
-    }
-
-    let remainingAmount = amount;
-
-    for (const policy of motorPolicies) {
-      if (remainingAmount <= 0) break;
-
-      let payableAmount = policy.netPremium - policy.payOutAmount;
-      let amountToPay = Math.min(remainingAmount, payableAmount);
-
-      policy.payOutAmount += amountToPay;
-      remainingAmount -= amountToPay;
-
-      if (policy.payOutAmount === policy.netPremium) {
-        policy.payOutPaymentStatus = "paid";
-      } else if (policy.payOutAmount > 0) {
-        policy.payOutPaymentStatus = "partialpaid";
-      } else {
-        policy.payOutPaymentStatus = "unpaid";
-      }
-
-      await policy.save();
-    }
-
-    return res.status(200).json({
-      message: `Payment status and amount updated successfully.`,
-      success: true,
-      status: "success",
-    });
-  } catch (error) {
-    return res.status(500).json({
-      message: "Error updating payment status and amount",
-      success: false,
-      error: error.message,
-    });
-  }
-};
-
 // Delete Motor Policy by ID
 export const deleteMotorPolicy = async (req, res) => {
   try {
