@@ -23,6 +23,11 @@ export const createMotorPolicyPayment = async (req, res) => {
     payOutTPAmount,
     payInCommission,
     payOutCommission,
+    payInAmount,
+    payOutAmount,
+    payInPaymentStatus,
+    payOutPaymentStatus,
+    balance,
     createdBy,
   } = req.body;
 
@@ -66,6 +71,11 @@ export const createMotorPolicyPayment = async (req, res) => {
       payOutTPAmount,
       payInCommission,
       payOutCommission,
+      payInAmount,
+      payOutAmount,
+      payInPaymentStatus,
+      payOutPaymentStatus,
+      balance,
       policyDate: motorPolicy.createdOn,
       createdBy,
     });
@@ -137,7 +147,7 @@ export const policyStatusManage = async (req, res) => {
     });
   } catch (err) {
     res.status(400).json({
-      message:"Motor Policy Payment Failed to Update",
+      message: "Motor Policy Payment Failed to Update",
       error: err.message,
       success: false,
       status: "error",
@@ -229,11 +239,12 @@ export const updateMotorPolicyPayment = async (req, res) => {
       });
     }
 
-    const updatedMotorPolicyPayment = await motorPolicyPayment.findByIdAndUpdate(
-      existingProfile._id,
-      req.body,
-      { new: true }
-    );
+    const updatedMotorPolicyPayment =
+      await motorPolicyPayment.findByIdAndUpdate(
+        existingProfile._id,
+        req.body,
+        { new: true }
+      );
 
     if (!updatedMotorPolicyPayment) {
       return res.status(404).json({
@@ -249,12 +260,10 @@ export const updateMotorPolicyPayment = async (req, res) => {
       success: true,
       status: "success",
     });
-
   } catch (err) {
     res.status(400).json({ message: err.message, status: "error" });
   }
 };
-
 
 // Delete a motor policy payment by ObjectId
 export const deleteMotorPolicyPayment = async (req, res) => {
