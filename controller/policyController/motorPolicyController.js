@@ -400,8 +400,8 @@ export const createMotorPolicy = async (req, res) => {
         payOutCommission: savedMotorPolicy.payOutCommission || 0,
         payInAmount: savedMotorPolicy.payInAmount || 0,
         payOutAmount: savedMotorPolicy.payOutAmount || 0,
-        payInPaymentStatus: savedMotorPolicy.payInPaymentStatus || "",
-        payOutPaymentStatus: savedMotorPolicy.payOutPaymentStatus || "",
+        payInPaymentStatus: savedMotorPolicy.payInPaymentStatus,
+        payOutPaymentStatus: savedMotorPolicy.payOutPaymentStatus,
         issueDate: formattedIssueDate, // Use formatted date
         createdBy: savedMotorPolicy.createdBy,
       });
