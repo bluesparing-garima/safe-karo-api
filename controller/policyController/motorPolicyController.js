@@ -126,7 +126,6 @@ export const uploadMotorPolicy = async (req, res) => {
       const query = { policyNumber: data.policyNumber };
 
       const existingRecord = await MotorPolicyModel.findOne(query);
-
       if (existingRecord) {
         existingRecord.policyStatus = data.policyStatus;
         existingRecord.partnerId = data.partnerId;
@@ -191,45 +190,50 @@ export const uploadMotorPolicy = async (req, res) => {
           paymentRecord.partnerId = existingRecord.partnerId;
           paymentRecord.policyNumber = existingRecord.policyNumber;
           paymentRecord.bookingId = existingRecord.bookingId;
-          paymentRecord.createdOn = existingRecord.createdOn;
-          paymentRecord.policyDate = existingRecord.createdOn;
-          paymentRecord.status = existingRecord.policyStatus;
+          paymentRecord.od = existingRecord.od;
+          paymentRecord.tp = existingRecord.tp;
           paymentRecord.netPremium = existingRecord.netPremium;
           paymentRecord.finalPremium = existingRecord.finalPremium;
+          paymentRecord.payInODPercentage = 0;
+          paymentRecord.payInTPPercentage = 0;
+          paymentRecord.payInODAmount = 0;
+          paymentRecord.payInTPAmount = 0;
+          paymentRecord.payOutODPercentage = 0;
+          paymentRecord.payOutTPPercentage = 0;
+          paymentRecord.payOutODAmount = 0;
+          paymentRecord.payOutTPAmount = 0;
+          paymentRecord.payInCommission = 0;
+          paymentRecord.payOutCommission = 0;
+          paymentRecord.createdBy = existingRecord.createdBy;
 
           await paymentRecord.save();
-        } else {
-          const newPayment = new MotorPolicyPaymentModel({
-            policyId: existingRecord._id,
-            partnerId: existingRecord.partnerId,
-            policyNumber: existingRecord.policyNumber,
-            bookingId: existingRecord.bookingId,
-            createdOn: existingRecord.createdOn,
-            policyDate: existingRecord.createdOn,
-            status: existingRecord.policyStatus,
-            netPremium: existingRecord.netPremium,
-            finalPremium: existingRecord.finalPremium,
-          });
-
-          await newPayment.save();
         }
       } else {
-        const newPolicy = new MotorPolicyModel(data);
-        await newPolicy.save();
+        const newPolicy = await MotorPolicyModel.create(data);
 
-        const newPayment = new MotorPolicyPaymentModel({
-          policyId: newPolicy._id,
+        const newMotorPolicyPayment = new MotorPolicyPaymentModel({
           partnerId: newPolicy.partnerId,
+          policyId: newPolicy._id,
           policyNumber: newPolicy.policyNumber,
           bookingId: newPolicy.bookingId,
-          createdOn: newPolicy.createdOn,
-          policyDate: newPolicy.createdOn,
-          status: newPolicy.policyStatus,
+          od: newPolicy.od,
+          tp: newPolicy.tp,
           netPremium: newPolicy.netPremium,
           finalPremium: newPolicy.finalPremium,
+          payInODPercentage: 0,
+          payInTPPercentage: 0,
+          payInODAmount: 0,
+          payInTPAmount: 0,
+          payOutODPercentage: 0,
+          payOutTPPercentage: 0,
+          payOutODAmount: 0,
+          payOutTPAmount: 0,
+          payInCommission: 0,
+          payOutCommission: 0,
+          createdBy: newPolicy.createdBy,
         });
 
-        await newPayment.save();
+        await newMotorPolicyPayment.save();
       }
     }
 
