@@ -38,7 +38,7 @@ export const createMotorPolicyPayment = async (req, res) => {
 
     // Fetch MotorPolicy using policyId
     const motorPolicy = await MotorPolicyModel.findById(policyId);
-    
+
     if (!motorPolicy) {
       return res.status(404).json({
         message: "Motor Policy not found",
@@ -80,6 +80,65 @@ export const createMotorPolicyPayment = async (req, res) => {
   } catch (err) {
     res.status(400).json({
       message: err.message,
+      success: false,
+      status: "error",
+    });
+  }
+};
+
+// policy Status Manage
+export const policyStatusManage = async (req, res) => {
+  const policyUpdates = req.body;
+
+  try {
+    const updatePromises = policyUpdates.map(
+      async ({
+        policyNumber,
+        payInAmount,
+        payOutAmount,
+        payInPaymentStatus,
+        payOutPaymentStatus,
+        balance,
+      }) => {
+        let existingPayment = await motorPolicyPayment.findOne({
+          policyNumber,
+        });
+
+        if (!existingPayment) {
+          // Create a new payment record
+          existingPayment = new motorPolicyPayment({
+            policyNumber,
+            payInAmount,
+            payOutAmount,
+            payInPaymentStatus,
+            payOutPaymentStatus,
+            balance,
+          });
+        } else {
+          existingPayment.payInAmount = payInAmount;
+          existingPayment.payInPaymentStatus = payInPaymentStatus;
+          existingPayment.payOutAmount = payOutAmount;
+          existingPayment.payOutPaymentStatus = payOutPaymentStatus;
+          existingPayment.balance = balance;
+          existingPayment.updatedOn = Date.now();
+        }
+
+        return existingPayment.save();
+      }
+    );
+
+    const savedPayments = await Promise.all(updatePromises);
+
+    res.status(200).json({
+      message: "Motor Policy Payments updated successfully",
+      data: savedPayments,
+      success: true,
+      status: "success",
+    });
+  } catch (err) {
+    res.status(400).json({
+      message:"Motor Policy Payment Failed to Update",
+      error: err.message,
       success: false,
       status: "error",
     });
@@ -158,47 +217,44 @@ export const updateMotorPolicyPayment = async (req, res) => {
   } = req.body;
 
   try {
-    //const { policiesId } = ;
-    // if (!mongoose.Types.ObjectId.isValid.policyId) {
-    //   return res
-    //     .status(400)
-    //     .json({ message: "Invalid ID", success: false, status: "error" });
-    // }
-    //Check POlicyId
     const existingProfile = await motorPolicyPayment.findOne({
       policyId: req.params.policyId,
     });
-    if (existingProfile) {
-      const updatedMotorPolicyPayment =
-        await motorPolicyPayment.findByIdAndUpdate(
-          existingProfile._id,
-          req.body,
-          { new: true }
-        );
-      if (!updatedMotorPolicyPayment) {
-        return res.status(404).json({
-          message: "Motor Policy Payment not found",
-          success: false,
-          status: "error",
-        });
-      }
 
-      res.status(200).json({
-        message: "Motor Policy Payment updated successfully",
-        data: updatedMotorPolicyPayment,
-        success: true,
-        status: "success",
+    if (!existingProfile) {
+      return res.status(404).json({
+        message: "Motor Policy Payment not found",
+        success: false,
+        status: "error",
       });
     }
-    return res.status(404).json({
-      message: "Motor Policy Payment not found",
-      success: false,
-      status: "error",
+
+    const updatedMotorPolicyPayment = await motorPolicyPayment.findByIdAndUpdate(
+      existingProfile._id,
+      req.body,
+      { new: true }
+    );
+
+    if (!updatedMotorPolicyPayment) {
+      return res.status(404).json({
+        message: "Motor Policy Payment not found",
+        success: false,
+        status: "error",
+      });
+    }
+
+    res.status(200).json({
+      message: "Motor Policy Payment updated successfully",
+      data: updatedMotorPolicyPayment,
+      success: true,
+      status: "success",
     });
+
   } catch (err) {
     res.status(400).json({ message: err.message, status: "error" });
   }
 };
+
 
 // Delete a motor policy payment by ObjectId
 export const deleteMotorPolicyPayment = async (req, res) => {
