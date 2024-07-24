@@ -10,11 +10,11 @@ import {
 } from '../../controller/policyController/motorPolicyPaymentController.js';
 
 const router = express.Router();
-router.put('/:policyId', logActivity, updateMotorPolicyPayment);
 router.post('/', logActivity, createMotorPolicyPayment);
-router.post('/status-manage',logActivity,policyStatusManage);
 router.get('/', logActivity, getAllMotorPolicyPayments);
 router.get('/:policyId', logActivity, getMotorPolicyPaymentByPolicyId);
+router.put('/status-manage',logActivity,policyStatusManage);
+router.put('/:policyId', logActivity, updateMotorPolicyPayment);
 router.delete('/:id', logActivity, deleteMotorPolicyPayment);
 
 export default router;
