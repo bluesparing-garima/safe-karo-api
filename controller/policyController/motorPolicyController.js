@@ -239,6 +239,7 @@ export const uploadMotorPolicy = async (req, res) => {
     res.status(500).json({ message: "Internal server error." });
   }
 };
+
 // Create Motor Policy
 export const createMotorPolicy = async (req, res) => {
   // upload.array('rcback', 10)(req, res, (err) => {
@@ -387,16 +388,20 @@ export const createMotorPolicy = async (req, res) => {
         tp: savedMotorPolicy.tp,
         netPremium: savedMotorPolicy.netPremium,
         finalPremium: savedMotorPolicy.finalPremium,
-        payInODPercentage: 0,
-        payInTPPercentage: 0,
-        payInODAmount: 0,
-        payInTPAmount: 0,
-        payOutODPercentage: 0,
-        payOutTPPercentage: 0,
-        payOutODAmount: 0,
-        payOutTPAmount: 0,
-        payInCommission: 0,
-        payOutCommission: 0,
+        payInODPercentage: savedMotorPolicy.payInODPercentage || 0,
+        payInTPPercentage: savedMotorPolicy.payInTPPercentage || 0,
+        payInODAmount: savedMotorPolicy.payInODAmount || 0,
+        payInTPAmount: savedMotorPolicy.payInTPAmount || 0,
+        payOutODPercentage: savedMotorPolicy.payOutODPercentage || 0,
+        payOutTPPercentage: savedMotorPolicy.payOutTPPercentage || 0,
+        payOutODAmount: savedMotorPolicy.payOutODAmount || 0,
+        payOutTPAmount: savedMotorPolicy.payOutTPAmount || 0,
+        payInCommission: savedMotorPolicy.payInCommission || 0,
+        payOutCommission: savedMotorPolicy.payOutCommission || 0,
+        payInAmount: savedMotorPolicy.payInAmount || 0,
+        payOutAmount: savedMotorPolicy.payOutAmount || 0,
+        payInPaymentStatus: savedMotorPolicy.payInPaymentStatus || "",
+        payOutPaymentStatus: savedMotorPolicy.payOutPaymentStatus || "",
         issueDate: formattedIssueDate, // Use formatted date
         createdBy: savedMotorPolicy.createdBy,
       });
@@ -650,6 +655,10 @@ export const getMotorPolicyWithPaymentDetails = async (req, res) => {
       payOutTPAmount: motorPolicyPayments.payOutTPAmount,
       payInCommission: motorPolicyPayments.payInCommission,
       payOutCommission: motorPolicyPayments.payOutCommission,
+      payInAmount: motorPolicyPayments.payInAmount,
+      payOutAmount: motorPolicyPayments.payOutAmount,
+      payInPaymentStatus: motorPolicyPayments.payInPaymentStatus || " ",
+      payOutPaymentStatus: motorPolicyPayments.payOutPaymentStatus || " ",
       paymentCreatedBy: motorPolicyPayments.createdBy,
       paymentCreatedOn: motorPolicyPayments.createdOn,
       paymentUpdatedBy: motorPolicyPayments.updatedBy,
