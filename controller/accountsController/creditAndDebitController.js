@@ -230,8 +230,10 @@ export const getCreditAndDebitByDateRangeAndBrokerName = async (req, res) => {
     endDateObj.setHours(23, 59, 59, 999);
     // Query to find documents within the date range and broker name
     const creditAndDebits = await creditAndDebit.find({
-      createdOn: {
+      startDate: {
         $gte: startDateObj,
+      },
+      endDate: {
         $lte: endDateObj,
       },
       brokerName: brokerName,
@@ -239,7 +241,8 @@ export const getCreditAndDebitByDateRangeAndBrokerName = async (req, res) => {
 
     if (creditAndDebits.length === 0) {
       return res.status(404).json({
-        message: "No credit and debit data found within the specified date range and broker name.",
+        message:
+          "No credit and debit data found within the specified date range and broker name.",
         success: false,
         status: "error",
       });
@@ -281,8 +284,10 @@ export const getTotalAmountByDateRangeAndBrokerName = async (req, res) => {
 
     // Query to find documents within the date range and broker name
     const creditAndDebits = await creditAndDebit.find({
-      createdOn: {
+      startDate: {
         $gte: startDateObj,
+      },
+      endDate: {
         $lte: endDateObj,
       },
       brokerName: brokerName,
@@ -290,14 +295,18 @@ export const getTotalAmountByDateRangeAndBrokerName = async (req, res) => {
 
     if (creditAndDebits.length === 0) {
       return res.status(404).json({
-        message: "No credit and debit data found within the specified date range and broker name.",
+        message:
+          "No credit and debit data found within the specified date range and broker name.",
         success: false,
         status: "error",
       });
     }
 
     // Calculate the total amount
-    const totalAmount = creditAndDebits.reduce((total, record) => total + record.amount, 0);
+    const totalAmount = creditAndDebits.reduce(
+      (total, record) => total + record.amount,
+      0
+    );
 
     res.status(200).json({
       message: "Total amount calculated successfully.",
