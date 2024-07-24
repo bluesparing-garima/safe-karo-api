@@ -53,7 +53,11 @@ const creditAndDebitSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
-  date: {
+  startDate: {
+    type: Date,
+    trim: true,
+  },
+  endDate:{
     type: Date,
     trim: true,
   },

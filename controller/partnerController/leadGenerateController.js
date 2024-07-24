@@ -191,32 +191,28 @@ export const acceptLeadRequest = async (req, res) => {
 
 // Update Lead
 const updateLead = async (req, res) => {
-  // Middleware to handle file uploads
   upload(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ message: err.message });
     }
-    if (!req.files || Object.keys(req.files).length === 0) {
-      return res.status(400).json({ message: "No files selected!" });
-    }
+
     try {
       const updateData = req.body;
+      let fileDetails = {};
+      if (req.files && Object.keys(req.files).length > 0) {
+        fileDetails = Object.keys(req.files).reduce((acc, key) => {
+          req.files[key].forEach((file) => {
+            acc[file.fieldname] = file.filename;
+          });
+          return acc;
+        }, {});
+      }
 
-      // Process uploaded files and add to updateData if available
-      const fileDetails = Object.keys(req.files).reduce((acc, key) => {
-        req.files[key].forEach((file) => {
-          acc[file.fieldname] = file.filename;
-        });
-        return acc;
-      }, {});
-
-      // Merge updateData with fileDetails
       const updatedLeadData = {
         ...updateData,
         ...fileDetails,
       };
 
-      // Find and update lead by ID
       const updatedLead = await leadGenerateModel.findByIdAndUpdate(
         req.params.id,
         updatedLeadData,
@@ -224,9 +220,10 @@ const updateLead = async (req, res) => {
       );
 
       if (!updatedLead) {
-        return res
-          .status(404)
-          .json({ status: "failed", message: "Lead not found" });
+        return res.status(404).json({
+          status: "failed",
+          message: "Lead not found",
+        });
       }
 
       res.status(200).json({
@@ -243,6 +240,8 @@ const updateLead = async (req, res) => {
     }
   });
 };
+
+export default updateLead;
 
 // Delete Lead
 const deleteLead = async (req, res) => {

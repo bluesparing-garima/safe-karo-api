@@ -17,7 +17,8 @@ export const createCreditAndDebit = async (req, res) => {
       brokerId,
       brokerName,
       policyNumber,
-      date,
+      startDate,
+      endDate,
       remarks,
       createdBy,
       createdOn,
@@ -39,7 +40,8 @@ export const createCreditAndDebit = async (req, res) => {
       brokerName,
       remarks,
       policyNumber,
-      date,
+      startDate,
+      endDate,
       createdBy,
       createdOn,
     });
@@ -75,7 +77,6 @@ export const createCreditAndDebit = async (req, res) => {
     });
   }
 };
-
 
 // Get all credit and debit transactions
 export const getCreditAndDebit = async (req, res) => {
@@ -204,6 +205,57 @@ export const deleteCreditAndDebitById = async (req, res) => {
       message: "Error deleting transaction",
       error: error.message,
       status: "error",
+    });
+  }
+};
+
+// Get Credit And Debit by Date Range and Broker Name
+export const getCreditAndDebitByDateRangeAndBrokerName = async (req, res) => {
+  const { startDate, endDate, brokerName } = req.query;
+
+  if (!startDate || !endDate || !brokerName) {
+    return res.status(400).json({
+      status: "error",
+      success: false,
+      message: "Start date, end date, and broker name are required.",
+    });
+  }
+
+  try {
+    // Convert startDate to MongoDB date object for the start of the day
+    const startDateObj = new Date(startDate);
+    startDateObj.setHours(0, 0, 0, 0);
+    // Convert endDate to MongoDB date object for the end of the day
+    const endDateObj = new Date(endDate);
+    endDateObj.setHours(23, 59, 59, 999);
+    // Query to find documents within the date range and broker name
+    const creditAndDebits = await creditAndDebit.find({
+      createdOn: {
+        $gte: startDateObj,
+        $lte: endDateObj,
+      },
+      brokerName: brokerName,
+    });
+
+    if (creditAndDebits.length === 0) {
+      return res.status(404).json({
+        message: "No credit and debit data found within the specified date range and broker name.",
+        success: false,
+        status: "error",
+      });
+    }
+
+    res.status(200).json({
+      message: "Credit and Debit data retrieved successfully.",
+      data: creditAndDebits,
+      success: true,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving credit and debit data.",
+      success: false,
+      error: error.message,
     });
   }
 };

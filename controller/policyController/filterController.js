@@ -426,3 +426,241 @@ export const updateCommissionByDateRange = async (req, res) => {
     });
   }
 };
+
+// Get Policies by Date Range and Broker Name
+export const getPoliciesByDateRangeAndBrokerName = async (req, res) => {
+  const { startDate, endDate, broker } = req.query;
+
+  if (!startDate || !endDate || !broker) {
+    return res.status(400).json({
+      status: "error",
+      success: false,
+      message: "Start date, end date, and broker name are required.",
+    });
+  }
+
+  try {
+    const startDateObj = new Date(startDate);
+    startDateObj.setHours(0, 0, 0, 0);
+
+    const endDateObj = new Date(endDate);
+    endDateObj.setHours(23, 59, 59, 999);
+
+    const policies = await MotorPolicyModel.find({
+      issueDate: {
+        $gte: startDateObj,
+        $lte: endDateObj,
+      },
+      broker: broker,
+    });
+
+    if (policies.length === 0) {
+      return res.status(404).json({
+        message: "No policies found within the specified date range and broker name.",
+        success: false,
+        status: "error",
+      });
+    }
+
+    const policyIds = policies.map((policy) => policy._id);
+    const payments = await MotorPolicyModel.find({
+      policyId: { $in: policyIds },
+    });
+
+    const policyData = policies.map((policy) => {
+      const payment = payments.find(
+        (payment) => payment.policyId.toString() === policy._id.toString()
+      );
+      return {
+        policyType: policy.policyType,
+        caseType: policy.caseType,
+        category: policy.category,
+        subCategory: policy.subCategory,
+        companyName: policy.companyName,
+        broker: policy.broker,
+        vehicleAge: policy.vehicleAge,
+        make: policy.make,
+        model: policy.model,
+        fuelType: policy.fuelType,
+        rto: policy.rto,
+        vehicleNumber: policy.vehicleNumber,
+        weight: policy.weight,
+        cc: policy.cc,
+        ncb: policy.ncb,
+        policyNumber: policy.policyNumber,
+        fullName: policy.fullName,
+        emailId: policy.emailId,
+        phoneNumber: policy.phoneNumber,
+        mfgYear: policy.mfgYear,
+        tenure: policy.tenure,
+        idv: policy.idv,
+        od: policy.od,
+        tp: policy.tp,
+        netPremium: policy.netPremium,
+        finalPremium: policy.finalPremium,
+        paymentMode: policy.paymentMode,
+        partnerId: policy.partnerId,
+        partnerName: policy.partnerName,
+        relationshipManagerId: policy.relationshipManagerId,
+        relationshipManagerName: policy.relationshipManagerName,
+        bookingId: policy.bookingId,
+        policyCompletedBy: policy.policyCompletedBy,
+        paymentDetails: policy.paymentDetails,
+        productType: policy.productType,
+        createdBy: policy.createdBy,
+        updatedBy: policy.updatedBy,
+        updatedOn: policy.updatedOn,
+        isActive: policy.isActive,
+        createdOn: policy.createdOn,
+        issueDate: policy.issueDate,
+        paymentId: payment ? payment._id : null,
+        payInODPercentage: payment ? payment.payInODPercentage : null,
+        payInTPPercentage: payment ? payment.payInTPPercentage : null,
+        payInODAmount: payment ? payment.payInODAmount : null,
+        payInTPAmount: payment ? payment.payInTPAmount : null,
+        payOutODPercentage: payment ? payment.payOutODPercentage : null,
+        payOutTPPercentage: payment ? payment.payOutTPPercentage : null,
+        payOutODAmount: payment ? payment.payOutODAmount : null,
+        payOutTPAmount: payment ? payment.payOutTPAmount : null,
+        payInCommission: payment ? payment.payInCommission : null,
+        payOutCommission: payment ? payment.payOutCommission : null,
+        paymentCreatedBy: payment ? payment.createdBy : null,
+        paymentCreatedOn: payment ? payment.createdOn : null,
+        paymentUpdatedBy: payment ? payment.updatedBy : null,
+        paymentUpdatedOn: payment ? payment.updatedOn : null,
+      };
+    });
+
+    res.status(200).json({
+      message: "Motor Policy with Payment Details retrieved successfully.",
+      data: policyData,
+      success: true,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving policies.",
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+// Get Policies by Date Range and Partner Name
+export const getPoliciesByDateRangeAndPartnerName = async (req, res) => {
+  const { startDate, endDate, partnerName } = req.query;
+
+  if (!startDate || !endDate || !partnerName) {
+    return res.status(400).json({
+      status: "error",
+      success: false,
+      message: "Start date, end date, and broker name are required.",
+    });
+  }
+
+  try {
+    const startDateObj = new Date(startDate);
+    startDateObj.setHours(0, 0, 0, 0);
+
+    const endDateObj = new Date(endDate);
+    endDateObj.setHours(23, 59, 59, 999);
+
+    const policies = await MotorPolicyModel.find({
+      issueDate: {
+        $gte: startDateObj,
+        $lte: endDateObj,
+      },
+      partnerName: partnerName,
+    });
+
+    if (policies.length === 0) {
+      return res.status(404).json({
+        message: "No policies found within the specified date range and partner name.",
+        success: false,
+        status: "error",
+      });
+    }
+
+    const policyIds = policies.map((policy) => policy._id);
+    const payments = await MotorPolicyModel.find({
+      policyId: { $in: policyIds },
+    });
+
+    const policyData = policies.map((policy) => {
+      const payment = payments.find(
+        (payment) => payment.policyId.toString() === policy._id.toString()
+      );
+      return {
+        policyType: policy.policyType,
+        caseType: policy.caseType,
+        category: policy.category,
+        subCategory: policy.subCategory,
+        companyName: policy.companyName,
+        broker: policy.broker,
+        vehicleAge: policy.vehicleAge,
+        make: policy.make,
+        model: policy.model,
+        fuelType: policy.fuelType,
+        rto: policy.rto,
+        vehicleNumber: policy.vehicleNumber,
+        weight: policy.weight,
+        cc: policy.cc,
+        ncb: policy.ncb,
+        policyNumber: policy.policyNumber,
+        fullName: policy.fullName,
+        emailId: policy.emailId,
+        phoneNumber: policy.phoneNumber,
+        mfgYear: policy.mfgYear,
+        tenure: policy.tenure,
+        idv: policy.idv,
+        od: policy.od,
+        tp: policy.tp,
+        netPremium: policy.netPremium,
+        finalPremium: policy.finalPremium,
+        paymentMode: policy.paymentMode,
+        partnerId: policy.partnerId,
+        partnerName: policy.partnerName,
+        relationshipManagerId: policy.relationshipManagerId,
+        relationshipManagerName: policy.relationshipManagerName,
+        bookingId: policy.bookingId,
+        policyCompletedBy: policy.policyCompletedBy,
+        paymentDetails: policy.paymentDetails,
+        productType: policy.productType,
+        createdBy: policy.createdBy,
+        updatedBy: policy.updatedBy,
+        updatedOn: policy.updatedOn,
+        isActive: policy.isActive,
+        createdOn: policy.createdOn,
+        issueDate: policy.issueDate,
+        paymentId: payment ? payment._id : null,
+        payInODPercentage: payment ? payment.payInODPercentage : null,
+        payInTPPercentage: payment ? payment.payInTPPercentage : null,
+        payInODAmount: payment ? payment.payInODAmount : null,
+        payInTPAmount: payment ? payment.payInTPAmount : null,
+        payOutODPercentage: payment ? payment.payOutODPercentage : null,
+        payOutTPPercentage: payment ? payment.payOutTPPercentage : null,
+        payOutODAmount: payment ? payment.payOutODAmount : null,
+        payOutTPAmount: payment ? payment.payOutTPAmount : null,
+        payInCommission: payment ? payment.payInCommission : null,
+        payOutCommission: payment ? payment.payOutCommission : null,
+        paymentCreatedBy: payment ? payment.createdBy : null,
+        paymentCreatedOn: payment ? payment.createdOn : null,
+        paymentUpdatedBy: payment ? payment.updatedBy : null,
+        paymentUpdatedOn: payment ? payment.updatedOn : null,
+      };
+    });
+
+    res.status(200).json({
+      message: "Motor Policy with Payment Details retrieved successfully.",
+      data: policyData,
+      success: true,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving policies.",
+      success: false,
+      error: error.message,
+    });
+  }
+};
