@@ -2,6 +2,7 @@ import * as XLSX from "xlsx";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
+import moment from "moment";
 import BookingRequestModel from "../../models/bookingModel/bookingRequestSchema.js";
 import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
 import MotorPolicyPaymentModel from "../../models/policyModel/motorPolicyPaymentSchema.js";
@@ -23,6 +24,13 @@ if (!fs.existsSync(path.join(process.cwd(), "data"))) {
 const computeHash = (data) => {
   return crypto.createHash("md5").update(data).digest("hex");
 };
+
+// Custom function to convert Excel serial date to formatted date string
+function excelDateToFormattedDate(serial) {
+  const epoch = new Date(Date.UTC(1899, 11, 30)); // Excel epoch
+  const jsDate = new Date(epoch.getTime() + serial * 86400000); // 86400000 = ms per day
+  return moment(jsDate).format('YYYY-MM-DD');
+}
 
 // upload excel
 export const uploadMotorPolicy = async (req, res) => {
@@ -49,68 +57,70 @@ export const uploadMotorPolicy = async (req, res) => {
 
     const workbook = XLSX.read(file.data, { type: "buffer" });
     const sheetName = workbook.SheetNames[0];
-    const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+    const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { raw: true });
 
-    const extractedData = worksheet.map((row) => ({
-      policyType: row.policyType || row["Policy Type"] || "",
-      caseType: row.caseType || row["Case Type"] || "",
-      category: row.category || row["Category"] || "",
-      subCategory:
-        row.subCategory || row["SubCategory"] || row["Sub Category"] || "",
-      companyName: row.companyName || row["Company Name"] || "",
-      broker: row.broker || row["Broker"] || "",
-      vehicleAge: row.vehicleAge || row["Vehicle Age"] || "",
-      make: row.make || row["Make"] || "",
-      model: row.model || row["Model"] || "",
-      fuelType: row.fuelType || row["Fuel Type"] || "",
-      rto: row.rto || row["RTO"] || "",
-      vehicleNumber: row.vehicleNumber || row["Vehicle Number"] || "",
-      seatingCapacity: row.seatingCapacity || row["Seating Capacity"] || "",
-      cc: row.cc || row["CC"] || "",
-      ncb: row.ncb || row["NCB"] || "",
-      policyNumber: row.policyNumber || row["Policy Number"] || "",
-      fullName: row.fullName || row["Full Name"] || "",
-      emailId: row.emailId || row["Email ID"] || "",
-      phoneNumber: row.phoneNumber || row["Phone Number"] || "",
-      mfgYear: row.mfgYear || row["Manufacturing Year"] || "",
-      tenure: row.tenure || row["Tenure"] || "",
-      registrationDate: row.registrationDate || row["Registration Date"] || "",
-      endDate: row.endDate || row["End Date"] || "",
-      issueDate: row.issueDate || row["Issue Date"] || "",
-      idv: row.idv || row["IDV"] || "",
-      od: row.od || row["OD"] || "",
-      tp: row.tp || row["TP"] || "",
-      policyStatus: row.policyStatus || row["Policy Status"] || "",
-      netPremium: row.netPremium || row["Net Premium"] || "",
-      finalPremium: row.finalPremium || row["Final Premium"] || "",
-      paymentMode: row.paymentMode || row["Payment Mode"] || "",
-      policyCreatedBy: "admin",
-      partnerId: row.partnerId || row["Partner ID"] || "",
-      partnerName: row.partnerName || row["Partner Name"] || "",
-      relationshipManagerId:
-        row.relationshipManagerId || row["Relationship Manager ID"] || "",
-      relationshipManagerName:
-        row.relationshipManagerName || row["Relationship Manager Name"] || "",
-      bookingId: row.bookingId || row["Booking ID"] || "",
-      policyCompletedBy:
-        row.policyCompletedBy || row["Policy Completed By"] || "",
-      paymentDetails: row.paymentDetails || row["Payment Details"] || "",
-      productType: row.productType || row["Product Type"] || "",
-      rcFront: row.rcFront || row["RC Front"] || "",
-      rcBack: row.rcBack || row["RC Back"] || "",
-      previousPolicy: row.previousPolicy || row["Previous Policy"] || "",
-      survey: row.survey || row["Survey"] || "",
-      puc: row.puc || row["PUC"] || "",
-      fitness: row.fitness || row["Fitness"] || "",
-      proposal: row.proposal || row["Proposal"] || "",
-      currentPolicy: row.currentPolicy || row["Current Policy"] || "",
-      other: row.other || row["Other"] || "",
-      createdBy: "excel",
-      updatedBy: null,
-      updatedOn: null,
-      createdOn: Date.now(),
-      weight: row.weight || row["Weight"] || "",
-    }));
+    const extractedData = worksheet.map((row) => {
+      const registrationDate = typeof row.registrationDate === 'number' ? excelDateToFormattedDate(row.registrationDate) : row.registrationDate;
+      const endDate = typeof row.endDate === 'number' ? excelDateToFormattedDate(row.endDate) : row.endDate;
+      const issueDate = typeof row.issueDate === 'number' ? excelDateToFormattedDate(row.issueDate) : row.issueDate;
+
+      return {
+        policyType: row.policyType || row["Policy Type"] || "",
+        caseType: row.caseType || row["Case Type"] || "",
+        category: row.category || row["Category"] || "",
+        subCategory: row.subCategory || row["SubCategory"] || row["Sub Category"] || "",
+        companyName: row.companyName || row["Company Name"] || "",
+        broker: row.broker || row["Broker"] || "",
+        vehicleAge: row.vehicleAge || row["Vehicle Age"] || "",
+        make: row.make || row["Make"] || "",
+        model: row.model || row["Model"] || "",
+        fuelType: row.fuelType || row["Fuel Type"] || "",
+        rto: row.rto || row["RTO"] || "",
+        vehicleNumber: row.vehicleNumber || row["Vehicle Number"] || "",
+        seatingCapacity: row.seatingCapacity || row["Seating Capacity"] || "",
+        cc: row.cc || row["CC"] || "",
+        ncb: row.ncb || row["NCB"] || "",
+        policyNumber: row.policyNumber || row["Policy Number"] || "",
+        fullName: row.fullName || row["Full Name"] || "",
+        emailId: row.emailId || row["Email ID"] || "",
+        phoneNumber: row.phoneNumber || row["Phone Number"] || "",
+        mfgYear: row.mfgYear || row["Manufacturing Year"] || "",
+        tenure: row.tenure || row["Tenure"] || "",
+        registrationDate: registrationDate || "",
+        endDate: endDate || "",
+        issueDate: issueDate || "",
+        idv: row.idv || row["IDV"] || "",
+        od: row.od || row["OD"] || "",
+        tp: row.tp || row["TP"] || "",
+        policyStatus: row.policyStatus || row["Policy Status"] || "",
+        netPremium: row.netPremium || row["Net Premium"] || "",
+        finalPremium: row.finalPremium || row["Final Premium"] || "",
+        paymentMode: row.paymentMode || row["Payment Mode"] || "",
+        policyCreatedBy: "admin",
+        partnerId: row.partnerId || row["Partner ID"] || "",
+        partnerName: row.partnerName || row["Partner Name"] || "",
+        relationshipManagerId: row.relationshipManagerId || row["Relationship Manager ID"] || "",
+        relationshipManagerName: row.relationshipManagerName || row["Relationship Manager Name"] || "",
+        bookingId: row.bookingId || row["Booking ID"] || "",
+        policyCompletedBy: row.policyCompletedBy || row["Policy Completed By"] || "",
+        paymentDetails: row.paymentDetails || row["Payment Details"] || "",
+        productType: row.productType || row["Product Type"] || "",
+        rcFront: row.rcFront || row["RC Front"] || "",
+        rcBack: row.rcBack || row["RC Back"] || "",
+        previousPolicy: row.previousPolicy || row["Previous Policy"] || "",
+        survey: row.survey || row["Survey"] || "",
+        puc: row.puc || row["PUC"] || "",
+        fitness: row.fitness || row["Fitness"] || "",
+        proposal: row.proposal || row["Proposal"] || "",
+        currentPolicy: row.currentPolicy || row["Current Policy"] || "",
+        other: row.other || row["Other"] || "",
+        createdBy: "excel",
+        updatedBy: null,
+        updatedOn: null,
+        createdOn: Date.now(),
+        weight: row.weight || row["Weight"] || "",
+      };
+    });
 
     for (const data of extractedData) {
       const query = { policyNumber: data.policyNumber };
@@ -181,64 +191,57 @@ export const uploadMotorPolicy = async (req, res) => {
           paymentRecord.partnerId = existingRecord.partnerId;
           paymentRecord.policyNumber = existingRecord.policyNumber;
           paymentRecord.bookingId = existingRecord.bookingId;
-          paymentRecord.od = existingRecord.od;
-          paymentRecord.tp = existingRecord.tp;
+          paymentRecord.createdOn = existingRecord.createdOn;
+          paymentRecord.policyDate = existingRecord.createdOn;
+          paymentRecord.status = existingRecord.policyStatus;
           paymentRecord.netPremium = existingRecord.netPremium;
           paymentRecord.finalPremium = existingRecord.finalPremium;
-          paymentRecord.payInODPercentage = 0;
-          paymentRecord.payInTPPercentage = 0;
-          paymentRecord.payInODAmount = 0;
-          paymentRecord.payInTPAmount = 0;
-          paymentRecord.payOutODPercentage = 0;
-          paymentRecord.payOutTPPercentage = 0;
-          paymentRecord.payOutODAmount = 0;
-          paymentRecord.payOutTPAmount = 0;
-          paymentRecord.payInCommission = 0;
-          paymentRecord.payOutCommission = 0;
-          paymentRecord.createdBy = existingRecord.createdBy;
 
           await paymentRecord.save();
+        } else {
+          const newPayment = new MotorPolicyPaymentModel({
+            policyId: existingRecord._id,
+            partnerId: existingRecord.partnerId,
+            policyNumber: existingRecord.policyNumber,
+            bookingId: existingRecord.bookingId,
+            createdOn: existingRecord.createdOn,
+            policyDate: existingRecord.createdOn,
+            status: existingRecord.policyStatus,
+            netPremium: existingRecord.netPremium,
+            finalPremium: existingRecord.finalPremium,
+          });
+
+          await newPayment.save();
         }
       } else {
-        const newPolicy = await MotorPolicyModel.create(data);
+        const newPolicy = new MotorPolicyModel(data);
+        await newPolicy.save();
 
-        const newMotorPolicyPayment = new MotorPolicyPaymentModel({
-          partnerId: newPolicy.partnerId,
+        const newPayment = new MotorPolicyPaymentModel({
           policyId: newPolicy._id,
+          partnerId: newPolicy.partnerId,
           policyNumber: newPolicy.policyNumber,
           bookingId: newPolicy.bookingId,
-          od: newPolicy.od,
-          tp: newPolicy.tp,
+          createdOn: newPolicy.createdOn,
+          policyDate: newPolicy.createdOn,
+          status: newPolicy.policyStatus,
           netPremium: newPolicy.netPremium,
           finalPremium: newPolicy.finalPremium,
-          payInODPercentage: 0,
-          payInTPPercentage: 0,
-          payInODAmount: 0,
-          payInTPAmount: 0,
-          payOutODPercentage: 0,
-          payOutTPPercentage: 0,
-          payOutODAmount: 0,
-          payOutTPAmount: 0,
-          payInCommission: 0,
-          payOutCommission: 0,
-          createdBy: newPolicy.createdBy,
         });
 
-        await newMotorPolicyPayment.save();
+        await newPayment.save();
       }
     }
 
     storedHashes.push(fileHash);
-    fs.writeFileSync(hashFilePath, JSON.stringify(storedHashes));
-    res.status(200).json({
-      message: "File uploaded and data extracted successfully.",
-      data: extractedData,
-    });
+    fs.writeFileSync(hashFilePath, JSON.stringify(storedHashes, null, 2));
+    res.status(200).json({ message: "Data uploaded successfully!" });
   } catch (error) {
-    console.error("Error occurred while uploading file:", error);
-    res.status(500).json({ message: "Internal server error." });
+    console.error("Error while uploading motor policy data:", error);
+    res.status(500).json({ message: "An error occurred during upload." });
   }
 };
+
 
 // Create Motor Policy
 export const createMotorPolicy = async (req, res) => {
