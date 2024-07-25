@@ -27,7 +27,8 @@ export const createMotorPolicyPayment = async (req, res) => {
     payOutAmount,
     payInPaymentStatus,
     payOutPaymentStatus,
-    balance,
+    payInBalance,
+    payOutBalance,
     createdBy,
   } = req.body;
 
@@ -75,7 +76,8 @@ export const createMotorPolicyPayment = async (req, res) => {
       payOutAmount,
       payInPaymentStatus,
       payOutPaymentStatus,
-      balance,
+      payInBalance,
+      payOutBalance,
       policyDate: motorPolicy.createdOn,
       createdBy,
     });
@@ -108,7 +110,8 @@ export const policyStatusManage = async (req, res) => {
         payOutAmount,
         payInPaymentStatus,
         payOutPaymentStatus,
-        balance,
+        payInBalance,
+        payOutBalance,
       }) => {
         let existingPayment = await motorPolicyPayment.findOne({
           policyNumber,
@@ -122,14 +125,16 @@ export const policyStatusManage = async (req, res) => {
             payOutAmount,
             payInPaymentStatus,
             payOutPaymentStatus,
-            balance,
+            payInBalance,
+            payOutBalance,
           });
         } else {
           existingPayment.payInAmount = payInAmount;
           existingPayment.payInPaymentStatus = payInPaymentStatus;
           existingPayment.payOutAmount = payOutAmount;
           existingPayment.payOutPaymentStatus = payOutPaymentStatus;
-          existingPayment.balance = balance;
+          existingPayment.payInBalance = payInBalance;
+          existingPayment.payOutBalance = payOutBalance;
           existingPayment.updatedOn = Date.now();
         }
 
