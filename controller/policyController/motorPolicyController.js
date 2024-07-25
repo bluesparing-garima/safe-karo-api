@@ -96,7 +96,7 @@ export const uploadMotorPolicy = async (req, res) => {
         netPremium: row.netPremium || row["Net Premium"] || "",
         finalPremium: row.finalPremium || row["Final Premium"] || "",
         paymentMode: row.paymentMode || row["Payment Mode"] || "",
-        policyCreatedBy: "admin",
+        policyCreatedBy: row.policyCreatedBy || row["Policy Created By"] || "",
         partnerId: row.partnerId || row["Partner ID"] || "",
         partnerName: row.partnerName || row["Partner Name"] || "",
         relationshipManagerId: row.relationshipManagerId || row["Relationship Manager ID"] || "",
@@ -246,6 +246,63 @@ export const uploadMotorPolicy = async (req, res) => {
   }
 };
 
+// API to update registration, issue, and end dates
+export const updateMotorPolicyDates = async (req, res) => {
+  try {
+    if (!req.files || !req.files.excel) {
+      return res.status(400).send("No files were uploaded.");
+    }
+
+    const file = req.files.excel;
+    const fileHash = computeHash(file.data);
+
+    let storedHashes = [];
+    if (fs.existsSync(hashFilePath)) {
+      const rawHashData = fs.readFileSync(hashFilePath);
+      storedHashes = JSON.parse(rawHashData);
+    }
+
+    // Check if the file has already been uploaded
+    if (storedHashes.includes(fileHash)) {
+      return res
+        .status(400)
+        .json({ message: "File has already been uploaded." });
+    }
+
+    const workbook = XLSX.read(file.data, { type: "buffer" });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { raw: true });
+
+    for (const row of worksheet) {
+      const policyNumber = row.policyNumber || row["Policy Number"];
+      if (!policyNumber) {
+        continue;
+      }
+
+      const registrationDate = typeof row.registrationDate === 'number' ? excelDateToFormattedDate(row.registrationDate) : row.registrationDate;
+      const issueDate = typeof row.issueDate === 'number' ? excelDateToFormattedDate(row.issueDate) : row.issueDate;
+      const endDate = typeof row.endDate === 'number' ? excelDateToFormattedDate(row.endDate) : row.endDate;
+
+      const updateFields = {};
+      if (registrationDate) updateFields.registrationDate = registrationDate;
+      if (issueDate) updateFields.issueDate = issueDate;
+      if (endDate) updateFields.endDate = endDate;
+
+      await MotorPolicyModel.findOneAndUpdate(
+        { policyNumber },
+        { $set: updateFields },
+        { new: true }
+      );
+    }
+
+    storedHashes.push(fileHash);
+    fs.writeFileSync(hashFilePath, JSON.stringify(storedHashes, null, 2));
+    res.status(200).json({ message: "Dates updated successfully!" });
+  } catch (error) {
+    console.error("Error while updating motor policy dates:", error);
+    res.status(500).json({ message: "An error occurred during the update." });
+  }
+};
 
 // Create Motor Policy
 export const createMotorPolicy = async (req, res) => {

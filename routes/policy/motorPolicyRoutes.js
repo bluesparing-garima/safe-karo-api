@@ -11,17 +11,28 @@ import {
   getMotorPolicyWithPaymentDetails,
   getMotorPolicyByPolicyId,
   getMotorPolicyByPolicyCompletedBy,
-  uploadMotorPolicy
+  uploadMotorPolicy,
+  updateMotorPolicyDates,
 } from "../../controller/policyController/motorPolicyController.js";
 const router = express.Router();
 
 router.post("/", logActivity, createMotorPolicy);
 router.get("/", logActivity, getMotorPolicies);
 router.get("/validatePolicyNumber", logActivity, validatePolicyNumber);
-router.post('/upload',logActivity,uploadMotorPolicy);
+router.post("/upload", logActivity, uploadMotorPolicy);
+router.put(
+  "/update-motor-policy-dates-by-excel",
+  logActivity,
+  updateMotorPolicyDates
+);
+
 router.get("/policyId/:policyId", logActivity, getMotorPolicyByPolicyId);
 router.get("/partner/:partnerId", logActivity, getMotorPolicyByPartnerId);
-router.get("/policy-completed-by/:policyCompletedBy", logActivity,getMotorPolicyByPolicyCompletedBy);
+router.get(
+  "/policy-completed-by/:policyCompletedBy",
+  logActivity,
+  getMotorPolicyByPolicyCompletedBy
+);
 router.put("/:id", logActivity, updateMotorPolicy);
 router.delete("/:id", logActivity, deleteMotorPolicy);
 router.get("/validatePolicyNumber", logActivity, validatePolicyNumber);
