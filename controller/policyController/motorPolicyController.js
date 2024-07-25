@@ -96,7 +96,7 @@ export const uploadMotorPolicy = async (req, res) => {
         netPremium: row.netPremium || row["Net Premium"] || "",
         finalPremium: row.finalPremium || row["Final Premium"] || "",
         paymentMode: row.paymentMode || row["Payment Mode"] || "",
-        policyCreatedBy: row.policyCreatedBy || row["Policy Created By"] || "",
+        policyCreatedBy: "admin",
         partnerId: row.partnerId || row["Partner ID"] || "",
         partnerName: row.partnerName || row["Partner Name"] || "",
         relationshipManagerId: row.relationshipManagerId || row["Relationship Manager ID"] || "",
@@ -231,6 +231,7 @@ export const uploadMotorPolicy = async (req, res) => {
           payInCommission: 0,
           payOutCommission: 0,
           createdBy: newPolicy.createdBy,
+          policyDate:newPolicy.issueDate,
         });
 
         await newMotorPolicyPayment.save();
@@ -466,7 +467,7 @@ export const createMotorPolicy = async (req, res) => {
         payOutAmount: savedMotorPolicy.payOutAmount || 0,
         payInPaymentStatus: savedMotorPolicy.payInPaymentStatus,
         payOutPaymentStatus: savedMotorPolicy.payOutPaymentStatus,
-        issueDate: formattedIssueDate, // Use formatted date
+        policyDate: formattedIssueDate, // Use formatted date
         createdBy: savedMotorPolicy.createdBy,
       });
 
