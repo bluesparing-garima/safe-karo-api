@@ -61,6 +61,14 @@ const creditAndDebitSchema = new mongoose.Schema({
     type: Date,
     trim: true,
   },
+  employeeId:{
+    type: String,
+    trim: true,
+  },
+  employeeName:{
+    type: String,
+    trim: true,
+  },
   createdOn: {
     type: Date,
     default: Date.now,
