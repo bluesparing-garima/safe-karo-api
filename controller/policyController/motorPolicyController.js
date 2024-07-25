@@ -96,7 +96,7 @@ export const uploadMotorPolicy = async (req, res) => {
         netPremium: row.netPremium || row["Net Premium"] || "",
         finalPremium: row.finalPremium || row["Final Premium"] || "",
         paymentMode: row.paymentMode || row["Payment Mode"] || "",
-        policyCreatedBy: "admin",
+        policyCreatedBy: row.policyCreatedBy || row["Policy Created By"] || "",
         partnerId: row.partnerId || row["Partner ID"] || "",
         partnerName: row.partnerName || row["Partner Name"] || "",
         relationshipManagerId: row.relationshipManagerId || row["Relationship Manager ID"] || "",
