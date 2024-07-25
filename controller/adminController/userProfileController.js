@@ -250,6 +250,36 @@ export const getUserProfilesByRole = async (req, res) => {
   }
 };
 
+// Function to get user profiles except roles Partner or Agent
+export const getUserProfilesExcludingRoles = async (req, res) => {
+  try {
+    const excludedRoles = ["partner", "agent"];
+    
+    // Create case-insensitive regular expressions for each excluded role
+    const regexRoles = excludedRoles.map((role) => new RegExp(`^${role}$`, 'i'));
+    
+    const userProfiles = await UserProfileModel.find({
+      role: { $nin: regexRoles },
+    }).select('-password -originalPassword'); // Exclude password and originalPassword fields
+
+    const transformedUserProfiles = userProfiles.map((profile) => ({
+      teamId: profile._id,
+      teamName: profile.fullName,
+      ...profile.toObject(),
+    }));
+
+    res.status(200).json({
+      message: "User profiles retrieved successfully",
+      data: transformedUserProfiles,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving user profiles",
+      error: error.message,
+    });
+  }
+};
 
 // get user profile by ID
 export const getUserProfileById = async (req, res) => {
