@@ -1,12 +1,15 @@
 import creditAndDebit from "../../models/accountsModels/creditAndDebitSchema.js";
 import Account from "../../models/accountsModels/accountSchema.js";
-
+import motorPolicyPayment from '../../models/policyModel/motorPolicyPaymentSchema.js';
+ 
 // Create a new credit and debit transaction
 export const createCreditAndDebit = async (req, res) => {
   try {
     const {
       accountType,
       type,
+      employeeId,
+      employeeName,
       accountId,
       accountCode,
       amount,
@@ -29,6 +32,8 @@ export const createCreditAndDebit = async (req, res) => {
     const newCreditAndDebit = new creditAndDebit({
       accountType,
       type: lowerCaseType,
+      employeeId,
+      employeeName,
       accountId,
       accountCode,
       amount,
@@ -322,3 +327,67 @@ export const getTotalAmountByDateRangeAndBrokerName = async (req, res) => {
     });
   }
 };
+
+export const getCreditAndDebitByDateRangeAndPartnerId = async (req, res) => {
+  const { startDate, endDate, partnerId } = req.query;
+
+  if (!startDate || !endDate || !partnerId) {
+    return res.status(400).json({
+      status: "error",
+      success: false,
+      message: "Start date, end date, and partner name are required.",
+    });
+  }
+
+  try {
+    // Convert startDate to MongoDB date object for the start of the day
+    const startDateObj = new Date(startDate);
+    startDateObj.setHours(0, 0, 0, 0);
+    // Convert endDate to MongoDB date object for the end of the day
+    const endDateObj = new Date(endDate);
+    endDateObj.setHours(23, 59, 59, 999);
+
+    const result = await motorPolicyPayment.aggregate([
+      {
+        $match: {
+          policyDate: {
+            $gte: startDateObj,
+            $lte: endDateObj,
+          },
+          partnerId: partnerId,
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalPayOutCommission: { $sum: "$payOutCommission" },
+        },
+      },
+    ]);
+
+    if (result.length === 0) {
+      return res.status(404).json({
+        message:
+          "No credit and debit data found within the specified date range and partner name.",
+        success: false,
+        status: "error",
+      });
+    }
+
+    const totalPayOutCommission = result[0].totalPayOutCommission;
+
+    res.status(200).json({
+      message: "Credit and Debit data retrieved successfully.",
+      totalPayOutCommission: totalPayOutCommission,
+      success: true,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving credit and debit data.",
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
