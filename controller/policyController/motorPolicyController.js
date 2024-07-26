@@ -750,6 +750,8 @@ export const getMotorPolicyWithPaymentDetails = async (req, res) => {
       payOutAmount: motorPolicyPayments.payOutAmount,
       payInPaymentStatus: motorPolicyPayments.payInPaymentStatus || " ",
       payOutPaymentStatus: motorPolicyPayments.payOutPaymentStatus || " ",
+      payInBalance:motorPolicyPayments.payInBalance,
+      payOutBalance:motorPolicyPayments.payOutBalance,
       paymentCreatedBy: motorPolicyPayments.createdBy,
       paymentCreatedOn: motorPolicyPayments.createdOn,
       paymentUpdatedBy: motorPolicyPayments.updatedBy,
