@@ -2,7 +2,8 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import UserProfileModel from "../../models/adminModels/userProfileSchema.js";
 import UserModel from "../../models/userSchema.js";
-import upload from '../../middlewares/uploadMiddleware.js'
+import upload from "../../middlewares/uploadMiddleware.js";
+import moment from "moment";
 // Function to generate Partner ID
 const generatePartnerId = async () => {
   const lastUser = await UserProfileModel.findOne({
@@ -45,7 +46,7 @@ const hashPassword = async (password) => {
 export const createUserProfile = (req, res) => {
   upload(req, res, async (err) => {
     if (err) {
-      return res.status(400).json({ message: err.message});
+      return res.status(400).json({ message: err.message });
     }
     if (!req.files || Object.keys(req.files).length === 0) {
       return res.status(400).json({ message: "No files selected!" });
@@ -196,6 +197,82 @@ export const checkEmailExists = async (req, res) => {
   }
 };
 
+// Get count of users in user profile model by timestamp
+export const getCounts = async (req, res) => {
+  try {
+    const { timeframe } = req.query;
+
+    let startDate, groupBy, format, mapFormat;
+    switch (timeframe) {
+      case "day":
+        startDate = moment().startOf("day");
+        groupBy = { $dateToString: { format: "%H", date: "$joiningDate" } };
+        format = "HH";
+        mapFormat = (key) => key;
+        break;
+        case "week":
+          startDate = moment().startOf("week");
+          groupBy = { $dateToString: { format: "%u", date: "$joiningDate" } }; 
+          format = "D";
+          mapFormat = (key) => ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][key - 1];
+          break;
+        case "month":
+          startDate = moment().startOf("month");
+          groupBy = { $dateToString: { format: "%m", date: "$joiningDate" } };
+          format = "M";
+          mapFormat = (key) => moment(key, "M").format("MMM");
+          break;
+        case "year":
+          startDate = moment().startOf("year");
+          groupBy = { $dateToString: { format: "%Y", date: "$joiningDate" } };
+          format = "Y";
+          mapFormat = (key) => moment(key, "Y").format("YYYY");
+          break;
+        default:
+          return res.status(400).json({ message: "Invalid timeframe parameter" });
+      }
+
+     const pipeline = (role) => [
+        { $match: { role, createdOn: { $gte: startDate.toDate() } } },
+        { $group: { _id: groupBy, count: { $sum: 1 } } },
+        { $sort: { _id: 1 } }
+      ];
+  
+      const roles = ["Operation", "Partner", "Relationship Manager","Booking", "RM"];
+      const countsPromises = roles.map(role => UserProfileModel.aggregate(pipeline(role)));
+      const counts = await Promise.all(countsPromises);
+  
+      const formatCounts = (counts) => {
+        const formattedCounts = {};
+        counts.forEach(count => {
+          const key = count._id;
+          const mappedKey = mapFormat(key);
+          formattedCounts[mappedKey] = count.count;
+        });
+        return formattedCounts;
+      };
+  
+      const data = {
+        operationCount: formatCounts(counts[0]),
+        partnerCount: formatCounts(counts[1]),
+        relationshipManagerCount: formatCounts(counts[2]),
+        bookingCount: formatCounts(counts[3]),
+      };
+  
+      res.status(200).json({
+        message: "Counts retrieved successfully",
+        data,
+        status: "success",
+      });
+    } catch (error) {
+      console.error("Error retrieving counts:", error.message);
+      res.status(500).json({
+        message: "Error retrieving counts",
+        error: error.message,
+      });
+    }
+  };
+
 // Get all user profiles
 export const getAllUserProfiles = async (req, res) => {
   try {
@@ -225,9 +302,9 @@ export const getUserProfilesByRole = async (req, res) => {
       role === "RM" || role === "Relationship Manager"
         ? ["RM", "Relationship Manager"]
         : [role];
-    
+
     // Create case-insensitive regular expressions for each role
-    const regexRoles = searchRoles.map((r) => new RegExp(`^${r}$`, 'i'));
+    const regexRoles = searchRoles.map((r) => new RegExp(`^${r}$`, "i"));
 
     const userProfile = await UserProfileModel.find({
       role: { $in: regexRoles },
@@ -254,13 +331,15 @@ export const getUserProfilesByRole = async (req, res) => {
 export const getUserProfilesExcludingRoles = async (req, res) => {
   try {
     const excludedRoles = ["partner", "agent"];
-    
+
     // Create case-insensitive regular expressions for each excluded role
-    const regexRoles = excludedRoles.map((role) => new RegExp(`^${role}$`, 'i'));
-    
+    const regexRoles = excludedRoles.map(
+      (role) => new RegExp(`^${role}$`, "i")
+    );
+
     const userProfiles = await UserProfileModel.find({
       role: { $nin: regexRoles },
-    }).select('-password -originalPassword'); // Exclude password and originalPassword fields
+    }).select("-password -originalPassword"); // Exclude password and originalPassword fields
 
     const transformedUserProfiles = userProfiles.map((profile) => ({
       teamId: profile._id,
