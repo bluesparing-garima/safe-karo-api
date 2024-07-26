@@ -1,5 +1,5 @@
 import express from 'express';
-import {createCreditAndDebit,getCreditAndDebit,getCreditAndDebitById,updateCreditAndDebitById,deleteCreditAndDebitById,getCreditAndDebitByDateRangeAndBrokerName,getTotalAmountByDateRangeAndBrokerName,getCreditAndDebitByDateRangeAndPartnerId} from '../../controller/accountsController/creditAndDebitController.js';
+import {createCreditAndDebit,getCreditAndDebit,getCreditAndDebitById,updateCreditAndDebitById,deleteCreditAndDebitById,getCreditAndDebitByDateRangeAndBrokerName,getTotalAmountByDateRangeAndBrokerName,getCreditAndDebitByDateRangeAndPartnerId,getTotalAmountByDateRangeAndPartnerName} from '../../controller/accountsController/creditAndDebitController.js';
 import logActivity from '../../middlewares/logActivity.js';
 
 const router = express.Router();
@@ -16,6 +16,9 @@ router.get('/partner-id',logActivity,getCreditAndDebitByDateRangeAndPartnerId);
 
 // total amount filter
 router.get('/total-amount', logActivity, getTotalAmountByDateRangeAndBrokerName);
+
+// total amount filter with partnerName
+router.get('/partner/total-amount', logActivity, getTotalAmountByDateRangeAndPartnerName);
 
 // Get All Account details
 router.get('/', logActivity, getCreditAndDebit);
