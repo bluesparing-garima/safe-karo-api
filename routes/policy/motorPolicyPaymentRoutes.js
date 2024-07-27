@@ -6,12 +6,16 @@ import {
   getMotorPolicyPaymentByPolicyId,
   updateMotorPolicyPayment,
   deleteMotorPolicyPayment,
-  policyStatusManage
+  policyStatusManage,
+  getPayOutCommissionByPartner,
+  getMotorPolicyCountsByPartner
 } from '../../controller/policyController/motorPolicyPaymentController.js';
 
 const router = express.Router();
 router.post('/', logActivity, createMotorPolicyPayment);
 router.get('/', logActivity, getAllMotorPolicyPayments);
+router.get('/payout-commission-partner', logActivity, getPayOutCommissionByPartner);
+router.get('/policy-count-partner', logActivity, getMotorPolicyCountsByPartner);
 router.get('/:policyId', logActivity, getMotorPolicyPaymentByPolicyId);
 router.put('/status-manage',logActivity,policyStatusManage);
 router.put('/:policyId', logActivity, updateMotorPolicyPayment);
