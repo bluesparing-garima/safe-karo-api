@@ -1,6 +1,7 @@
 import motorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
 import mongoose from "mongoose";
 import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
+import moment from "moment";
 
 // Create a new motor policy payment
 export const createMotorPolicyPayment = async (req, res) => {
@@ -156,6 +157,90 @@ export const policyStatusManage = async (req, res) => {
       error: err.message,
       success: false,
       status: "error",
+    });
+  }
+};
+
+// Get PayIn and PayOut commissions weekly,monthly,yearly.
+export const getCommissionSums = async (req, res) => {
+  try {
+    const { timeframe } = req.query;
+
+    let startDate, groupBy, format, mapFormat;
+    switch (timeframe) {
+      case "day":
+        startDate = moment().startOf("day");
+        groupBy = {
+          $dateToString: { format: "%Y-%m-%d", date: "$policyDate" },
+        };
+        format = "YYYY-MM-DD";
+        mapFormat = (key) => moment(key, "YYYY-MM-DD").format("DD");
+        break;
+      case "week":
+        startDate = moment().startOf("week");
+        groupBy = {
+          $dateToString: { format: "%Y-%U-%u", date: "$policyDate" },
+        }; // Group by year, week number, and day of the week
+        format = "YYYY-WW-D";
+        mapFormat = (key) => {
+          const [year, week, day] = key.split("-");
+          const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+          const dayName = days[parseInt(day) - 1];
+          return `${dayName}`; // Format: Year-Week-Day
+        };
+        break;
+      case "month":
+        startDate = moment().startOf("month");
+        groupBy = { $dateToString: { format: "%Y-%m", date: "$policyDate" } };
+        format = "YYYY-MM";
+        mapFormat = (key) => moment(key, "YYYY-MM").format("MMM");
+        break;
+      case "year":
+        startDate = moment().startOf("year");
+        groupBy = { $dateToString: { format: "%Y", date: "$policyDate" } };
+        format = "YYYY";
+        mapFormat = (key) => key;
+        break;
+      default:
+        return res.status(400).json({ message: "Invalid timeframe parameter" });
+    }
+
+    const pipeline = [
+      { $match: { policyDate: { $gte: startDate.toDate() } } },
+      {
+        $group: {
+          _id: groupBy,
+          totalPayInCommission: { $sum: "$payInCommission" },
+          totalPayOutCommission: { $sum: "$payOutCommission" },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ];
+
+    const commissionData = await motorPolicyPayment.aggregate(pipeline);
+
+    const formattedData = commissionData.reduce((acc, item) => {
+      const key = item._id;
+      const mappedKey = mapFormat(key);
+      acc[mappedKey] = {
+        payInCommission: item.totalPayInCommission,
+        payOutCommission: item.totalPayOutCommission,
+      };
+      return acc;
+    }, {});
+
+    res.status(200).json({
+      message: "Commission sums retrieved successfully",
+      data: formattedData,
+      success: true,
+      status: "success",
+    });
+  } catch (error) {
+    console.error("Error retrieving commission sums:", error.message);
+    res.status(500).json({
+      message: "Error retrieving commission sums",
+      success: false,
+      error: error.message,
     });
   }
 };
