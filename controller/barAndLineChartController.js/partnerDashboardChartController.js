@@ -188,7 +188,7 @@ export const getMotorPolicyCountsByPartner = async (req, res) => {
 
     res.status(200).json({
       message: "Motor policy counts retrieved successfully",
-      data: [convertPeriodsToArray(result)],
+      data: convertPeriodsToArray(result),
       success: true,
       status: "success",
     });
