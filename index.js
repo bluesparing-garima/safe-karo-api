@@ -57,6 +57,7 @@ import creditAndDebit from './routes/accountRoutes/creditAndDebitRoute.js';
 import partnerChart from './routes/barAndLineChartRoutes/partnerChartRoutes.js';
 import adminChart from './routes/barAndLineChartRoutes/adminChartRoutes.js';
 import bookingChart from './routes/barAndLineChartRoutes/bookingChartRoutes.js';
+import brokerChart from './routes/barAndLineChartRoutes/brokerChartRoutes.js';
 
 import testRoutes from "./routes/testRoutes.js";
 import path from "path"; // Import path to resolve the directory path
@@ -203,6 +204,7 @@ app.use('/api/credit-debit',creditAndDebit);
 app.use('/api/partner-dashboard',partnerChart);
 app.use('/api/admin-dashboard',adminChart);
 app.use('/api/bookingperson-dashboard',bookingChart);
+app.use('/api/broker-dashboard',brokerChart);
 
 // Handle invalid routes
 //app.use(handleInvalidRoutes);
