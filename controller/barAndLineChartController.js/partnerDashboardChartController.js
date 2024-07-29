@@ -36,7 +36,7 @@ const convertPeriodsToArray = (periods) => {
   return Object.keys(periods).map(key => ({ [key]: periods[key] }));
 };
 
-
+// Get payOutCommission by partner 
 export const getPayOutCommissionByPartner = async (req, res) => {
   const { partnerId, timeframe } = req.query;
 
@@ -119,6 +119,7 @@ export const getPayOutCommissionByPartner = async (req, res) => {
   }
 };
 
+// Get policyCount by partner
 export const getMotorPolicyCountsByPartner = async (req, res) => {
   const { partnerId, timeframe } = req.query;
 
