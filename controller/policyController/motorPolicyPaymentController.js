@@ -1,6 +1,7 @@
 import motorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
 import mongoose from "mongoose";
 import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
+import moment from "moment";
 
 // Create a new motor policy payment
 export const createMotorPolicyPayment = async (req, res) => {

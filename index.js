@@ -52,6 +52,12 @@ import leadPayment from "./routes/partnerRoutes/leadPaymentRoutes.js";
 // Accounts 
 import accountRoute from "./routes/accountRoutes/accountRoute.js";
 import creditAndDebit from './routes/accountRoutes/creditAndDebitRoute.js';
+
+// Bar and Line chart routes
+import partnerChart from './routes/barAndLineChartRoutes/partnerChartRoutes.js';
+import adminChart from './routes/barAndLineChartRoutes/adminChartRoutes.js';
+import bookingChart from './routes/barAndLineChartRoutes/bookingChartRoutes.js';
+
 import testRoutes from "./routes/testRoutes.js";
 import path from "path"; // Import path to resolve the directory path
 const app = express();
@@ -192,6 +198,11 @@ app.use('/api/account',accountRoute);
 
 // Credit and Debit
 app.use('/api/credit-debit',creditAndDebit);
+
+// ---------------------------------------- Bar and Line charts ------------------------------
+app.use('/api/partner-dashboard',partnerChart);
+app.use('/api/admin-dashboard',adminChart);
+app.use('/api/bookingperson-dashboard',bookingChart);
 
 // Handle invalid routes
 //app.use(handleInvalidRoutes);

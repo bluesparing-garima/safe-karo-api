@@ -6,7 +6,8 @@ import {
   getMotorPolicyPaymentByPolicyId,
   updateMotorPolicyPayment,
   deleteMotorPolicyPayment,
-  policyStatusManage
+  policyStatusManage,
+
 } from '../../controller/policyController/motorPolicyPaymentController.js';
 
 const router = express.Router();
