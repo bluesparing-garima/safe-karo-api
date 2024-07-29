@@ -1,33 +1,42 @@
 import motorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
 import moment from "moment";
 
+// Helper function to generate all periods
 const generatePeriods = (startDate, endDate, timeframe) => {
   const periods = [];
   let currentDate = moment(startDate);
   while (currentDate <= moment(endDate)) {
     const key = currentDate.format(
       {
-        day: "ddd",
         week: "ddd",
         month: "MMM",
         year: "YYYY",
       }[timeframe]
     );
-
-    periods.push({ period: key, value: 0 });
-
-    if (timeframe === "day" || timeframe === "week") {
-      currentDate.add(1, "day");
-    } else if (timeframe === "month") {
-      currentDate.add(1, "month");
-    } else if (timeframe === "year") {
-      currentDate.add(1, "year");
-    }
+    periods.push({ [key]: 0 });
+    currentDate.add(
+      timeframe === "day" || timeframe === "week"
+        ? 1
+        : timeframe === "month"
+        ? 1
+        : 1,
+      timeframe === "day" || timeframe === "week"
+        ? "day"
+        : timeframe === "month"
+        ? "month"
+        : "year"
+    );
   }
   return periods;
 };
 
-// Get payOut commission for partner by week,month,year wise
+
+// Helper function to convert periods object to an array
+const convertPeriodsToArray = (periods) => {
+  return Object.keys(periods).map(key => ({ [key]: periods[key] }));
+};
+
+// Get payOutCommission by partner 
 export const getPayOutCommissionByPartner = async (req, res) => {
   const { partnerId, timeframe } = req.query;
 
@@ -39,40 +48,24 @@ export const getPayOutCommissionByPartner = async (req, res) => {
     });
   }
 
-  let startDate, endDate, groupBy, format, mapFormat;
+  let startDate, endDate, groupBy, mapFormat;
   switch (timeframe) {
-    case "day":
-      startDate = moment().startOf("week");
-      endDate = moment().endOf("week");
-      groupBy = { $dayOfWeek: "$policyDate" };
-      format = "d";
-      mapFormat = (key) => {
-        const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-        return days[key - 1];
-      };
-      break;
     case "week":
       startDate = moment().startOf("week");
       endDate = moment().endOf("week");
       groupBy = { $dayOfWeek: "$policyDate" };
-      format = "d";
-      mapFormat = (key) => {
-        const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-        return days[key - 1];
-      };
+      mapFormat = (key) => ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][key - 1];
       break;
     case "month":
       startDate = moment().startOf("year");
       endDate = moment().endOf("year");
       groupBy = { $dateToString: { format: "%m", date: "$policyDate" } };
-      format = "MM";
       mapFormat = (key) => moment(key, "MM").format("MMM");
       break;
     case "year":
       startDate = moment().startOf("year");
       endDate = moment().endOf("year");
       groupBy = { $dateToString: { format: "%Y", date: "$policyDate" } };
-      format = "YYYY";
       mapFormat = (key) => key;
       break;
     default:
@@ -80,17 +73,15 @@ export const getPayOutCommissionByPartner = async (req, res) => {
   }
 
   try {
-    // Generate all periods for the given timeframe
     const periods = generatePeriods(startDate, endDate, timeframe);
 
-    // Aggregation pipeline
     const pipeline = [
       {
         $match: {
           partnerId,
           policyDate: {
-            $gte: moment().startOf("year").toDate(),
-            $lte: moment().endOf("year").toDate(),
+            $gte: startDate.toDate(),
+            $lte: endDate.toDate(),
           },
         },
       },
@@ -105,16 +96,16 @@ export const getPayOutCommissionByPartner = async (req, res) => {
 
     const commissionData = await motorPolicyPayment.aggregate(pipeline);
 
-    // Merge results with periods
     const result = periods.reduce((acc, period) => {
-      const item = commissionData.find((item) => mapFormat(item._id) === period.period);
-      acc[period.period.toLowerCase()] = item ? item.totalPayOutCommission : 0;
+      const key = Object.keys(period)[0];
+      const item = commissionData.find((item) => mapFormat(item._id) === key);
+      acc[key] = item ? item.totalPayOutCommission : 0;
       return acc;
     }, {});
 
     res.status(200).json({
       message: "PayOut commissions retrieved successfully",
-      data: [result],
+      data: convertPeriodsToArray(result),
       success: true,
       status: "success",
     });
@@ -128,7 +119,7 @@ export const getPayOutCommissionByPartner = async (req, res) => {
   }
 };
 
-// Get policy count for partner by week,month,year wise
+// Get policyCount by partner
 export const getMotorPolicyCountsByPartner = async (req, res) => {
   const { partnerId, timeframe } = req.query;
 
@@ -140,40 +131,24 @@ export const getMotorPolicyCountsByPartner = async (req, res) => {
     });
   }
 
-  let startDate, endDate, groupBy, format, mapFormat;
+  let startDate, endDate, groupBy, mapFormat;
   switch (timeframe) {
-    case "day":
-      startDate = moment().startOf("week");
-      endDate = moment().endOf("week");
-      groupBy = { $dayOfWeek: "$policyDate" };
-      format = "d";
-      mapFormat = (key) => {
-        const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-        return days[key - 1];
-      };
-      break;
     case "week":
       startDate = moment().startOf("week");
       endDate = moment().endOf("week");
       groupBy = { $dayOfWeek: "$policyDate" };
-      format = "d";
-      mapFormat = (key) => {
-        const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-        return days[key - 1];
-      };
+      mapFormat = (key) => ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][key - 1];
       break;
     case "month":
       startDate = moment().startOf("year");
       endDate = moment().endOf("year");
       groupBy = { $dateToString: { format: "%m", date: "$policyDate" } };
-      format = "MM";
       mapFormat = (key) => moment(key, "MM").format("MMM");
       break;
     case "year":
       startDate = moment().startOf("year");
       endDate = moment().endOf("year");
       groupBy = { $dateToString: { format: "%Y", date: "$policyDate" } };
-      format = "YYYY";
       mapFormat = (key) => key;
       break;
     default:
@@ -181,17 +156,15 @@ export const getMotorPolicyCountsByPartner = async (req, res) => {
   }
 
   try {
-    // Generate all periods for the given timeframe
     const periods = generatePeriods(startDate, endDate, timeframe);
 
-    // Aggregation pipeline
     const pipeline = [
       {
         $match: {
           partnerId,
           policyDate: {
-            $gte: moment().startOf("year").toDate(),
-            $lte: moment().endOf("year").toDate(),
+            $gte: startDate.toDate(),
+            $lte: endDate.toDate(),
           },
         },
       },
@@ -206,16 +179,16 @@ export const getMotorPolicyCountsByPartner = async (req, res) => {
 
     const policyCounts = await motorPolicyPayment.aggregate(pipeline);
 
-    // Merge results with periods
     const result = periods.reduce((acc, period) => {
-      const item = policyCounts.find((item) => mapFormat(item._id) === period.period);
-      acc[period.period.toLowerCase()] = item ? item.count : 0;
+      const key = Object.keys(period)[0];
+      const item = policyCounts.find((item) => mapFormat(item._id) === key);
+      acc[key] = item ? item.count : 0;
       return acc;
     }, {});
 
     res.status(200).json({
       message: "Motor policy counts retrieved successfully",
-      data: [result],
+      data: [convertPeriodsToArray(result)],
       success: true,
       status: "success",
     });

@@ -3,45 +3,37 @@ import moment from "moment";
 
 // Helper function to generate all periods
 const generatePeriods = (startDate, endDate, timeframe) => {
-  const periods = {};
+  const periods = [];
   let currentDate = moment(startDate);
+  
   while (currentDate <= moment(endDate)) {
     const key = currentDate.format(
       {
-        day: "ddd",
         week: "ddd",
         month: "MMM",
         year: "YYYY",
       }[timeframe]
     );
-
-    periods[key] = 0;
-
-    if (timeframe === "day" || timeframe === "week") {
-      currentDate.add(1, "day");
-    } else if (timeframe === "month") {
-      currentDate.add(1, "month");
-    } else if (timeframe === "year") {
-      currentDate.add(1, "year");
-    }
+    periods.push({ [key]: 0 });
+    currentDate.add(
+      timeframe === "day" || timeframe === "week"
+        ? 1
+        : timeframe === "month"
+        ? 1
+        : 1,
+      timeframe === "day" || timeframe === "week"
+        ? "day"
+        : timeframe === "month"
+        ? "month"
+        : "year"
+    );
   }
   return periods;
 };
 
-// Helper function to convert periods object to an array
-const convertPeriodsToArray = (periods) => {
-  const result = [];
-  for (const key in periods) {
-    if (periods.hasOwnProperty(key)) {
-      result.push({ [key]: periods[key] });
-    }
-  }
-  return result;
-};
-
 // Get policy count for partner by week, month, year-wise
 export const getMotorPolicyCountsByPolicyCompletedBy = async (req, res) => {
-  const { policyCompletedBy, timeframe } = req.query;
+  const { policyCompletedBy, timeframe, specifiedYear, specifiedMonth, specifiedWeek } = req.query;
 
   if (!policyCompletedBy || !timeframe) {
     return res.status(400).json({
@@ -52,21 +44,17 @@ export const getMotorPolicyCountsByPolicyCompletedBy = async (req, res) => {
   }
 
   let startDate, endDate, groupBy, format, mapFormat;
+  
   switch (timeframe) {
-    case "day":
-      startDate = moment().startOf("week");
-      endDate = moment().endOf("week");
-      groupBy = { $dayOfWeek: "$policyDate" };
-      format = "d";
-      mapFormat = (key) => {
-        const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-        return days[key - 1];
-      };
-      break;
     case "week":
-      startDate = moment().startOf("week");
-      endDate = moment().endOf("week");
-      groupBy = { $dayOfWeek: "$policyDate" };
+      if (specifiedYear && specifiedWeek) {
+        startDate = moment().year(specifiedYear).week(specifiedWeek).startOf('week');
+        endDate = moment().year(specifiedYear).week(specifiedWeek).endOf('week');
+      } else {
+        startDate = moment().startOf("week");
+        endDate = moment().endOf("week");
+      }
+      groupBy = { $dayOfWeek: "$issueDate" };
       format = "d";
       mapFormat = (key) => {
         const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -74,16 +62,32 @@ export const getMotorPolicyCountsByPolicyCompletedBy = async (req, res) => {
       };
       break;
     case "month":
-      startDate = moment().startOf("year");
-      endDate = moment().endOf("year");
-      groupBy = { $dateToString: { format: "%m", date: "$policyDate" } };
+      if (specifiedYear && specifiedMonth) {
+        startDate = moment().year(specifiedYear).month(specifiedMonth - 1).startOf('month');
+        endDate = moment().year(specifiedYear).month(specifiedMonth - 1).endOf('month');
+      } else {
+        startDate = moment().startOf("month");
+        endDate = moment().endOf("month");
+      }
+      groupBy = { $dateToString: { format: "%m", date: "$issueDate" } };
       format = "MM";
       mapFormat = (key) => moment(key, "MM").format("MMM");
       break;
     case "year":
-      startDate = moment().startOf("year");
-      endDate = moment().endOf("year");
-      groupBy = { $dateToString: { format: "%Y", date: "$policyDate" } };
+      // Dynamic range of years
+      const minYear = await motorPolicy.aggregate([
+        { $group: { _id: null, minYear: { $min: { $year: "$issueDate" } } } }
+      ]);
+      const maxYear = await motorPolicy.aggregate([
+        { $group: { _id: null, maxYear: { $max: { $year: "$issueDate" } } } }
+      ]);
+
+      const startYear = minYear[0]?.minYear || moment().year();
+      const endYear = maxYear[0]?.maxYear || moment().year();
+      
+      startDate = moment().year(startYear).startOf('year');
+      endDate = moment().year(endYear).endOf('year');
+      groupBy = { $dateToString: { format: "%Y", date: "$issueDate" } };
       format = "YYYY";
       mapFormat = (key) => key;
       break;
@@ -100,12 +104,12 @@ export const getMotorPolicyCountsByPolicyCompletedBy = async (req, res) => {
       {
         $match: {
           policyCompletedBy,
-          policyDate: {
+          issueDate: {
             $gte: startDate.toDate(),
             $lte: endDate.toDate(),
           },
         },
-      }, // Adjust match to include the specified timeframe
+      },
       {
         $group: {
           _id: groupBy,
@@ -118,17 +122,15 @@ export const getMotorPolicyCountsByPolicyCompletedBy = async (req, res) => {
     const policyCounts = await motorPolicy.aggregate(pipeline);
 
     // Merge results with periods
-    policyCounts.forEach((item) => {
-      const key = item._id;
-      const mappedKey = mapFormat(key);
-      periods[mappedKey] = item.count;
+    const result = periods.map(period => {
+      const key = Object.keys(period)[0];
+      const item = policyCounts.find((item) => mapFormat(item._id) === key);
+      return { [key]: item ? item.count : 0 };
     });
-
-    const periodsArray = convertPeriodsToArray(periods);
 
     res.status(200).json({
       message: "Motor policy counts retrieved successfully",
-      data: periodsArray,
+      data: result,
       success: true,
       status: "success",
     });
