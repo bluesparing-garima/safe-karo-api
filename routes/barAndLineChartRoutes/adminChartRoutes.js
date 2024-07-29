@@ -7,7 +7,7 @@ import {
 
 const router = express.Router();
 router.get(
-  "/payin-payout-commission",
+  "/commission",
   logActivity,
   getPayInPayOutCommissionsByTimeframe
 );

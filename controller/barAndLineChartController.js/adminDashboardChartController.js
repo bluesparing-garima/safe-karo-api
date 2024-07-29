@@ -169,7 +169,6 @@ export const getPayInPayOutCommissionsByTimeframe = async (req, res) => {
   }
 };
 
-
 // Get all user counts by timeframe
 export const getAllUserCountsByTimeframe = async (req, res) => {
     const { timeframe } = req.query;
@@ -265,3 +264,4 @@ export const getAllUserCountsByTimeframe = async (req, res) => {
       });
     }
   };
+
