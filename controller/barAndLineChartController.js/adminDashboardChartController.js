@@ -1,4 +1,5 @@
 import motorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
+import motorPolicy from "../../models/policyModel/motorpolicySchema.js";
 import moment from "moment";
 
 // Helper function to generate all periods
@@ -174,7 +175,7 @@ export const getAllUserCountsByTimeframe = async (req, res) => {
     case "week":
       startDate = moment().startOf("week");
       endDate = moment().endOf("week");
-      groupBy = { $dayOfWeek: "$policyDate" };
+      groupBy = { $dayOfWeek: "$issueDate" };
       format = "d";
       mapFormat = (key) => {
         const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -184,14 +185,14 @@ export const getAllUserCountsByTimeframe = async (req, res) => {
     case "month":
       startDate = moment().startOf("year");
       endDate = moment().endOf("year");
-      groupBy = { $month: "$policyDate" };
+      groupBy = { $month: "$issueDate" };
       format = "MM";
       mapFormat = (key) => moment(key, "MM").format("MMM");
       break;
     case "year":
       startDate = moment().startOf("year").subtract(5, "years");
       endDate = moment().endOf("year");
-      groupBy = { $year: "$policyDate" };
+      groupBy = { $year: "$issueDate" };
       format = "YYYY";
       mapFormat = (key) => key;
       break;
@@ -207,7 +208,7 @@ export const getAllUserCountsByTimeframe = async (req, res) => {
     const pipeline = [
       {
         $match: {
-          policyDate: {
+          issueDate: {
             $gte: startDate.toDate(),
             $lte: endDate.toDate(),
           },
@@ -222,7 +223,7 @@ export const getAllUserCountsByTimeframe = async (req, res) => {
       { $sort: { _id: 1 } },
     ];
 
-    const userCounts = await motorPolicyPayment.aggregate(pipeline);
+    const userCounts = await motorPolicy.aggregate(pipeline);
 
     // Merge results with periods
     const mergedPeriods = {};
