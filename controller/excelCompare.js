@@ -7,7 +7,6 @@ import MotorPolicyPayment from "../models/policyModel/motorPolicyPaymentSchema.j
 
 const dataFilePath = path.join(process.cwd(), "data", "data.json");
 const hashFilePath = path.join(process.cwd(), "data", "hashes.json");
-const firstExcelFilePath = path.join(process.cwd(), "data", "firstExcelData.json");
 
 if (!fs.existsSync(path.join(process.cwd(), "data"))) {
   fs.mkdirSync(path.join(process.cwd(), "data"));
@@ -92,73 +91,6 @@ export const compareExcel = async (req, res) => {
   } catch (error) {
     console.error("Error processing file:", error);
     res.status(500).json({ message: "Error processing file", error: error.message });
-  }
-};
-
-export const compareTwoExcels = async (req, res) => {
-  try {
-    if (!req.files || !req.files.firstExcel || !req.files.secondExcel) {
-      return res.status(400).send("Both files need to be uploaded.");
-    }
-
-    const firstFile = req.files.firstExcel;
-    const secondFile = req.files.secondExcel;
-
-    const firstWorkbook = XLSX.read(firstFile.data, { type: "buffer" });
-    const secondWorkbook = XLSX.read(secondFile.data, { type: "buffer" });
-
-    const firstSheetName = firstWorkbook.SheetNames[0];
-    const secondSheetName = secondWorkbook.SheetNames[0];
-
-    const firstWorksheet = XLSX.utils.sheet_to_json(firstWorkbook.Sheets[firstSheetName]);
-    const secondWorksheet = XLSX.utils.sheet_to_json(secondWorkbook.Sheets[secondSheetName]);
-
-    const firstData = firstWorksheet.map((row) => ({
-      policyNumber: row.policyNumber,
-      netPremium: row.netPremium,
-      payInAmount: row.payInAmount,
-      broker: row.broker,
-    }));
-
-    const secondData = secondWorksheet.map((row) => ({
-      policyNumber: row.policyNumber,
-      netPremium: row.netPremium,
-      payInAmount: row.payInAmount,
-      broker: row.broker,
-    }));
-
-    const differences = firstData.map((firstRow) => {
-      const secondRow = secondData.find(
-        (secondItem) => secondItem.policyNumber === firstRow.policyNumber
-      );
-      if (secondRow) {
-        return {
-          policyNumber: firstRow.policyNumber,
-          firstExcel: {
-            policyNumber: firstRow.policyNumber,
-            netPremium: firstRow.netPremium,
-            payInAmount: firstRow.payInAmount,
-            broker: firstRow.broker,
-          },
-          secondExcel: {
-            policyNumber: secondRow.policyNumber,
-            netPremium: secondRow.netPremium,
-            payInAmount: secondRow.payInAmount,
-            broker: secondRow.broker,
-          },
-        };
-      }
-      return null;
-    }).filter((item) => item !== null);
-
-    res.status(200).json({
-      message: "Files compared successfully.",
-      data: differences,
-      status: "Success",
-    });
-  } catch (error) {
-    console.error("Error processing files:", error);
-    res.status(500).json({ message: "Error processing files", error: error.message });
   }
 };
 
