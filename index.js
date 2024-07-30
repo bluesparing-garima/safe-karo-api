@@ -54,8 +54,16 @@ import leadPayment from "./routes/partnerRoutes/leadPaymentRoutes.js";
 import accountRoute from "./routes/accountRoutes/accountRoute.js";
 import creditAndDebit from './routes/accountRoutes/creditAndDebitRoute.js';
 
+
 // Excel Compare
 import excelCompare  from "./routes/excelCompareRoutes.js";
+
+// Bar and Line chart routes
+import partnerChart from './routes/barAndLineChartRoutes/partnerChartRoutes.js';
+import adminChart from './routes/barAndLineChartRoutes/adminChartRoutes.js';
+import bookingChart from './routes/barAndLineChartRoutes/bookingChartRoutes.js';
+import brokerChart from './routes/barAndLineChartRoutes/brokerChartRoutes.js';
+
 
 import testRoutes from "./routes/testRoutes.js";
 
@@ -199,8 +207,21 @@ app.use('/api/account',accountRoute);
 // Credit and Debit
 app.use('/api/credit-debit',creditAndDebit);
 
+
 // excel compare
 app.use('/api/compare-excel',excelCompare);
+
+// ---------------------------------------- Bar and Line charts ------------------------------
+app.use('/api/partner-dashboard',partnerChart);
+app.use('/api/admin-dashboard',adminChart);
+app.use('/api/bookingperson-dashboard',bookingChart);
+app.use('/api/broker-dashboard',brokerChart);
+
+// Handle invalid routes
+//app.use(handleInvalidRoutes);
+
+//Add for acess the folder
+
 
 // Serve static files from the uploads directory
 const __dirname = path.resolve();

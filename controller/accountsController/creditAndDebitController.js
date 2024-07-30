@@ -1,7 +1,7 @@
 import creditAndDebit from "../../models/accountsModels/creditAndDebitSchema.js";
 import Account from "../../models/accountsModels/accountSchema.js";
-import motorPolicyPayment from '../../models/policyModel/motorPolicyPaymentSchema.js';
- 
+import motorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
+
 // Create a new credit and debit transaction
 export const createCreditAndDebit = async (req, res) => {
   try {
@@ -227,42 +227,38 @@ export const getCreditAndDebitByDateRangeAndBrokerName = async (req, res) => {
   }
 
   try {
-    // Convert startDate to MongoDB date object for the start of the day
     const startDateObj = new Date(startDate);
     startDateObj.setHours(0, 0, 0, 0);
-    // Convert endDate to MongoDB date object for the end of the day
+
     const endDateObj = new Date(endDate);
     endDateObj.setHours(23, 59, 59, 999);
-    // Query to find documents within the date range and broker name
+
     const creditAndDebits = await creditAndDebit.find({
-      startDate: {
-        $gte: startDateObj,
-      },
-      endDate: {
-        $lte: endDateObj,
-      },
-      brokerName: brokerName,
+      startDate: { $gte: startDateObj },
+      endDate: { $lte: endDateObj },
+      brokerName,
     });
 
     if (creditAndDebits.length === 0) {
       return res.status(404).json({
+        status: "error",
+        success: false,
         message:
           "No credit and debit data found within the specified date range and broker name.",
-        success: false,
-        status: "error",
       });
     }
 
     res.status(200).json({
+      status: "success",
+      success: true,
       message: "Credit and Debit data retrieved successfully.",
       data: creditAndDebits,
-      success: true,
-      status: "success",
     });
   } catch (error) {
     res.status(500).json({
-      message: "Error retrieving credit and debit data.",
+      status: "error",
       success: false,
+      message: "Error retrieving credit and debit data.",
       error: error.message,
     });
   }
@@ -281,49 +277,43 @@ export const getTotalAmountByDateRangeAndBrokerName = async (req, res) => {
   }
 
   try {
-    // Convert startDate to MongoDB date object for the start of the day
     const startDateObj = new Date(startDate);
     startDateObj.setHours(0, 0, 0, 0);
-    // Convert endDate to MongoDB date object for the end of the day
+
     const endDateObj = new Date(endDate);
     endDateObj.setHours(23, 59, 59, 999);
 
-    // Query to find documents within the date range and broker name
     const creditAndDebits = await creditAndDebit.find({
-      startDate: {
-        $gte: startDateObj,
-      },
-      endDate: {
-        $lte: endDateObj,
-      },
-      brokerName: brokerName,
+      startDate: { $gte: startDateObj },
+      endDate: { $lte: endDateObj },
+      brokerName,
     });
 
     if (creditAndDebits.length === 0) {
       return res.status(404).json({
+        status: "error",
+        success: false,
         message:
           "No credit and debit data found within the specified date range and broker name.",
-        success: false,
-        status: "error",
       });
     }
 
-    // Calculate the total amount
     const totalAmount = creditAndDebits.reduce(
       (total, record) => total + record.amount,
       0
     );
 
     res.status(200).json({
-      message: "Total amount calculated successfully.",
-      totalAmount: totalAmount,
-      success: true,
       status: "success",
+      success: true,
+      message: "Total amount calculated successfully.",
+      totalAmount,
     });
   } catch (error) {
     res.status(500).json({
-      message: "Error retrieving credit and debit data.",
+      status: "error",
       success: false,
+      message: "Error retrieving credit and debit data.",
       error: error.message,
     });
   }
@@ -337,15 +327,14 @@ export const getCreditAndDebitByDateRangeAndPartnerId = async (req, res) => {
     return res.status(400).json({
       status: "error",
       success: false,
-      message: "Start date, end date, and partner name are required.",
+      message: "Start date, end date, and partner ID are required.",
     });
   }
 
   try {
-    // Convert startDate to MongoDB date object for the start of the day
     const startDateObj = new Date(startDate);
     startDateObj.setHours(0, 0, 0, 0);
-    // Convert endDate to MongoDB date object for the end of the day
+
     const endDateObj = new Date(endDate);
     endDateObj.setHours(23, 59, 59, 999);
 
@@ -369,25 +358,26 @@ export const getCreditAndDebitByDateRangeAndPartnerId = async (req, res) => {
 
     if (result.length === 0) {
       return res.status(404).json({
-        message:
-          "No credit and debit data found within the specified date range and partner name.",
-        success: false,
         status: "error",
+        success: false,
+        message:
+          "No credit and debit data found within the specified date range and partner ID.",
       });
     }
 
     const totalPayOutCommission = result[0].totalPayOutCommission;
 
     res.status(200).json({
-      message: "Credit and Debit data retrieved successfully.",
-      totalPayOutCommission: totalPayOutCommission,
-      success: true,
       status: "success",
+      success: true,
+      message: "Credit and Debit data retrieved successfully.",
+      totalPayOutCommission,
     });
   } catch (error) {
     res.status(500).json({
-      message: "Error retrieving credit and debit data.",
+      status: "error",
       success: false,
+      message: "Error retrieving credit and debit data.",
       error: error.message,
     });
   }
@@ -401,54 +391,48 @@ export const getTotalAmountByDateRangeAndPartnerName = async (req, res) => {
     return res.status(400).json({
       status: "error",
       success: false,
-      message: "Start date, end date, and broker name are required.",
+      message: "Start date, end date, and partner name are required.",
     });
   }
 
   try {
-    // Convert startDate to MongoDB date object for the start of the day
     const startDateObj = new Date(startDate);
     startDateObj.setHours(0, 0, 0, 0);
-    // Convert endDate to MongoDB date object for the end of the day
+
     const endDateObj = new Date(endDate);
     endDateObj.setHours(23, 59, 59, 999);
 
-    // Query to find documents within the date range and broker name
     const creditAndDebits = await creditAndDebit.find({
-      startDate: {
-        $gte: startDateObj,
-      },
-      endDate: {
-        $lte: endDateObj,
-      },
-      partnerName: partnerName,
+      startDate: { $gte: startDateObj },
+      endDate: { $lte: endDateObj },
+      partnerName,
     });
 
     if (creditAndDebits.length === 0) {
       return res.status(404).json({
-        message:
-          "No credit and debit data found within the specified date range and broker name.",
-        success: false,
         status: "error",
+        success: false,
+        message:
+          "No credit and debit data found within the specified date range and partner name.",
       });
     }
 
-    // Calculate the total amount
     const totalAmount = creditAndDebits.reduce(
       (total, record) => total + record.amount,
       0
     );
 
     res.status(200).json({
-      message: "Total amount calculated successfully.",
-      totalAmount: totalAmount,
-      success: true,
       status: "success",
+      success: true,
+      message: "Total amount calculated successfully.",
+      totalAmount,
     });
   } catch (error) {
     res.status(500).json({
-      message: "Error retrieving credit and debit data.",
+      status: "error",
       success: false,
+      message: "Error retrieving credit and debit data.",
       error: error.message,
     });
   }

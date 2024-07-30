@@ -100,6 +100,12 @@ export const getPoliciesByDateRange = async (req, res) => {
         payOutTPAmount: payment ? payment.payOutTPAmount : 0,
         payInCommission: payment ? payment.payInCommission : 0,
         payOutCommission: payment ? payment.payOutCommission : 0,
+        payInAmount: payment ? payment.payInAmount : 0,
+        payOutAmount:payment? payment.payOutAmount:0,
+        payInPaymentStatus: payment ? payment.payInPaymentStatus: "UnPaid",
+        payOutPaymentStatus: payment ? payment.payOutPaymentStatus: "UnPaid",
+        payInBalance: payment? payment.payInBalance:0,
+        payOutBalance: payment? payment.payOutBalance:0,
         paymentCreatedBy: payment ? payment.createdBy : 0,
         paymentCreatedOn: payment ? payment.createdOn : 0,
         paymentUpdatedBy: payment ? payment.updatedBy : 0,
@@ -223,6 +229,12 @@ export const getAllMatchingRecords = async (req, res) => {
         payOutTPAmount: payment ? payment.payOutTPAmount : null,
         payInCommission: payment ? payment.payInCommission : null,
         payOutCommission: payment ? payment.payOutCommission : null,
+        payInAmount: payment ? payment.payInAmount : 0,
+        payOutAmount:payment? payment.payOutAmount:0,
+        payInPaymentStatus: payment ? payment.payInPaymentStatus: "UnPaid",
+        payOutPaymentStatus: payment ? payment.payOutPaymentStatus: "UnPaid",
+        payInBalance: payment? payment.payInBalance:0,
+        payOutBalance: payment? payment.payOutBalance:0,
         paymentCreatedBy: payment ? payment.createdBy : null,
         paymentCreatedOn: payment ? payment.createdOn : null,
         paymentUpdatedBy: payment ? payment.updatedBy : null,
@@ -376,9 +388,9 @@ export const updateCommissionByDateRange = async (req, res) => {
           payInODPercentage !== undefined &&
           payInTPPercentage !== undefined
         ) {
-          const calculatedPayInODAmount = (od * payInODPercentage) / 100;
-          const calculatedPayInTPAmount = (tp * payInTPPercentage) / 100;
-          payInCommission = calculatedPayInODAmount + calculatedPayInTPAmount;
+          const calculatedPayInODAmount = Math.round((od * payInODPercentage) / 100);
+          const calculatedPayInTPAmount = Math.round((tp * payInTPPercentage) / 100);
+          payInCommission = Math.round(calculatedPayInODAmount + calculatedPayInTPAmount);
 
           updatedFields = {
             ...updatedFields,
@@ -394,10 +406,9 @@ export const updateCommissionByDateRange = async (req, res) => {
           payOutODPercentage !== undefined &&
           payOutTPPercentage !== undefined
         ) {
-          const calculatedPayOutODAmount = (od * payOutODPercentage) / 100;
-          const calculatedPayOutTPAmount = (tp * payOutTPPercentage) / 100;
-          payOutCommission =
-            calculatedPayOutODAmount + calculatedPayOutTPAmount;
+          const calculatedPayOutODAmount = Math.round((od * payOutODPercentage) / 100);
+          const calculatedPayOutTPAmount = Math.round((tp * payOutTPPercentage) / 100);
+          payOutCommission = Math.round(calculatedPayOutODAmount + calculatedPayOutTPAmount);
 
           updatedFields = {
             ...updatedFields,
@@ -434,6 +445,7 @@ export const updateCommissionByDateRange = async (req, res) => {
     });
   }
 };
+
 
 // Get Policies by Date Range and Broker Name
 export const getPoliciesByDateRangeAndBrokerName = async (req, res) => {

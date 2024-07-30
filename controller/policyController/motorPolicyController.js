@@ -245,6 +245,12 @@ export const uploadMotorPolicy = async (req, res) => {
           payOutTPAmount: 0,
           payInCommission: 0,
           payOutCommission: 0,
+          payInBalance:0,
+          payOutBalance:0,
+          payInAmount:0,
+          payOutAmount:0,
+          payInPaymentStatus: "UnPaid",
+          payOutPaymentStatus:"UnPaid",
           createdBy: newPolicy.createdBy,
           policyDate: newPolicy.issueDate,
         });
