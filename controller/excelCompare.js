@@ -6,15 +6,10 @@ import MotorPolicy from "../models/policyModel/motorpolicySchema.js";
 import MotorPolicyPayment from "../models/policyModel/motorPolicyPaymentSchema.js"
 
 const dataFilePath = path.join(process.cwd(), "data", "data.json");
-const hashFilePath = path.join(process.cwd(), "data", "hashes.json");
 
 if (!fs.existsSync(path.join(process.cwd(), "data"))) {
   fs.mkdirSync(path.join(process.cwd(), "data"));
 }
-
-const computeHash = (data) => {
-  return crypto.createHash("md5").update(data).digest("hex");
-};
 
 export const compareExcel = async (req, res) => {
   try {
@@ -23,17 +18,6 @@ export const compareExcel = async (req, res) => {
     }
 
     const file = req.files.excel;
-    const fileHash = computeHash(file.data);
-
-    let storedHashes = [];
-    if (fs.existsSync(hashFilePath)) {
-      const rawHashData = fs.readFileSync(hashFilePath);
-      storedHashes = JSON.parse(rawHashData);
-    }
-
-    if (storedHashes.includes(fileHash)) {
-      return res.status(400).json({ message: "File has already been uploaded." });
-    }
 
     const workbook = XLSX.read(file.data, { type: "buffer" });
     const sheetName = workbook.SheetNames[0];
@@ -80,8 +64,6 @@ export const compareExcel = async (req, res) => {
     }).filter((item) => item !== null);
 
     fs.writeFileSync(dataFilePath, JSON.stringify(differences, null, 2));
-    storedHashes.push(fileHash);
-    fs.writeFileSync(hashFilePath, JSON.stringify(storedHashes, null, 2));
 
     res.status(200).json({
       message: "File uploaded and data processed successfully.",
