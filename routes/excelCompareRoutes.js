@@ -1,11 +1,12 @@
 import express from 'express';
-import {compareExcel,downloadExcel,getAllDataCompare} from '../controller/excelCompare.js';
+import {compareBrokerExcel,comparePartnerExcel} from '../controller/excelCompare.js';
 import logActivity from '../middlewares/logActivity.js';
 
 const router = express.Router();
 
-router.post('/',logActivity,compareExcel);
-router.get('/',logActivity,getAllDataCompare);
-router.get('/download',logActivity,downloadExcel);
+router.post('/compare-broker-excel',logActivity,compareBrokerExcel);
+router.post('/compare-partner-excel',logActivity,comparePartnerExcel)
+
+
 
 export default router;
