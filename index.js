@@ -86,9 +86,9 @@ app.use("/api/user-profile", userProfile);
 // Booking request
 app.use("/api/booking-request", bookingRequestRoute);
 
-// app.use(fileUpload({
-//   createParentPath: true
-// }));
+app.use(fileUpload({
+  createParentPath: true
+}));
 
 // motor policy Routes
 app.use("/api/policy/motor", motorPolicyRoutes);
@@ -200,7 +200,7 @@ app.use('/api/account',accountRoute);
 app.use('/api/credit-debit',creditAndDebit);
 
 // excel compare
-app.use('/api/compare-broker-excel',excelCompare);
+app.use('/api',excelCompare);
 
 // Serve static files from the uploads directory
 const __dirname = path.resolve();
