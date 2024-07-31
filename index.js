@@ -209,7 +209,7 @@ app.use('/api/credit-debit',creditAndDebit);
 
 
 // excel compare
-app.use('/api/compare-broker-excel',excelCompare);
+app.use('/api',excelCompare);
 
 // ---------------------------------------- Bar and Line charts ------------------------------
 app.use('/api/partner-dashboard',partnerChart);
