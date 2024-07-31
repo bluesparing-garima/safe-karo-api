@@ -141,3 +141,4 @@ export const getAllDataCompare = async (req, res) => {
     res.status(500).json({ message: "Error retrieving data", error: error.message });
   }
 };
+
