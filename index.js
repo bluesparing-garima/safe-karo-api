@@ -200,7 +200,7 @@ app.use('/api/account',accountRoute);
 app.use('/api/credit-debit',creditAndDebit);
 
 // excel compare
-app.use('/api/compare-excel',excelCompare);
+app.use('/api/compare-broker-excel',excelCompare);
 
 // Serve static files from the uploads directory
 const __dirname = path.resolve();
