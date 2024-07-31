@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import MotorPolicy from "../models/policyModel/motorpolicySchema.js";
-import MotorPolicyPayment from "../models/policyModel/motorPolicyPaymentSchema.js"
+import MotorPolicyPayment from "../models/policyModel/motorPolicyPaymentSchema.js";
 
 const dataFilePath = path.join(process.cwd(), "data", "data.json");
 
@@ -25,9 +25,7 @@ export const compareExcel = async (req, res) => {
 
     const extractedData = worksheet.map((row) => ({
       policyNumber: row.policyNumber,
-      netPremium: row.netPremium,
-      payInAmount: row.payInAmount,
-      broker: row.broker,
+      payInCommission: row.payInCommission,
     }));
 
     const policyNumbers = extractedData.map((data) => data.policyNumber);
@@ -39,37 +37,49 @@ export const compareExcel = async (req, res) => {
       policyNumber: { $in: policyNumbers },
     });
 
-    const differences = extractedData.map((excelRow) => {
-      const dbRow = dbData.find((dbItem) => dbItem.policyNumber === excelRow.policyNumber);
-      const paymentRow = paymentData.find((paymentItem) => paymentItem.policyNumber === excelRow.policyNumber);
+    const differences = dbData.map((dbRow) => {
+      const paymentRow = paymentData.find((paymentItem) => paymentItem.policyNumber === dbRow.policyNumber);
+      const excelRow = extractedData.find((excelItem) => excelItem.policyNumber === dbRow.policyNumber);
 
-      if (dbRow && paymentRow) {
-        return {
-          policyNumber: excelRow.policyNumber,
-          db: {
-            policyNumber: dbRow.policyNumber,
-            netPremium: dbRow.netPremium,
-            payInAmount: paymentRow.payInAmount,
-            broker: dbRow.broker,
-          },
-          excel: {
-            policyNumber: excelRow.policyNumber,
-            netPremium: excelRow.netPremium,
-            payInAmount: excelRow.payInAmount,
-            broker: excelRow.broker,
-          },
-        };
-      }
-      return null;
-    }).filter((item) => item !== null);
+      const dbDetails = {
+        policyNumber: dbRow.policyNumber,
+        broker : dbRow.broker,
+        payInCommission: paymentRow ? paymentRow.payInCommission : null,
+        payInAmount: paymentRow ? paymentRow.payInAmount : null,
+        payInPaymentStatus: paymentRow ? paymentRow.payInPaymentStatus : null,
+        payInBalance: paymentRow ? paymentRow.payInBalance : null,
+      };
 
-    fs.writeFileSync(dataFilePath, JSON.stringify(differences, null, 2));
+      const excelDetails = excelRow || {
+        policyNumber: dbRow.policyNumber,
+        payInCommission: null,
+      };
 
-    res.status(200).json({
-      message: "File uploaded and data processed successfully.",
-      data: differences,
-      status: "Success",
+      return {
+        broker: dbRow.broker,
+        db: dbDetails,
+        excel: excelDetails,
+        hasDifference: excelRow && paymentRow && excelRow.payInCommission !== paymentRow.payInCommission,
+      };
     });
+
+    const response = {
+      broker: differences[0]?.broker || "Unknown Broker",
+      message: "File uploaded and data processed successfully.",
+      status: "Success",
+      data: [
+        {
+          Excel: differences.map(diff => diff.excel),
+        },
+        {
+          Db: differences.map(diff => diff.db),
+        }
+      ]
+    };
+
+    fs.writeFileSync(dataFilePath, JSON.stringify(response, null, 2));
+
+    res.status(200).json(response);
   } catch (error) {
     console.error("Error processing file:", error);
     res.status(500).json({ message: "Error processing file", error: error.message });
@@ -86,17 +96,21 @@ export const downloadExcel = async (req, res) => {
     const data = JSON.parse(rawData);
 
     const wb = XLSX.utils.book_new();
-    const wsData = data.map((row) => ({
-      policyNumber: row.policyNumber,
-      dbNetPremium: row.db.netPremium,
-      dbPayInAmount: row.db.payInAmount,
-      dbBroker: row.db.broker,
-      excelNetPremium: row.excel.netPremium,
-      excelPayInAmount: row.excel.payInAmount,
-      excelBroker: row.excel.broker,
-    }));
+    const wsData = data.data[0].Excel.map((excelRow, index) => {
+      const dbRow = data.data[1].Db[index] || {};
+      return {
+        policyNumber: dbRow.policyNumber || excelRow.policyNumber,
+        dbBroker: dbRow.broker || '',
+        dbPayInCommission: dbRow.payInCommission || '',
+        excelPayInCommission: excelRow.payInCommission || '',
+        dbPayInAmount: dbRow.payInAmount,
+        dbPayInPaymentStatus: dbRow.payInPaymentStatus,
+        dbPayInBalance: dbRow.payInBalance,
+        hasDifference: dbRow.payInCommission !== excelRow.payInCommission,
+      };
+    });
 
-    const ws = XLSX.utils.json_to_sheet(wsData);
+    const ws = XLSX.utils.json_to_sheet(wsData, { header: ["policyNumber", "dbBroker", "dbPayInCommission", "excelPayInCommission", "dbPayInAmount","dbPayInPaymentStatus","dbPayInBalance","hasDifference"] });
     XLSX.utils.book_append_sheet(wb, ws, "Differences");
 
     const excelFilePath = path.join(process.cwd(), "data", "differences.xlsx");
@@ -127,3 +141,4 @@ export const getAllDataCompare = async (req, res) => {
     res.status(500).json({ message: "Error retrieving data", error: error.message });
   }
 };
+
