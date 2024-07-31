@@ -22,6 +22,7 @@ export const createCreditAndDebit = async (req, res) => {
       policyNumber,
       startDate,
       endDate,
+      distributedDate,
       remarks,
       createdBy,
       createdOn,
@@ -47,6 +48,7 @@ export const createCreditAndDebit = async (req, res) => {
       policyNumber,
       startDate,
       endDate,
+      distributedDate,
       createdBy,
       createdOn,
     });

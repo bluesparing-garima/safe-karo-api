@@ -121,6 +121,7 @@ export const compareBrokerExcel = async (req, res) => {
     });
 
     const response = {
+      broker: extractedData[0].broker,
       message: "File uploaded and data processed successfully.",
       status: "Success",
       data: [...allData, ...additionalData].map((diff) => ({
