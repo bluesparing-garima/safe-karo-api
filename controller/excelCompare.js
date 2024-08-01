@@ -1,17 +1,9 @@
 import * as XLSX from "xlsx";
 import fs from "fs";
 import path from "path";
-import crypto from "crypto";
 import MotorPolicy from "../models/policyModel/motorpolicySchema.js";
 import MotorPolicyPayment from "../models/policyModel/motorPolicyPaymentSchema.js";
-
 const dataFilePath = path.join(process.cwd(), "data", "data.json");
-
-const partnerDataFilePath = path.join(
-  process.cwd(),
-  "data",
-  "partnerData.json"
-);
 
 if (!fs.existsSync(path.join(process.cwd(), "data"))) {
   fs.mkdirSync(path.join(process.cwd(), "data"));
@@ -19,13 +11,13 @@ if (!fs.existsSync(path.join(process.cwd(), "data"))) {
 
 export const compareBrokerExcel = async (req, res) => {
   try {
-    if (!req.files || !req.files.excel) {
+    if (!req.file) {
       return res.status(400).send("No files were uploaded.");
     }
 
-    const file = req.files.excel;
+    const file = req.file;
 
-    const workbook = XLSX.read(file.data, { type: "buffer" });
+    const workbook = XLSX.read(file.buffer, { type: "buffer" });
     const sheetName = workbook.SheetNames[0];
     const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
@@ -38,7 +30,6 @@ export const compareBrokerExcel = async (req, res) => {
     const policyNumbers = extractedData.map((data) => data.policyNumber);
     const brokers = [...new Set(extractedData.map((data) => data.broker))];
 
-    // Fetching data from the database
     const dbData = await MotorPolicy.find({
       broker: { $in: brokers },
     });
@@ -121,13 +112,14 @@ export const compareBrokerExcel = async (req, res) => {
     });
 
     const response = {
+      broker: extractedData[0].broker,
       message: "File uploaded and data processed successfully.",
       status: "Success",
       data: [...allData, ...additionalData].map((diff) => ({
         policyNumber: diff.db.policyNumber || diff.excel.policyNumber,
         broker: diff.broker,
-        safeKaroCommission: diff.db.payInCommission, // db commission
-        brokerCommission: diff.excel.payInCommission, // excel commission
+        safeKaroCommission: diff.db.payInCommission,
+        brokerCommission: diff.excel.payInCommission,
         commissionDifference: diff.commissionDifference,
         hasDifference: diff.hasDifference,
       })),
@@ -146,13 +138,13 @@ export const compareBrokerExcel = async (req, res) => {
 
 export const comparePartnerExcel = async (req, res) => {
   try {
-    if (!req.files || !req.files.excel) {
+    if (!req.file) {
       return res.status(400).send("No files were uploaded.");
     }
 
-    const file = req.files.excel;
+    const file = req.file;
 
-    const workbook = XLSX.read(file.data, { type: "buffer" });
+    const workbook = XLSX.read(file.buffer, { type: "buffer" });
     const sheetName = workbook.SheetNames[0];
     const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
@@ -178,7 +170,7 @@ export const comparePartnerExcel = async (req, res) => {
     );
 
     const policyPartnerMap = new Map();
-    dbData.forEach(row => {
+    dbData.forEach((row) => {
       if (!policyPartnerMap.has(row.policyNumber)) {
         policyPartnerMap.set(row.policyNumber, new Set());
       }
@@ -189,16 +181,22 @@ export const comparePartnerExcel = async (req, res) => {
       .filter(([_, partners]) => partners.size > 1)
       .map(([policyNumber]) => policyNumber);
 
-    const allData = [...policyNumbers, ...dbData.map(dbRow => dbRow.policyNumber)]
-      .filter((policyNumber, index, self) => self.indexOf(policyNumber) === index)
-      .filter(policyNumber => !invalidPolicyNumbers.includes(policyNumber))
+    const allData = [
+      ...policyNumbers,
+      ...dbData.map((dbRow) => dbRow.policyNumber),
+    ]
+      .filter(
+        (policyNumber, index, self) => self.indexOf(policyNumber) === index
+      )
+      .filter((policyNumber) => !invalidPolicyNumbers.includes(policyNumber))
       .map((policyNumber) => {
         const dbRow = dbPolicyMap.get(policyNumber);
         const excelRow = extractedData.find(
           (excelItem) => excelItem.policyNumber === policyNumber
         );
 
-        const partnerName = dbRow?.partnerName || excelRow?.partnerName || "Unknown partnerName";
+        const partnerName =
+          dbRow?.partnerName || excelRow?.partnerName || "Unknown partnerName";
 
         const dbDetails = {
           policyNumber: policyNumber,
@@ -232,27 +230,29 @@ export const comparePartnerExcel = async (req, res) => {
       partnerName: { $nin: Array.from(partnerNames) },
     });
 
-    const additionalData = additionalDbData.map((dbRow) => {
-      const paymentRow = paymentData.find(
-        (paymentItem) => paymentItem.policyNumber === dbRow.policyNumber
-      );
+    const additionalData = additionalDbData
+      .map((dbRow) => {
+        const paymentRow = paymentData.find(
+          (paymentItem) => paymentItem.policyNumber === dbRow.policyNumber
+        );
 
-      return {
-        partnerName: dbRow.partnerName,
-        db: {
-          policyNumber: dbRow.policyNumber,
+        return {
           partnerName: dbRow.partnerName,
-          payOutCommission: paymentRow ? paymentRow.payOutCommission : 0,
-        },
-        excel: {
-          policyNumber: dbRow.policyNumber,
-          payOutCommission: 0,
-          partnerName: dbRow.partnerName,
-        },
-        commissionDifference: paymentRow ? paymentRow.payOutCommission : 0,
-        hasDifference: true,
-      };
-    }).filter(diff => partnerNames.has(diff.partnerName));
+          db: {
+            policyNumber: dbRow.policyNumber,
+            partnerName: dbRow.partnerName,
+            payOutCommission: paymentRow ? paymentRow.payOutCommission : 0,
+          },
+          excel: {
+            policyNumber: dbRow.policyNumber,
+            payOutCommission: 0,
+            partnerName: dbRow.partnerName,
+          },
+          commissionDifference: paymentRow ? paymentRow.payOutCommission : 0,
+          hasDifference: true,
+        };
+      })
+      .filter((diff) => partnerNames.has(diff.partnerName));
 
     const response = {
       partnerName: extractedData[0].partnerName,
@@ -261,14 +261,14 @@ export const comparePartnerExcel = async (req, res) => {
       data: [...allData, ...additionalData].map((diff) => ({
         policyNumber: diff.db.policyNumber || diff.excel.policyNumber,
         partnerName: diff.partnerName,
-        safeKaroCommission: diff.db.payOutCommission, // db commission
-        partnerCommission: diff.excel.payOutCommission, // excel commission
+        safeKaroCommission: diff.db.payOutCommission,
+        brokerCommission: diff.excel.payOutCommission,
         commissionDifference: diff.commissionDifference,
         hasDifference: diff.hasDifference,
       })),
     };
 
-    fs.writeFileSync(dataFilePath, JSON.stringify(response, null, 2));
+    fs.writeFileSync(partnerDataFilePath, JSON.stringify(response, null, 2));
 
     res.status(200).json(response);
   } catch (error) {

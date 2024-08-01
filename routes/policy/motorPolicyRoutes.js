@@ -1,5 +1,6 @@
 import express from "express";
 import logActivity from "../../middlewares/logActivity.js";
+import uploadSingleExcel from '../../middlewares/uploadSingleExcel.js';
 import {
   createMotorPolicy,
   getMotorPolicies,
@@ -19,10 +20,11 @@ const router = express.Router();
 router.post("/", logActivity, createMotorPolicy);
 router.get("/", logActivity, getMotorPolicies);
 router.get("/validatePolicyNumber", logActivity, validatePolicyNumber);
-router.post("/upload", logActivity, uploadMotorPolicy);
+router.post("/upload", logActivity, uploadSingleExcel, uploadMotorPolicy);
 router.put(
   "/update-motor-policy-dates-by-excel",
   logActivity,
+  uploadSingleExcel,
   updateMotorPolicyDates
 );
 
