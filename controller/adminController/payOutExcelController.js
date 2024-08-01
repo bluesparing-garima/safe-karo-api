@@ -13,13 +13,13 @@ if (!fs.existsSync(path.join(process.cwd(), 'data'))) {
 
 const uploadExcel = async (req, res) => {
     try {
-        if (!req.files || !req.files.excel) {
+        if (!req.file) {
             return res.status(400).send('No files were uploaded.');
         }
 
-        const file = req.files.excel;
+        const file = req.file;
 
-        const workbook = XLSX.read(file.data, { type: 'buffer' });
+        const workbook = XLSX.read(file.buffer, { type: 'buffer' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
@@ -108,7 +108,7 @@ const getAllData = async (req, res) => {
         // Fetch data only from MongoDB
         const dataFromMongo = await PayOutExcelDataModel.find();
         res.status(200).json({
-            message: 'File uploaded and data processed successfully.',
+            message: 'Data retrieved successfully.',
             data: dataFromMongo,
             status: "Success"
         });
