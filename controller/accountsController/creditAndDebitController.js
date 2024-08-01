@@ -1,6 +1,8 @@
 import creditAndDebit from "../../models/accountsModels/creditAndDebitSchema.js";
 import Account from "../../models/accountsModels/accountSchema.js";
 import motorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
+import Broker from "../../models/adminModels/brokerSchema.js";
+import Partner from "../../models/adminModels/userProfileSchema.js";
 
 // Create a new credit and debit transaction
 export const createCreditAndDebit = async (req, res) => {
@@ -102,6 +104,77 @@ export const getCreditAndDebit = async (req, res) => {
     });
   }
 };
+
+// Get credit transactions by brokerId
+export const getCreditDetailsByBrokerId = async (req, res) => {
+  try {
+    const { brokerId } = req.params;
+
+    if (!brokerId) {
+      return res.status(400).json({
+        message: "BrokerId is required",
+        status: "error",
+      });
+    }
+
+    const transactions = await creditAndDebit.find({ brokerId });
+
+    if (transactions.length === 0) {
+      return res.status(404).json({
+        message: "No transactions found for the given brokerId",
+        status: "error",
+      });
+    }
+
+    res.status(200).json({
+      message: "Transactions retrieved successfully",
+      data: transactions,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving transactions",
+      error: error.message,
+      status: "error",
+    });
+  }
+};
+
+// Get credit and debit transactions by partnerId
+export const getDebitDetailsByPartnerId = async (req, res) => {
+  try {
+    const { partnerId } = req.params;
+
+    if (!partnerId) {
+      return res.status(400).json({
+        message: "PartnerId is required",
+        status: "error",
+      });
+    }
+
+    const transactions = await creditAndDebit.find({ partnerId });
+
+    if (transactions.length === 0) {
+      return res.status(404).json({
+        message: "No transactions found for the given partnerId",
+        status: "error",
+      });
+    }
+
+    res.status(200).json({
+      message: "Transactions retrieved successfully",
+      data: transactions,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving transactions",
+      error: error.message,
+      status: "error",
+    });
+  }
+};
+
 
 // Get a credit and debit transaction by ID
 export const getCreditAndDebitById = async (req, res) => {
