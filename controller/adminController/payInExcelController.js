@@ -159,9 +159,6 @@ const uploadExcel = async (req, res) => {
     }
 };
 
-export default uploadExcel;
-
-
 const getAllData = async (req, res) => {
     try {
         // Fetch data only from MongoDB
