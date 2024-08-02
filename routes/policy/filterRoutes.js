@@ -1,6 +1,5 @@
 import {
   getAllMatchingRecords,
-  createPercentageData,
   getPoliciesByDateRange,
   updateCommissionByDateRange,
   updateODTPByDateRange,
@@ -13,7 +12,6 @@ import logActivity from "../../middlewares/logActivity.js";
 const router = express.Router();
 router.get("/date-range", logActivity, getPoliciesByDateRange);
 router.get("/policies", logActivity, getAllMatchingRecords);
-router.post("/percentage-update", logActivity, createPercentageData);
 router.get("/broker-name", logActivity, getPoliciesByDateRangeAndBrokerName);
 router.get("/partner-name", logActivity, getPoliciesByDateRangeAndPartnerName);
 router.put("/update-od-tp", logActivity, updateODTPByDateRange);
