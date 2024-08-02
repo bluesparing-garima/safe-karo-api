@@ -19,6 +19,13 @@ const router = express.Router();
 // Create Account
 router.post("/", logActivity, createCreditAndDebit);
 
+// Get All Details by BrokerId.
+router.get("/broker-id", logActivity, getCreditDetailsByBrokerId);
+
+// Get All Details by PartnerId.
+router.get("/partner-id", logActivity, getDebitDetailsByPartnerId);
+
+
 // Filter
 router.get(
   "/broker-name",
@@ -49,12 +56,6 @@ router.get(
 
 // Get All Account details
 router.get("/", logActivity, getCreditAndDebit);
-
-// Get All Details by BrokerId.
-router.get("/broker-id/:brokerId", logActivity, getCreditDetailsByBrokerId);
-
-// Get All Details by PartnerId.
-router.get("/partner-id/:partnerId", logActivity, getDebitDetailsByPartnerId);
 
 // Get Account by ID
 router.get("/:id", logActivity, getCreditAndDebitById);
