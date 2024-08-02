@@ -18,6 +18,7 @@ import addRolesRoutes from "./routes/adminRoutes/rolesRoutes.js";
 import payInexcelRoutes from "./routes/adminRoutes/payInExcelRoutes.js";
 import payOutExcelRoutes from "./routes/adminRoutes/payOutExcelRoutes.js";
 import payInRoutes from "./routes/adminRoutes/payInRoutes.js";
+import percentageUpdate from './routes/adminRoutes/percentageUpdateRoute.js';
 import vehicleType from "./routes/adminRoutes/productSubTypeRoutes.js";
 import partnerRoutes from "./routes/adminRoutes/partnerRoutes.js";
 import productName from "./routes/adminRoutes/productRoutes.js";
@@ -131,6 +132,8 @@ app.use("/api/pay-in/excel", payInexcelRoutes);
 //upload payout excel
 app.use("/api/pay-out/excel", payOutExcelRoutes);
 
+// percentage Update manually
+app.use('/api/policy/motor',percentageUpdate);
 // PayIn Routes
 app.use("/api/calculate", payInRoutes);
 
