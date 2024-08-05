@@ -9,9 +9,9 @@ import {
 } from '../../controller/accountsController/statementManageController.js';
 import logActivity from '../../middlewares/logActivity.js';
 router.post('/manage', logActivity,createStatement);
-router.get('/', logActivity,getAllStatements);
-router.get('/:id', logActivity,getStatementById);
-router.put('/:id', logActivity,updateStatement);
-router.delete('/:id',logActivity, deleteStatement);
+router.get('/manage', logActivity,getAllStatements);
+router.get('/manage/:id', logActivity,getStatementById);
+router.put('/manage/:id', logActivity,updateStatement);
+router.delete('/manage/:id',logActivity, deleteStatement);
 
 export default router;
