@@ -3,7 +3,6 @@ import PayInExcelDataModel from "../../models/adminModels/payInExcelDataSchema.j
 import PayOutExcelDataModel from "../../models/adminModels/payOutExcelDataSchema.js";
 import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
 
-// create a Entry in PayInExcelModel if payIn OD and TP same for PayOut
 export const createPercentageData = async (req, res) => {
   try {
     const {
@@ -50,9 +49,24 @@ export const createPercentageData = async (req, res) => {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
-    // Parse dates
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    if (
+      payInODPercentage === undefined &&
+      payInTPPercentage === undefined &&
+      payOutODPercentage === undefined &&
+      payOutTPPercentage === undefined
+    ) {
+      return res.status(400).json({
+        status: "error",
+        success: false,
+        message: "At least one of pay-in or pay-out percentages is required.",
+      });
+    }
+
+    const startDateObj = new Date(startDate);
+    startDateObj.setHours(0, 0, 0, 0);
+
+    const endDateObj = new Date(endDate);
+    endDateObj.setHours(23, 59, 59, 999);
 
     const query = {
       policyType,
@@ -69,8 +83,8 @@ export const createPercentageData = async (req, res) => {
       seatingCapacity,
       rto,
       cc,
-      startDate: start,
-      endDate: end,
+      startDate: startDateObj,
+      endDate: endDateObj,
     };
 
     const createOrUpdateRecord = async (Model, data) => {
@@ -99,10 +113,11 @@ export const createPercentageData = async (req, res) => {
           `Error creating or updating record in ${Model.collection.name}:`,
           err
         );
-        throw err; // Re-throw to catch in outer try-catch
+        throw err;
       }
     };
 
+    // Create or update records in PayInExcelDataModel and PayOutExcelDataModel
     if (payInODPercentage !== undefined && payInTPPercentage !== undefined) {
       await createOrUpdateRecord(PayInExcelDataModel, {
         od: payInODPercentage,
@@ -117,62 +132,7 @@ export const createPercentageData = async (req, res) => {
       });
     }
 
-    res.status(200).json({
-      message: "Data added or updated successfully in the relevant models",
-      status: "Success",
-    });
-  } catch (error) {
-    console.error(`Error in createPercentageData:`, error);
-    res
-      .status(500)
-      .json({ message: "Error processing request", error: error.message });
-  }
-};
-
-export const updateCommissionByInputs = async (req, res) => {
-  const {
-    policyType,
-    caseType,
-    productType,
-    subCategory,
-    companyName,
-    broker,
-    make,
-    model,
-    fuelType,
-    ncb,
-    vehicleAge,
-    seatingCapacity,
-    rto,
-    cc,
-    payInODPercentage,
-    payInTPPercentage,
-    payOutODPercentage,
-    payOutTPPercentage,
-    startDate,
-    endDate,
-  } = req.body;
-
-  if (
-    payInODPercentage === undefined &&
-    payInTPPercentage === undefined &&
-    payOutODPercentage === undefined &&
-    payOutTPPercentage === undefined
-  ) {
-    return res.status(400).json({
-      status: "error",
-      success: false,
-      message: "At least one of pay-in or pay-out percentages is required.",
-    });
-  }
-
-  try {
-    const startDateObj = new Date(startDate);
-    startDateObj.setHours(0, 0, 0, 0);
-
-    const endDateObj = new Date(endDate);
-    endDateObj.setHours(23, 59, 59, 999);
-
+    // Update MotorPolicyPaymentModel based on the provided percentages
     const motorPolicyQuery = {
       policyType,
       caseType,
@@ -304,16 +264,15 @@ export const updateCommissionByInputs = async (req, res) => {
     );
 
     res.status(200).json({
-      message: `Commission fields updated successfully.`,
+      message: "Data added or updated successfully in the relevant models and commission fields updated.",
       success: true,
       status: "success",
       updatedPayments,
     });
   } catch (error) {
-    console.error(`Error updating motor policy:`, error);
+    console.error(`Error in createOrUpdatePercentageData:`, error);
     res.status(500).json({
-      message: `Error updating commission fields.`,
-      success: false,
+      message: "Error processing request",
       error: error.message,
     });
   }
