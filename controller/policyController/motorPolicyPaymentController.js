@@ -1,7 +1,7 @@
 import motorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
 import mongoose from "mongoose";
 import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
-import moment from "moment";
+import StatementManage from '../../models/accountsModels/statementManageSchema.js';
 
 // Create a new motor policy payment
 export const createMotorPolicyPayment = async (req, res) => {
@@ -212,18 +212,24 @@ export const getUnPaidAndPartialPaidPayments = async (req, res) => {
       },
     ]);
 
+    const partnerStatement = await StatementManage.findOne({ partnerId: partnerId });
+
     // Handle case when no documents are found
     const result = results[0] || {
       totalAmount: 0,
       payments: [],
     };
 
+    const partnerBalance = partnerStatement ? partnerStatement.partnerBalance : 0;
+    const amountToBePaid = result.totalAmount - partnerBalance;
+
     res.status(200).json({
-      message:
-        "Motor policy payments for status Unpaid and Partial Paid retrieved successfully",
+      message: "Motor policy payments for status Unpaid and Partial Paid retrieved successfully",
       data: {
         payments: result.payments,
         totalAmount: result.totalAmount,
+        partnerBalance,
+        amountToBePaid
       },
       success: true,
       status: "success",

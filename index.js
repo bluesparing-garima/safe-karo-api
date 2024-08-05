@@ -62,6 +62,8 @@ import adminChart from './routes/barAndLineChartRoutes/adminChartRoutes.js';
 import bookingChart from './routes/barAndLineChartRoutes/bookingChartRoutes.js';
 import brokerChart from './routes/barAndLineChartRoutes/brokerChartRoutes.js';
 
+// statement Manage 
+import statementManage from "./routes/accountRoutes/statementManageRoutes.js";
 import testRoutes from "./routes/testRoutes.js";
 
 const app = express();
@@ -134,6 +136,10 @@ app.use("/api/pay-out/excel", payOutExcelRoutes);
 
 // percentage Update manually
 app.use('/api/policy/motor',percentageUpdate);
+
+// statement Management
+app.use("/api/statement", statementManage);
+
 // PayIn Routes
 app.use("/api/calculate", payInRoutes);
 
