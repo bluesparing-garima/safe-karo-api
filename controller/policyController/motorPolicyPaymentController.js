@@ -161,6 +161,85 @@ export const policyStatusManage = async (req, res) => {
   }
 };
 
+// Get Unpaid and partial paid by date range and partnerId
+export const getUnPaidAndPartialPaidPayments = async (req, res) => {
+  try {
+    const { partnerId, startDate, endDate } = req.query;
+
+    if (!partnerId || !startDate || !endDate) {
+      return res.status(400).json({
+        message: "Missing required query parameters",
+        success: false,
+        status: "error",
+      });
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    // Aggregation pipeline to calculate totals based on status
+    const results = await motorPolicyPayment.aggregate([
+      {
+        $match: {
+          partnerId,
+          policyDate: { $gte: start, $lte: end },
+          $or: [
+            { payOutPaymentStatus: "UnPaid" },
+            { payOutPaymentStatus: "Partial" },
+          ],
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalAmount: {
+            $sum: {
+              $cond: [
+                { $eq: ["$payOutPaymentStatus", "UnPaid"] },
+                "$payOutCommission",
+                {
+                  $cond: [
+                    { $eq: ["$payOutPaymentStatus", "Partial"] },
+                    "$payOutBalance",
+                    0,
+                  ],
+                },
+              ],
+            },
+          },
+          payments: { $push: "$$ROOT" }, // Collect all matching documents
+        },
+      },
+    ]);
+
+    // Handle case when no documents are found
+    const result = results[0] || {
+      totalAmount: 0,
+      payments: [],
+    };
+
+    res.status(200).json({
+      message:
+        "Motor policy payments for status Unpaid and Partial Paid retrieved successfully",
+      data: {
+        payments: result.payments,
+        totalAmount: result.totalAmount,
+      },
+      success: true,
+      status: "success",
+    });
+  } catch (error) {
+    console.error("Error retrieving motor policy payments:", error);
+
+    res.status(500).json({
+      message: "Error retrieving motor policy payments",
+      error: error.message,
+      success: false,
+      status: "error",
+    });
+  }
+};
+
 // Get all motor policy payments
 export const getAllMotorPolicyPayments = async (req, res) => {
   try {

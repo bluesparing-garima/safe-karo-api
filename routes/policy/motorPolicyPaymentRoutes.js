@@ -7,12 +7,14 @@ import {
   updateMotorPolicyPayment,
   deleteMotorPolicyPayment,
   policyStatusManage,
+  getUnPaidAndPartialPaidPayments
 
 } from '../../controller/policyController/motorPolicyPaymentController.js';
 
 const router = express.Router();
 router.post('/', logActivity, createMotorPolicyPayment);
 router.get('/', logActivity, getAllMotorPolicyPayments);
+router.get('/partner-id/status', logActivity, getUnPaidAndPartialPaidPayments);
 router.get('/:policyId', logActivity, getMotorPolicyPaymentByPolicyId);
 router.put('/status-manage',logActivity,policyStatusManage);
 router.put('/:policyId', logActivity, updateMotorPolicyPayment);
