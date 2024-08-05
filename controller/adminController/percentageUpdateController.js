@@ -154,11 +154,13 @@ export const createPercentageData = async (req, res) => {
     const matchingPolicies = await MotorPolicyModel.find(motorPolicyQuery);
 
     if (matchingPolicies.length === 0) {
-      return res.status(404).json({
-        status: "error",
-        success: false,
-        message: "No matching policies found.",
+      // Save payInExcelData and payOutExcelData even if no matching policies
+      res.status(200).json({
+        message: "No matching policies found, but PayIn and PayOut records created.",
+        success: true,
+        status: "success",
       });
+      return;
     }
 
     const policyNumbers = matchingPolicies.map((policy) => policy.policyNumber);
