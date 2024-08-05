@@ -155,7 +155,7 @@ export const getCreditDetailsByBrokerId = async (req, res) => {
   }
 };
 
-// Get Credit by Date Range and Broker Idd
+// Get Debit by Date Range and Broker Idd
 export const getDebitDetailsByPartnerId = async (req, res) => {
   const { startDate, endDate, partnerId } = req.query;
 
