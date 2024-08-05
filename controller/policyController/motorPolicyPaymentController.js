@@ -1,7 +1,7 @@
 import motorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
 import mongoose from "mongoose";
 import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
-import moment from "moment";
+import StatementManage from "../../models/accountsModels/statementManageSchema.js";
 
 // Create a new motor policy payment
 export const createMotorPolicyPayment = async (req, res) => {
@@ -155,6 +155,104 @@ export const policyStatusManage = async (req, res) => {
     res.status(400).json({
       message: "Motor Policy Payment Failed to Update",
       error: err.message,
+      success: false,
+      status: "error",
+    });
+  }
+};
+
+// Get Unpaid and partial paid by date range and partnerId
+export const getUnPaidAndPartialPaidPayments = async (req, res) => {
+  try {
+    const { partnerId, startDate, endDate } = req.query;
+
+    if (!partnerId || !startDate || !endDate) {
+      return res.status(400).json({
+        message: "Missing required query parameters",
+        success: false,
+        status: "error",
+      });
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    const results = await motorPolicyPayment.aggregate([
+      {
+        $match: {
+          partnerId,
+          policyDate: { $gte: start, $lte: end },
+          $or: [
+            { payOutPaymentStatus: "UnPaid" },
+            { payOutPaymentStatus: "Partial" },
+          ],
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalAmount: {
+            $sum: {
+              $cond: [
+                { $eq: ["$payOutPaymentStatus", "UnPaid"] },
+                "$payOutCommission",
+                {
+                  $cond: [
+                    { $eq: ["$payOutPaymentStatus", "Partial"] },
+                    "$payOutBalance",
+                    0,
+                  ],
+                },
+              ],
+            },
+          },
+          payments: { $push: "$$ROOT" },
+        },
+      },
+    ]);
+
+    const partnerStatements = await StatementManage.aggregate([
+      {
+        $match: {
+          partnerId: partnerId,
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalPartnerBalance: { $sum: "$partnerBalance" },
+        },
+      },
+    ]);
+
+    const totalPartnerBalance =
+      partnerStatements.length > 0
+        ? partnerStatements[0].totalPartnerBalance
+        : 0;
+
+    const result = results[0] || {
+      totalAmount: 0,
+      payments: [],
+    };
+
+    const adjustedTotalAmount = result.totalAmount - totalPartnerBalance;
+
+    res.status(200).json({
+      message:
+        "Motor policy payments for status Unpaid and Partial Paid retrieved successfully",
+      data: {
+        payments: result.payments,
+        totalAmount: result.totalAmount,
+        partnerBalance: totalPartnerBalance,
+        adjustedTotalAmount,
+      },
+      success: true,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving motor policy payments",
+      error: error.message,
       success: false,
       status: "error",
     });
