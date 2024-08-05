@@ -133,7 +133,8 @@ app.use("/api/pay-in/excel", payInexcelRoutes);
 app.use("/api/pay-out/excel", payOutExcelRoutes);
 
 // percentage Update manually
-app.use('/api/policy/motor',percentageUpdate);
+app.use('/api/policy/motor/commission',percentageUpdate);
+
 // PayIn Routes
 app.use("/api/calculate", payInRoutes);
 
