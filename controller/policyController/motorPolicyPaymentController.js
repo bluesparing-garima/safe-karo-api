@@ -349,33 +349,47 @@ export const getMotorPolicyPaymentByPolicyId = async (req, res) => {
 
 // Update motor policy payment by policyId
 export const updateMotorPolicyPayment = async (req, res) => {
-  try {
-    const {
-      payInAmount,
-      payOutAmount,
-      payInPaymentStatus,
-      payOutPaymentStatus,
-      payInBalance,
-      payOutBalance,
-      updatedBy,
-    } = req.body;
+  const {
+    partnerId,
+    policyId,
+    policyNumber,
+    bookingId,
+    od,
+    tp,
+    netPremium,
+    finalPremium,
+    payInODPercentage,
+    payInTPPercentage,
+    payInODAmount,
+    payInTPAmount,
+    payOutODPercentage,
+    payOutTPPercentage,
+    payOutODAmount,
+    payOutTPAmount,
+    payInCommission,
+    payOutCommission,
+    updatedBy,
+  } = req.body;
 
-    const updatedMotorPolicyPayment = await motorPolicyPayment.findOneAndUpdate(
-      { policyId: req.params.policyId },
-      {
-        $set: {
-          payInAmount,
-          payOutAmount,
-          payInPaymentStatus,
-          payOutPaymentStatus,
-          payInBalance,
-          payOutBalance,
-          updatedBy,
-          updatedOn: Date.now(),
-        },
-      },
-      { new: true }
-    );
+  try {
+    const existingProfile = await motorPolicyPayment.findOne({
+      policyId: req.params.policyId,
+    });
+
+    if (!existingProfile) {
+      return res.status(404).json({
+        message: "Motor Policy Payment not found",
+        success: false,
+        status: "error",
+      });
+    }
+
+    const updatedMotorPolicyPayment =
+      await motorPolicyPayment.findByIdAndUpdate(
+        existingProfile._id,
+        req.body,
+        { new: true }
+      );
 
     if (!updatedMotorPolicyPayment) {
       return res.status(404).json({
@@ -385,51 +399,17 @@ export const updateMotorPolicyPayment = async (req, res) => {
       });
     }
 
-    if (["UnPaid", "Partial", "Paid"].includes(payOutPaymentStatus)) {
-      let existingDebit = await debitModel.findOne({
-        policyNumber: updatedMotorPolicyPayment.policyNumber,
-      });
-
-      if (existingDebit) {
-        existingDebit.paidAmount = payOutAmount;
-        existingDebit.payOutAmount = payOutAmount;
-        existingDebit.payOutPaymentStatus = payOutPaymentStatus;
-        existingDebit.payOutBalance = payOutBalance;
-        existingDebit.updatedBy = updatedBy;
-        existingDebit.updatedOn = Date.now();
-      } else {
-        const newDebit = new debitModel({
-          policyNumber: updatedMotorPolicyPayment.policyNumber,
-          partnerId: updatedMotorPolicyPayment.partnerId,
-          paidAmount: payOutAmount,
-          payOutAmount: payOutAmount,
-          payOutPaymentStatus,
-          payOutBalance,
-          policyDate: updatedMotorPolicyPayment.policyDate,
-          createdBy: updatedMotorPolicyPayment.createdBy,
-          updatedBy,
-          createdOn: updatedMotorPolicyPayment.createdOn,
-          updatedOn: Date.now(),
-        });
-
-        await newDebit.save();
-      }
-    }
-
     res.status(200).json({
       message: "Motor Policy Payment updated successfully",
-      success: true,
       data: updatedMotorPolicyPayment,
+      success: true,
       status: "success",
     });
   } catch (err) {
-    res.status(500).json({
-      message: err.message,
-      success: false,
-      status: "error",
-    });
+    res.status(400).json({ message: err.message, status: "error" });
   }
 };
+
 
 // Delete motor policy payment by policyId
 export const deleteMotorPolicyPayment = async (req, res) => {
