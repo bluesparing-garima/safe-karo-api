@@ -52,7 +52,7 @@ import leadPayment from "./routes/partnerRoutes/leadPaymentRoutes.js";
 // Accounts 
 import accountRoute from "./routes/accountRoutes/accountRoute.js";
 import creditAndDebit from './routes/accountRoutes/creditAndDebitRoute.js';
-
+import debitRoute from "./routes/accountRoutes/debitRoute.js";
 // Excel Compare
 import excelCompare from "./routes/excelCompareRoutes.js";
 
@@ -64,6 +64,7 @@ import brokerChart from './routes/barAndLineChartRoutes/brokerChartRoutes.js';
 
 // statement Manage 
 import statementManage from "./routes/accountRoutes/statementManageRoutes.js";
+
 import testRoutes from "./routes/testRoutes.js";
 
 const app = express();
@@ -198,6 +199,9 @@ app.use('/api/account', accountRoute);
 
 // Credit and Debit
 app.use('/api/credit-debit', creditAndDebit);
+
+// Debit details 
+app.use('/api',debitRoute);
 
 // excel compare
 app.use('/api', excelCompare);

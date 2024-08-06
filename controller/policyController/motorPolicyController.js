@@ -136,7 +136,7 @@ export const uploadMotorPolicy = async (req, res) => {
         weight: row.weight || row["Weight"] || "",
       };
     });
-
+    
     for (const data of extractedData) {
       const query = { policyNumber: data.policyNumber };
 
@@ -281,6 +281,7 @@ export const updateMotorPolicyDates = async (req, res) => {
     res.status(500).send("Internal Server Error");
   }
 };
+
 // Create Motor Policy
 export const createMotorPolicy = async (req, res) => {
   // upload.array('rcback', 10)(req, res, (err) => {
