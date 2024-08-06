@@ -78,7 +78,7 @@ export const createMotorPolicyPayment = async (req, res) => {
       payOutPaymentStatus,
       payInBalance,
       payOutBalance,
-      policyDate: motorPolicy.createdOn,
+      policyDate: motorPolicy.issueDate,
       createdBy,
     });
 
@@ -92,7 +92,7 @@ export const createMotorPolicyPayment = async (req, res) => {
         payOutAmount: payOutCommission,
         payOutPaymentStatus,
         payOutBalance,
-        policyDate: motorPolicy.createdOn,
+        policyDate: motorPolicy.issueDate,
         createdBy,
         updatedBy: createdBy,
         createdOn: new Date(),
@@ -229,30 +229,30 @@ export const getUnPaidAndPartialPaidPayments = async (req, res) => {
         $match: {
           partnerId,
           policyDate: { $gte: start, $lte: end },
-          $or: [
-            { payOutPaymentStatus: "UnPaid" },
-            { payOutPaymentStatus: "Partial" },
-          ],
+          payOutPaymentStatus: { $in: ["UnPaid", "Partial"] },
+        },
+      },
+      {
+        $addFields: {
+          relevantAmount: {
+            $cond: [
+              { $eq: ["$payOutPaymentStatus", "UnPaid"] },
+              "$payOutCommission",
+              {
+                $cond: [
+                  { $eq: ["$payOutPaymentStatus", "Partial"] },
+                  "$payOutBalance",
+                  0,
+                ],
+              },
+            ],
+          },
         },
       },
       {
         $group: {
           _id: null,
-          totalAmount: {
-            $sum: {
-              $cond: [
-                { $eq: ["$payOutPaymentStatus", "UnPaid"] },
-                "$payOutCommission",
-                {
-                  $cond: [
-                    { $eq: ["$payOutPaymentStatus", "Partial"] },
-                    "$payOutBalance",
-                    0,
-                  ],
-                },
-              ],
-            },
-          },
+          totalAmount: { $sum: "$relevantAmount" },
           payments: { $push: "$$ROOT" },
         },
       },
