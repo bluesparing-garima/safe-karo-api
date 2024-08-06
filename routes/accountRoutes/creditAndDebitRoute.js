@@ -10,7 +10,7 @@ import {
   getCreditAndDebitByDateRangeAndBrokerName,
   getTotalAmountByDateRangeAndBrokerName,
   getCreditAndDebitByDateRangeAndPartnerId,
-  getTotalAmountByDateRangeAndPartnerName,
+  getTotalAmountByDateRangeAndPartnerId,
 } from "../../controller/accountsController/creditAndDebitController.js";
 import logActivity from "../../middlewares/logActivity.js";
 
@@ -51,7 +51,7 @@ router.get(
 router.get(
   "/partner/total-amount",
   logActivity,
-  getTotalAmountByDateRangeAndPartnerName
+  getTotalAmountByDateRangeAndPartnerId
 );
 
 // Get All Account details
