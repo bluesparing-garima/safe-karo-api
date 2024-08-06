@@ -486,11 +486,11 @@ export const getCreditAndDebitByDateRangeAndPartnerId = async (req, res) => {
   }
 };
 
-// Get Debit data by Date Range and Partner Name
-export const getTotalAmountByDateRangeAndPartnerName = async (req, res) => {
-  const { startDate, endDate, partnerName } = req.query;
+// Get Debit data by Date Range and PartnerId
+export const getTotalAmountByDateRangeAndPartnerId = async (req, res) => {
+  const { startDate, endDate, partnerId } = req.query;
 
-  if (!startDate || !endDate || !partnerName) {
+  if (!startDate || !endDate || !partnerId) {
     return res.status(400).json({
       status: "error",
       success: false,
@@ -508,7 +508,7 @@ export const getTotalAmountByDateRangeAndPartnerName = async (req, res) => {
     const creditAndDebits = await creditAndDebit.find({
       startDate: { $gte: startDateObj },
       endDate: { $lte: endDateObj },
-      partnerName,
+      partnerId,
     });
 
     if (creditAndDebits.length === 0) {
@@ -516,7 +516,7 @@ export const getTotalAmountByDateRangeAndPartnerName = async (req, res) => {
         status: "error",
         success: false,
         message:
-          "No credit and debit data found within the specified date range and partner name.",
+          "No credit and debit data found within the specified date range and partnerId.",
       });
     }
 

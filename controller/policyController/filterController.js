@@ -589,15 +589,15 @@ export const getPoliciesByDateRangeAndBrokerName = async (req, res) => {
   }
 };
 
-// Get Policies by Date Range and Partner Name
-export const getPoliciesByDateRangeAndPartnerName = async (req, res) => {
-  const { startDate, endDate, partnerName } = req.query;
+// Get Policies by Date Range and PartnerId
+export const getPoliciesByDateRangeAndPartnerId = async (req, res) => {
+  const { startDate, endDate, partnerId } = req.query;
 
-  if (!startDate || !endDate || !partnerName) {
+  if (!startDate || !endDate || !partnerId) {
     return res.status(400).json({
       status: "error",
       success: false,
-      message: "Start date, end date, and broker name are required.",
+      message: "Start date, end date, and partnerId are required.",
     });
   }
 
@@ -613,13 +613,13 @@ export const getPoliciesByDateRangeAndPartnerName = async (req, res) => {
         $gte: startDateObj,
         $lte: endDateObj,
       },
-      partnerName: partnerName,
+      partnerId: partnerId,
     });
 
     if (policies.length === 0) {
       return res.status(404).json({
         message:
-          "No policies found within the specified date range and partner name.",
+          "No policies found within the specified date range and partnerId.",
         success: false,
         status: "error",
       });
