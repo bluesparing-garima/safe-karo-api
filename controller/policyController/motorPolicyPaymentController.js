@@ -1,6 +1,7 @@
-import motorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
 import mongoose from "mongoose";
+import motorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
 import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
+import debitModel from "../../models/accountsModels/debitsSchema.js";
 import StatementManage from "../../models/accountsModels/statementManageSchema.js";
 
 // Create a new motor policy payment
@@ -34,7 +35,6 @@ export const createMotorPolicyPayment = async (req, res) => {
   } = req.body;
 
   try {
-    // Check if policyId is a valid ObjectId
     if (!mongoose.Types.ObjectId.isValid(policyId)) {
       return res.status(400).json({
         message: "Invalid policyId",
@@ -43,7 +43,6 @@ export const createMotorPolicyPayment = async (req, res) => {
       });
     }
 
-    // Fetch MotorPolicy using policyId
     const motorPolicy = await MotorPolicyModel.findById(policyId);
 
     if (!motorPolicy) {
@@ -84,6 +83,25 @@ export const createMotorPolicyPayment = async (req, res) => {
     });
 
     const savedMotorPolicyPayment = await newMotorPolicyPayment.save();
+
+    if (payOutPaymentStatus === "UnPaid" || payOutPaymentStatus === "Partial") {
+      const newDebit = new debitModel({
+        policyNumber,
+        partnerId,
+        paidAmount: payOutAmount,
+        payOutAmount: payOutCommission,
+        payOutPaymentStatus,
+        payOutBalance,
+        policyDate: motorPolicy.createdOn,
+        createdBy,
+        updatedBy: createdBy,
+        createdOn: new Date(),
+        updatedOn: new Date(),
+      });
+
+      await newDebit.save();
+    }
+
     res.status(201).json({
       message: "Motor Policy Payment created successfully",
       data: savedMotorPolicyPayment,
@@ -99,49 +117,78 @@ export const createMotorPolicyPayment = async (req, res) => {
   }
 };
 
-// policy Status Manage
+// Policy Status Manage
 export const policyStatusManage = async (req, res) => {
   const policyUpdates = req.body;
 
   try {
-    const updatePromises = policyUpdates.map(
-      async ({
-        policyNumber,
-        payInAmount,
-        payOutAmount,
-        payInPaymentStatus,
-        payOutPaymentStatus,
-        payInBalance,
-        payOutBalance,
-      }) => {
-        let existingPayment = await motorPolicyPayment.findOne({
+    const updatePromises = policyUpdates.map(async ({
+      policyNumber,
+      payInAmount,
+      payOutAmount,
+      payInPaymentStatus,
+      payOutPaymentStatus,
+      payInBalance,
+      payOutBalance,
+      updatedBy,
+    }) => {
+      let existingPayment = await motorPolicyPayment.findOne({ policyNumber });
+
+      if (!existingPayment) {
+        existingPayment = new motorPolicyPayment({
           policyNumber,
+          payInAmount,
+          payOutAmount,
+          payInPaymentStatus,
+          payOutPaymentStatus,
+          payInBalance,
+          payOutBalance,
+          createdOn: Date.now(),
+          updatedOn: Date.now(),
         });
-
-        if (!existingPayment) {
-          // Create a new payment record
-          existingPayment = new motorPolicyPayment({
-            policyNumber,
-            payInAmount,
-            payOutAmount,
-            payInPaymentStatus,
-            payOutPaymentStatus,
-            payInBalance,
-            payOutBalance,
-          });
-        } else {
-          existingPayment.payInAmount = payInAmount;
-          existingPayment.payInPaymentStatus = payInPaymentStatus;
-          existingPayment.payOutAmount = payOutAmount;
-          existingPayment.payOutPaymentStatus = payOutPaymentStatus;
-          existingPayment.payInBalance = payInBalance;
-          existingPayment.payOutBalance = payOutBalance;
-          existingPayment.updatedOn = Date.now();
-        }
-
-        return existingPayment.save();
+      } else {
+        existingPayment.payInAmount = payInAmount;
+        existingPayment.payInPaymentStatus = payInPaymentStatus;
+        existingPayment.payOutAmount = payOutAmount;
+        existingPayment.payOutPaymentStatus = payOutPaymentStatus;
+        existingPayment.payInBalance = payInBalance;
+        existingPayment.payOutBalance = payOutBalance;
+        existingPayment.updatedOn = Date.now();
       }
-    );
+
+      const savedPayment = await existingPayment.save();
+
+      if (["UnPaid", "Partial", "Paid"].includes(payOutPaymentStatus)) {
+        let existingDebit = await debitModel.findOne({ policyNumber });
+
+        if (existingDebit) {
+          existingDebit.paidAmount = payOutAmount;
+          existingDebit.payOutAmount = payOutAmount;
+          existingDebit.payOutPaymentStatus = payOutPaymentStatus;
+          existingDebit.payOutBalance = payOutBalance;
+          existingDebit.updatedBy = updatedBy;
+          existingDebit.updatedOn = Date.now();
+        } else {
+          const newDebit = new debitModel({
+            policyNumber,
+            partnerId: existingPayment.partnerId,
+            paidAmount: payOutAmount,
+            payOutAmount: payOutAmount,
+            payOutPaymentStatus,
+            payOutBalance,
+            policyDate: existingPayment.policyDate,
+            createdBy: existingPayment.createdBy,
+            updatedBy,
+            createdOn: existingPayment.createdOn,
+            updatedOn: Date.now(),
+          });
+
+          await newDebit.save();
+        }
+      }
+
+      return savedPayment;
+    });
 
     const savedPayments = await Promise.all(updatePromises);
 
@@ -161,7 +208,7 @@ export const policyStatusManage = async (req, res) => {
   }
 };
 
-// Get Unpaid and partial paid by date range and partnerId
+// Get UnPaid and Partial Paid by date range and partnerId
 export const getUnPaidAndPartialPaidPayments = async (req, res) => {
   try {
     const { partnerId, startDate, endDate } = req.query;
@@ -213,9 +260,7 @@ export const getUnPaidAndPartialPaidPayments = async (req, res) => {
 
     const partnerStatements = await StatementManage.aggregate([
       {
-        $match: {
-          partnerId: partnerId,
-        },
+        $match: { partnerId },
       },
       {
         $group: {
@@ -230,16 +275,12 @@ export const getUnPaidAndPartialPaidPayments = async (req, res) => {
         ? partnerStatements[0].totalPartnerBalance
         : 0;
 
-    const result = results[0] || {
-      totalAmount: 0,
-      payments: [],
-    };
-
+    const result = results[0] || { totalAmount: 0, payments: [] };
     const adjustedTotalAmount = result.totalAmount - totalPartnerBalance;
 
     res.status(200).json({
       message:
-        "Motor policy payments for status Unpaid and Partial Paid retrieved successfully",
+        "Motor policy payments for status UnPaid and Partial Paid retrieved successfully",
       data: {
         payments: result.payments,
         totalAmount: result.totalAmount,
@@ -306,49 +347,35 @@ export const getMotorPolicyPaymentByPolicyId = async (req, res) => {
   }
 };
 
-// Update a motor policy payment by ObjectId
+// Update motor policy payment by policyId
 export const updateMotorPolicyPayment = async (req, res) => {
-  const {
-    partnerId,
-    policyId,
-    policyNumber,
-    bookingId,
-    od,
-    tp,
-    netPremium,
-    finalPremium,
-    payInODPercentage,
-    payInTPPercentage,
-    payInODAmount,
-    payInTPAmount,
-    payOutODPercentage,
-    payOutTPPercentage,
-    payOutODAmount,
-    payOutTPAmount,
-    payInCommission,
-    payOutCommission,
-    updatedBy,
-  } = req.body;
-
   try {
-    const existingProfile = await motorPolicyPayment.findOne({
-      policyId: req.params.policyId,
-    });
+    const {
+      payInAmount,
+      payOutAmount,
+      payInPaymentStatus,
+      payOutPaymentStatus,
+      payInBalance,
+      payOutBalance,
+      updatedBy,
+    } = req.body;
 
-    if (!existingProfile) {
-      return res.status(404).json({
-        message: "Motor Policy Payment not found",
-        success: false,
-        status: "error",
-      });
-    }
-
-    const updatedMotorPolicyPayment =
-      await motorPolicyPayment.findByIdAndUpdate(
-        existingProfile._id,
-        req.body,
-        { new: true }
-      );
+    const updatedMotorPolicyPayment = await motorPolicyPayment.findOneAndUpdate(
+      { policyId: req.params.policyId },
+      {
+        $set: {
+          payInAmount,
+          payOutAmount,
+          payInPaymentStatus,
+          payOutPaymentStatus,
+          payInBalance,
+          payOutBalance,
+          updatedBy,
+          updatedOn: Date.now(),
+        },
+      },
+      { new: true }
+    );
 
     if (!updatedMotorPolicyPayment) {
       return res.status(404).json({
@@ -358,28 +385,58 @@ export const updateMotorPolicyPayment = async (req, res) => {
       });
     }
 
+    if (["UnPaid", "Partial", "Paid"].includes(payOutPaymentStatus)) {
+      let existingDebit = await debitModel.findOne({
+        policyNumber: updatedMotorPolicyPayment.policyNumber,
+      });
+
+      if (existingDebit) {
+        existingDebit.paidAmount = payOutAmount;
+        existingDebit.payOutAmount = payOutAmount;
+        existingDebit.payOutPaymentStatus = payOutPaymentStatus;
+        existingDebit.payOutBalance = payOutBalance;
+        existingDebit.updatedBy = updatedBy;
+        existingDebit.updatedOn = Date.now();
+      } else {
+        const newDebit = new debitModel({
+          policyNumber: updatedMotorPolicyPayment.policyNumber,
+          partnerId: updatedMotorPolicyPayment.partnerId,
+          paidAmount: payOutAmount,
+          payOutAmount: payOutAmount,
+          payOutPaymentStatus,
+          payOutBalance,
+          policyDate: updatedMotorPolicyPayment.policyDate,
+          createdBy: updatedMotorPolicyPayment.createdBy,
+          updatedBy,
+          createdOn: updatedMotorPolicyPayment.createdOn,
+          updatedOn: Date.now(),
+        });
+
+        await newDebit.save();
+      }
+    }
+
     res.status(200).json({
       message: "Motor Policy Payment updated successfully",
-      data: updatedMotorPolicyPayment,
       success: true,
+      data: updatedMotorPolicyPayment,
       status: "success",
     });
   } catch (err) {
-    res.status(400).json({ message: err.message, status: "error" });
+    res.status(500).json({
+      message: err.message,
+      success: false,
+      status: "error",
+    });
   }
 };
 
-// Delete a motor policy payment by ObjectId
+// Delete motor policy payment by policyId
 export const deleteMotorPolicyPayment = async (req, res) => {
   try {
-    const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res
-        .status(400)
-        .json({ message: "Invalid ID", success: false, status: "error" });
-    }
-    const deletedMotorPolicyPayment =
-      await motorPolicyPayment.findByIdAndDelete(id);
+    const deletedMotorPolicyPayment = await motorPolicyPayment.findOneAndDelete({
+      policyId: req.params.policyId,
+    });
     if (!deletedMotorPolicyPayment) {
       return res.status(404).json({
         message: "Motor Policy Payment not found",
@@ -393,8 +450,10 @@ export const deleteMotorPolicyPayment = async (req, res) => {
       status: "success",
     });
   } catch (err) {
-    res
-      .status(500)
-      .json({ message: err.message, success: false, status: "error" });
+    res.status(500).json({
+      message: err.message,
+      success: false,
+      status: "error",
+    });
   }
 };
