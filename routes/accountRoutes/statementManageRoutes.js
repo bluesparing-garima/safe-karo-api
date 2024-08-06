@@ -3,6 +3,7 @@ const router = express.Router();
 import {
   createStatement,
   getAllStatements,
+  getStatementsByPartnerId,
   getStatementById,
   updateStatement,
   deleteStatement
@@ -10,6 +11,7 @@ import {
 import logActivity from '../../middlewares/logActivity.js';
 router.post('/manage', logActivity,createStatement);
 router.get('/manage', logActivity,getAllStatements);
+router.get('/manage/:partnerId', getStatementsByPartnerId);
 router.get('/manage/:id', logActivity,getStatementById);
 router.put('/manage/:id', logActivity,updateStatement);
 router.delete('/manage/:id',logActivity, deleteStatement);
