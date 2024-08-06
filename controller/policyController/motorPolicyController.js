@@ -220,6 +220,7 @@ export const uploadMotorPolicy = async (req, res) => {
           paymentRecord.payOutTPAmount = 0;
           paymentRecord.payInCommission = 0;
           paymentRecord.payOutCommission = 0;
+          paymentRecord.policyDate = existingRecord.issueDate;
           paymentRecord.createdBy = existingRecord.createdBy;
 
           await paymentRecord.save();
@@ -246,6 +247,7 @@ export const uploadMotorPolicy = async (req, res) => {
           payOutTPAmount: 0,
           payInCommission: 0,
           payOutCommission: 0,
+          policyDate: newPolicy.issueDate,
           createdBy: newPolicy.createdBy,
         });
 
