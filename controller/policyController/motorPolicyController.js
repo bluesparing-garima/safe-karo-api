@@ -141,6 +141,7 @@ export const uploadMotorPolicy = async (req, res) => {
       const query = { policyNumber: data.policyNumber };
 
       const existingRecord = await MotorPolicyModel.findOne(query);
+
       if (existingRecord) {
         existingRecord.policyStatus = data.policyStatus;
         existingRecord.partnerId = data.partnerId;
@@ -192,22 +193,75 @@ export const uploadMotorPolicy = async (req, res) => {
         existingRecord.other = data.other;
         existingRecord.createdBy = "excel";
         existingRecord.createdOn = data.createdOn;
-        existingRecord.updatedBy = data.updatedBy;
-        existingRecord.updatedOn = data.updatedOn;
+        existingRecord.updatedBy = "";
+        existingRecord.updatedOn = new Date();
+
         await existingRecord.save();
+
+        const paymentRecord = await MotorPolicyPaymentModel.findOne({
+          policyId: existingRecord._id,
+        });
+
+        if (paymentRecord) {
+          paymentRecord.partnerId = existingRecord.partnerId;
+          paymentRecord.policyNumber = existingRecord.policyNumber;
+          paymentRecord.bookingId = existingRecord.bookingId;
+          paymentRecord.od = existingRecord.od;
+          paymentRecord.tp = existingRecord.tp;
+          paymentRecord.netPremium = existingRecord.netPremium;
+          paymentRecord.finalPremium = existingRecord.finalPremium;
+          paymentRecord.payInODPercentage = 0;
+          paymentRecord.payInTPPercentage = 0;
+          paymentRecord.payInODAmount = 0;
+          paymentRecord.payInTPAmount = 0;
+          paymentRecord.payOutODPercentage = 0;
+          paymentRecord.payOutTPPercentage = 0;
+          paymentRecord.payOutODAmount = 0;
+          paymentRecord.payOutTPAmount = 0;
+          paymentRecord.payInCommission = 0;
+          paymentRecord.payOutCommission = 0;
+          paymentRecord.createdBy = existingRecord.createdBy;
+
+          await paymentRecord.save();
+        }
       } else {
-        await MotorPolicyModel.create(data);
+        const newPolicy = await MotorPolicyModel.create(data);
+
+        const newMotorPolicyPayment = new MotorPolicyPaymentModel({
+          partnerId: newPolicy.partnerId,
+          policyId: newPolicy._id,
+          policyNumber: newPolicy.policyNumber,
+          bookingId: newPolicy.bookingId,
+          od: newPolicy.od,
+          tp: newPolicy.tp,
+          netPremium: newPolicy.netPremium,
+          finalPremium: newPolicy.finalPremium,
+          payInODPercentage: 0,
+          payInTPPercentage: 0,
+          payInODAmount: 0,
+          payInTPAmount: 0,
+          payOutODPercentage: 0,
+          payOutTPPercentage: 0,
+          payOutODAmount: 0,
+          payOutTPAmount: 0,
+          payInCommission: 0,
+          payOutCommission: 0,
+          createdBy: newPolicy.createdBy,
+        });
+
+        await newMotorPolicyPayment.save();
       }
     }
 
-    // Save hashes to avoid re-uploading the same file
     storedHashes.push(fileHash);
-    fs.writeFileSync(hashFilePath, JSON.stringify(storedHashes, null, 2));
-
-    res.status(200).json({ message: "Motor policies uploaded successfully." });
+    fs.writeFileSync(hashFilePath, JSON.stringify(storedHashes));
+    res.status(200).json({
+      message: "File uploaded and data extracted successfully.",
+      data: extractedData,
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).send("Internal Server Error");
+    console.error("Error occurred while uploading file:", error);
+    res.status(500).json({ message: "Internal server error." });
   }
 };
 
