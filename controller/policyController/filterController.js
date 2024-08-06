@@ -678,7 +678,7 @@ export const getPoliciesByDateRangeAndPartnerId = async (req, res) => {
           updatedOn: policy.updatedOn,
           isActive: policy.isActive,
           createdOn: policy.createdOn,
-          issueDate: policy.issueDate,
+          policyDate: policy.issueDate,
           paymentId: payment ? payment._id : null,
           payInODPercentage: payment ? payment.payInODPercentage : null,
           payInTPPercentage: payment ? payment.payInTPPercentage : null,
