@@ -845,7 +845,6 @@ export const validatePolicyNumber = async (req, res) => {
 
 // Update Motor Policy by ID
 export const updateMotorPolicy = async (req, res) => {
-  // Middleware to handle file uploads
   upload(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ message: err.message });
@@ -938,8 +937,6 @@ export const updateMotorPolicy = async (req, res) => {
         updatedBy: updatedBy || "system",
         updatedOn: new Date(),
       };
-
-      // Check if partnerId and partnerName are provided in the request body
       if (partnerId !== undefined) {
         formData.partnerId = partnerId;
       }
@@ -949,12 +946,10 @@ export const updateMotorPolicy = async (req, res) => {
 
       const fileDetails = {};
 
-      // Process uploaded files if available
       if (req.files && Object.keys(req.files).length > 0) {
         Object.keys(req.files).forEach((key) => {
           fileDetails[key] = req.files[key][0].filename;
         });
-        // Merge file details into formData
         Object.assign(formData, fileDetails);
       }
 
@@ -968,6 +963,18 @@ export const updateMotorPolicy = async (req, res) => {
         return res
           .status(404)
           .json({ status: "error", message: "Motor Policy not found" });
+      }
+      if (partnerId !== undefined || partnerName !== undefined) {
+        await MotorPolicyPaymentModel.updateMany(
+          { policyNumber: updatedForm.policyNumber },
+          {
+            $set: {
+              partnerId: partnerId || updatedForm.partnerId,
+              partnerName: partnerName || updatedForm.partnerName,
+              updatedOn: new Date(),
+            },
+          }
+        );
       }
 
       res.status(200).json({
