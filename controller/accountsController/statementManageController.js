@@ -30,6 +30,44 @@ export const getAllStatements = async (req, res) => {
   }
 };
 
+// Read statements by partner ID
+export const getStatementsByPartnerId = async (req, res) => {
+  const { partnerId } = req.params;
+
+  if (!partnerId) {
+    return res.status(400).json({
+      message: "Missing required query parameter: partnerId",
+      success: false,
+      status: "error",
+    });
+  }
+
+  try {
+    const statements = await StatementManage.find({ partnerId });
+    if (!statements.length) {
+      return res.status(404).json({
+        message: "No statements found for the given partnerId",
+        success: false,
+        status: "error",
+      });
+    }
+
+    res.status(200).json({
+      message: "Statements retrieved successfully",
+      data: statements,
+      success: true,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving statements",
+      error: error.message,
+      success: false,
+      status: "error",
+    });
+  }
+};
+
 // Read a single statement by ID
 export const getStatementById = async (req, res) => {
   try {
