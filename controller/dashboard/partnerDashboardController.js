@@ -6,7 +6,7 @@ import StatementManage from "../../models/accountsModels/statementManageSchema.j
 
 // Controller function to count policies by partnerId and category
 export const getPartnerDashboardCount = async (req, res) => {
-  const { partnerId } = req.params;
+  const { partnerId, startDate, endDate } = req.query;
 
   if (!partnerId) {
     return res.status(400).json({
@@ -15,13 +15,15 @@ export const getPartnerDashboardCount = async (req, res) => {
     });
   }
 
-  try {
-    // Aggregate total count of policies for the specified partnerId
-    const totalPolicies = await MotorPolicyModel.countDocuments({ partnerId });
+  const dateFilter = {
+    $gte: new Date(startDate),
+    $lte: new Date(endDate),
+  };
 
+  try {
     // Aggregate count of policies by category for the specified partnerId
     const policyCounts = await MotorPolicyModel.aggregate([
-      { $match: { partnerId } },
+      { $match: { partnerId, issueDate: dateFilter } },
       { $group: { _id: '$category', count: { $sum: 1 } } },
     ]);
 
@@ -32,14 +34,14 @@ export const getPartnerDashboardCount = async (req, res) => {
 
     // Aggregate net premium for the specified partnerId
     const netPremiumAggregate = await MotorPolicyModel.aggregate([
-      { $match: { partnerId } },
+      { $match: { partnerId, issueDate: dateFilter } },
       { $group: { _id: null, totalNetPremium: { $sum: '$netPremium' } } },
     ]);
     const netPremium = netPremiumAggregate.length > 0 ? netPremiumAggregate[0].totalNetPremium : 0;
 
     // Aggregate lead counts for the specified partnerId
     const leadCounts = await Lead.aggregate([
-      { $match: { partnerId } },
+      { $match: { partnerId, createdOn: dateFilter } },
       { $group: { _id: "$status", count: { $sum: 1 } } },
     ]);
 
@@ -60,14 +62,14 @@ export const getPartnerDashboardCount = async (req, res) => {
 
     // Aggregate reward (totalPayOutCommission) for the specified partnerId
     const rewardAggregate = await MotorPolicyPaymentModel.aggregate([
-      { $match: { partnerId } },
+      { $match: { partnerId, policyDate: dateFilter } },
       { $group: { _id: null, totalPayOutCommission: { $sum: '$payOutCommission' } } },
     ]);
     const reward = rewardAggregate.length > 0 ? rewardAggregate[0].totalPayOutCommission : 0;
 
     // Aggregate booking requests by status for the specified partnerId
     const bookingCounts = await BookingRequest.aggregate([
-      { $match: { partnerId } },
+      { $match: { partnerId, createdOn: dateFilter } },
       { $group: { _id: "$bookingStatus", count: { $sum: 1 } } },
     ]);
 
@@ -95,7 +97,7 @@ export const getPartnerDashboardCount = async (req, res) => {
 
     // Aggregate total payOutAmount for the specified partnerId
     const payOutAmountAggregate = await MotorPolicyPaymentModel.aggregate([
-      { $match: { partnerId } },
+      { $match: { partnerId, policyDate: dateFilter } },
       { $group: { _id: null, totalPayOutAmount: { $sum: '$payOutAmount' } } },
     ]);
     const payOutAmount = payOutAmountAggregate.length > 0 ? payOutAmountAggregate[0].totalPayOutAmount : 0;
