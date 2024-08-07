@@ -2,6 +2,7 @@ import MotorPolicyModel from '../../models/policyModel/motorpolicySchema.js';
 import MotorPolicyPaymentModel from '../../models/policyModel/motorPolicyPaymentSchema.js';
 import Lead from '../../models/partnerModels/leadGenerateSchema.js';
 import BookingRequest from "../../models/bookingModel/bookingRequestSchema.js";
+import StatementManage from "../../models/accountsModels/statementManageSchema.js";
 
 // Controller function to count policies by partnerId and category
 export const getPartnerDashboardCount = async (req, res) => {
@@ -48,6 +49,7 @@ export const getPartnerDashboardCount = async (req, res) => {
       formattedLeadCounts[lead._id] = lead.count;
       totalLead += lead.count;
     });
+
     // Prepare leadCounts dynamically
     const leadRequests = {
       "Total Lead": totalLead,
@@ -84,6 +86,20 @@ export const getPartnerDashboardCount = async (req, res) => {
       bookingRequests[`${key.charAt(0).toUpperCase()}${key.slice(1)} Booking`] = formattedBookingCounts[key];
     });
 
+    // Aggregate total balance for the specified partnerId
+    const balanceAggregate = await StatementManage.aggregate([
+      { $match: { partnerId } },
+      { $group: { _id: null, totalBalance: { $sum: '$partnerBalance' } } },
+    ]);
+    const balance = balanceAggregate.length > 0 ? balanceAggregate[0].totalBalance : 0;
+
+    // Aggregate total payOutAmount for the specified partnerId
+    const payOutAmountAggregate = await MotorPolicyPaymentModel.aggregate([
+      { $match: { partnerId } },
+      { $group: { _id: null, totalPayOutAmount: { $sum: '$payOutAmount' } } },
+    ]);
+    const payOutAmount = payOutAmountAggregate.length > 0 ? payOutAmountAggregate[0].totalPayOutAmount : 0;
+
     const data = {
       message: 'Partner dashboard counts retrieved successfully',
       data: [
@@ -93,6 +109,8 @@ export const getPartnerDashboardCount = async (req, res) => {
           },
           commissions: {
             'PayOut Commission': reward,
+            'Balance': balance,
+            'Paid Amount': payOutAmount,
           },
           policyCounts: formattedPolicyCounts,
           bookingRequests: bookingRequests,
