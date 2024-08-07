@@ -6,7 +6,7 @@ import StatementManage from "../../models/accountsModels/statementManageSchema.j
 
 // Controller function to count policies by partnerId and category
 export const getPartnerDashboardCount = async (req, res) => {
-  const { partnerId, startDate, endDate } = req.query;
+  const { partnerId } = req.query;
 
   if (!partnerId) {
     return res.status(400).json({
@@ -15,9 +15,13 @@ export const getPartnerDashboardCount = async (req, res) => {
     });
   }
 
+  const startDate = new Date(req.query.startDate);
+  const endDate = new Date(req.query.endDate);
+  endDate.setHours(23, 59, 59, 999);
+  
   const dateFilter = {
-    $gte: new Date(startDate),
-    $lte: new Date(endDate),
+    $gte: startDate,
+    $lte: endDate,
   };
 
   try {
