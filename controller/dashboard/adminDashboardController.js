@@ -15,6 +15,13 @@ import Account from "../../models/accountsModels/accountSchema.js";
 
 // Controller function to get dashboard count
 export const getDashboardCount = async (req, res) => {
+  const { startDate, endDate } = req.query;
+
+  const dateFilter = {
+    $gte: new Date(startDate),
+    $lte: new Date(endDate),
+  };
+
   try {
     // Count users by role
     const roleCounts = await UserProfileModel.aggregate([
@@ -45,6 +52,7 @@ export const getDashboardCount = async (req, res) => {
 
     // Count policies by category and calculate net and final premiums
     const policyCounts = await MotorPolicyModel.aggregate([
+      { $match: { issueDate: dateFilter } },
       {
         $group: {
           _id: {
@@ -56,6 +64,7 @@ export const getDashboardCount = async (req, res) => {
     ]);
 
     const netPremiums = await MotorPolicyModel.aggregate([
+      { $match: { issueDate: dateFilter } },
       {
         $group: {
           _id: null,
@@ -80,39 +89,40 @@ export const getDashboardCount = async (req, res) => {
     const finalPremium =
       netPremiums.length > 0 ? netPremiums[0].FinalPremium : 0;
 
-    // Sum payInCommission and payOutCommission
+    // Sum payInCommission, payInAmount, payOutCommission, and payInBalance
     const commissionSums = await MotorPolicyPaymentModel.aggregate([
+      { $match: { policyDate: dateFilter } },
       {
         $group: {
           _id: null,
-          totalPayInCommission: { $sum: "$payInCommission" },
-          totalPayOutCommission: { $sum: "$payOutCommission" },
-          totalPayInAmount: { $sum: "$payInAmount" },
+          totalPayIn: { $sum: "$payInCommission" },
+          receivedAmount: { $sum: "$payInAmount" },
           totalPayInBalance: { $sum: "$payInBalance" },
+          totalPartnerPayout: { $sum: "$payOutCommission" },
         },
       },
       {
         $project: {
           _id: 0,
-          totalPayInCommission: 1,
-          totalPayOutCommission: 1,
-          totalPayInAmount: 1,
+          totalPayIn: 1,
+          receivedAmount: 1,
           totalPayInBalance: 1,
+          totalPartnerPayout: 1,
         },
       },
     ]);
 
-    const totalPayInCommission =
-      commissionSums.length > 0 ? commissionSums[0].totalPayInCommission : 0;
-    const totalPayOutCommission =
-      commissionSums.length > 0 ? commissionSums[0].totalPayOutCommission : 0;
-    const totalPayInAmount =
-      commissionSums.length > 0 ? commissionSums[0].totalPayInAmount : 0;
-    const totalPayInBalance =
-      commissionSums.length > 0 ? commissionSums[0].totalPayInBalance : 0;
+    const totalPayIn =
+      commissionSums.length > 0 ? commissionSums[0].totalPayIn : 0;
+    const receivedAmount =
+      commissionSums.length > 0 ? commissionSums[0].receivedAmount : 0;
+    const totalPayInBalance = totalPayIn - receivedAmount;
+    const totalPartnerPayout =
+      commissionSums.length > 0 ? commissionSums[0].totalPartnerPayout : 0;
 
     // Count booking requests by status
     const bookingCounts = await BookingRequest.aggregate([
+      { $match: { createdOn: dateFilter } },
       { $group: { _id: "$bookingStatus", count: { $sum: 1 } } },
     ]);
 
@@ -125,6 +135,7 @@ export const getDashboardCount = async (req, res) => {
 
     // Count leads by status
     const leadCounts = await Lead.aggregate([
+      { $match: { createdOn: dateFilter } },
       { $group: { _id: "$status", count: { $sum: 1 } } },
     ]);
 
@@ -135,27 +146,15 @@ export const getDashboardCount = async (req, res) => {
       totalLead += lead.count;
     });
 
-    // Count Roles
-    const roleCount = await Roles.countDocuments();
-    // Count brokers
+    // Calculate distinct roles
+    const distinctRoles = await UserProfileModel.distinct("role");
+
     const brokerCount = await Broker.countDocuments();
-
-    // Count makes
     const makeCount = await Make.countDocuments();
-
-    // Count models
     const modelCount = await Model.countDocuments();
-
-    // Count categories
     const categoryCount = await Category.countDocuments();
-
-    // Count companies
     const companyCount = await Company.countDocuments();
-
-    // Count product types
     const productTypeCount = await ProductType.countDocuments();
-
-    // Count sub-product types
     const subProductTypeCount = await SubProductType.countDocuments();
 
     // Prepare bookingRequests dynamically
@@ -167,7 +166,7 @@ export const getDashboardCount = async (req, res) => {
         formattedBookingCounts[key];
     });
 
-    // Prepare leadCounts dynamically
+    // Prepare leadRequests dynamically
     const leadRequests = {
       "Total Lead": totalLead,
     };
@@ -200,23 +199,22 @@ export const getDashboardCount = async (req, res) => {
       message: "Dashboard Count retrieved successfully",
       data: [
         {
-          roleCounts: totalRoles,
-          detailedRoleCounts: formattedRoleCounts,
+          TotalRoles: distinctRoles.length,
+          roleCounts: formattedRoleCounts,
           policyCounts: formattedPolicyCounts,
           premiums: {
             "Net Premium": netPremium,
             "Final Premium": finalPremium,
           },
           commissions: {
-            "PayIn Commission": totalPayInCommission,
-            "PayOut Commission": totalPayOutCommission,
+            "Total PayIn Amount": totalPayIn,
+            "Received Amount": receivedAmount,
             "PayIn Balance": totalPayInBalance,
-            "PayIn Amount": totalPayInAmount,
+            "Total Partner Payout": totalPartnerPayout,
           },
           bookingRequests: bookingRequests,
           leadCounts: leadRequests,
           adminCounts: {
-            Roles: roleCount,
             Brokers: brokerCount,
             Makes: makeCount,
             Models: modelCount,
