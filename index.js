@@ -181,7 +181,7 @@ app.use("/api/branches", branch);
 app.use("/api/dashboard", adminDashboard);
 
 // partner dashboard
-app.use("/api/dashboard", partnerDashboardRoutes);
+app.use("/api/partner-dashboard", partnerDashboardRoutes);
 
 // partner dashboard
 app.use("/api/booking-dashboard", bookingDashboardRoutes);

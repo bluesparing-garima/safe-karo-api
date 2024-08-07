@@ -25,7 +25,26 @@ const statementManageSchema = new Schema({
   accountId:{
     type: String,
     trim: true,
+  },
+  createdOn: { type: Date, default: Date.now },
+  updatedOn: { type: Date, default: Date.now },
+});
+
+// Middleware to update timestamps on save
+statementManageSchema.pre('save', function (next) {
+  if (this.isNew) {
+      this.createdOn = Date.now();
+      this.updatedOn = null;
+  } else {
+      this.updatedOn = Date.now();
   }
+  next();
+});
+
+// Middleware to handle updates specifically
+statementManageSchema.pre('findOneAndUpdate', function (next) {
+  this._update.updatedOn = Date.now(); 
+  next();
 });
 
 const StatementManage = mongoose.model(
