@@ -83,9 +83,9 @@ export const getStatementById = async (req, res) => {
 
 // Update a statement by ID
 export const updateStatement = async (req, res) => {
-  const { partnerBalance, payOutAmount, startDate, endDate, partnerID } = req.body;
+  const { partnerBalance, payOutAmount, startDate, endDate, partnerId } = req.body;
 
-  if (!partnerBalance || !payOutAmount|| !startDate || !endDate || !partnerID) {
+  if (!partnerBalance || !payOutAmount|| !startDate || !endDate || !partnerId) {
     return res.status(400).json({ message: 'All fields are required', status: 'error' });
   }
 
@@ -95,7 +95,7 @@ export const updateStatement = async (req, res) => {
       payOutAmount,
       startDate,
       endDate,
-      partnerID
+      partnerId
     }, { new: true });
 
     if (!updatedStatement) {
