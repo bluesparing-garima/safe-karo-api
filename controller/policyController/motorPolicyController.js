@@ -136,7 +136,7 @@ export const uploadMotorPolicy = async (req, res) => {
         weight: row.weight || row["Weight"] || "",
       };
     });
-    
+
     for (const data of extractedData) {
       const query = { policyNumber: data.policyNumber };
 
@@ -247,6 +247,8 @@ export const uploadMotorPolicy = async (req, res) => {
           payOutTPAmount: 0,
           payInCommission: 0,
           payOutCommission: 0,
+          payOutPaymentStatus: "UnPaid",
+          payInPaymentStatus: "UnPaid",
           policyDate: newPolicy.issueDate,
           createdBy: newPolicy.createdBy,
         });
@@ -498,8 +500,8 @@ export const createMotorPolicy = async (req, res) => {
         payOutCommission: savedMotorPolicy.payOutCommission || 0,
         payInAmount: savedMotorPolicy.payInAmount || 0,
         payOutAmount: savedMotorPolicy.payOutAmount || 0,
-        payInPaymentStatus: savedMotorPolicy.payInPaymentStatus,
-        payOutPaymentStatus: savedMotorPolicy.payOutPaymentStatus,
+        payInPaymentStatus: savedMotorPolicy.payInPaymentStatus || "UnPaid",
+        payOutPaymentStatus: savedMotorPolicy.payOutPaymentStatus || "UnPaid",
         policyDate: formattedIssueDate, // Use formatted date
         createdBy: savedMotorPolicy.createdBy,
       });
