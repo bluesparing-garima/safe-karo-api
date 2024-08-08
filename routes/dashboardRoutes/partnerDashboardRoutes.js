@@ -3,6 +3,6 @@ import { getPartnerDashboardCount } from "../../controller/dashboard/partnerDash
 import logActivity from "../../middlewares/logActivity.js";
 const router = express.Router();
 
-router.get("/:partnerId", logActivity, getPartnerDashboardCount);
-
+router.get("/", logActivity, getPartnerDashboardCount);
+//router.get("/:partnerId", logActivity, getPartnerDashboardCount);
 export default router;
