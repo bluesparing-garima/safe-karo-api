@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import motorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
 import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
 import debitModel from "../../models/accountsModels/debitsSchema.js";
-import StatementManage from "../../models/accountsModels/statementManageSchema.js";
+import creditAndDebitSchema from "../../models/accountsModels/creditAndDebitSchema.js";
 
 // Create a new motor policy payment
 export const createMotorPolicyPayment = async (req, res) => {
@@ -263,7 +263,7 @@ export const getUnPaidAndPartialPaidPayments = async (req, res) => {
       },
     ]);
 
-    const partnerStatement = await StatementManage.findOne({ partnerId }).sort({ _id: -1 });
+    const partnerStatement = await creditAndDebitSchema.findOne({ partnerId }).sort({ _id: -1 });
 
     const totalPartnerBalance = partnerStatement ? partnerStatement.partnerBalance : 0;
 
