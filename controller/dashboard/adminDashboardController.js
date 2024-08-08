@@ -43,11 +43,13 @@ export const getDashboardCount = async (req, res) => {
       { $group: { _id: "$normalizedRole", count: { $sum: 1 } } },
     ]);
 
-    const formattedRoleCounts = {};
-    let totalRoles = 0;
+    const distinctRoles = await UserProfileModel.distinct("role");
+
+    const formattedRoleCounts = {
+      Total: distinctRoles.length,
+    };
     roleCounts.forEach((role) => {
       formattedRoleCounts[role._id] = role.count;
-      totalRoles += role.count;
     });
 
     // Count policies by category and calculate net and final premiums
@@ -146,9 +148,6 @@ export const getDashboardCount = async (req, res) => {
       totalLead += lead.count;
     });
 
-    // Calculate distinct roles
-    const distinctRoles = await UserProfileModel.distinct("role");
-
     const brokerCount = await Broker.countDocuments();
     const makeCount = await Make.countDocuments();
     const modelCount = await Model.countDocuments();
@@ -199,7 +198,6 @@ export const getDashboardCount = async (req, res) => {
       message: "Dashboard Count retrieved successfully",
       data: [
         {
-          TotalRoles: distinctRoles.length,
           roleCounts: formattedRoleCounts,
           policyCounts: formattedPolicyCounts,
           premiums: {
