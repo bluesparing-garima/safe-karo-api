@@ -1,5 +1,33 @@
 import debits from "../../models/accountsModels/debitsSchema.js";
 
+export const getAllDebits = async (req, res) => {
+  try {
+    const allDebitRecords = await debits.find({});
+
+    if (!allDebitRecords || allDebitRecords.length === 0) {
+      return res.status(404).json({
+        message: "No debit records found",
+        success: false,
+        status: "error",
+      });
+    }
+
+    res.status(200).json({
+      message: "All debit records retrieved successfully",
+      data: allDebitRecords,
+      success: true,
+      status: "success",
+    });
+  } catch (err) {
+    res.status(500).json({
+      message: "An error occurred while retrieving all debit records",
+      error: err.message,
+      success: false,
+      status: "error",
+    });
+  }
+};
+
 export const getDebitsByPartnerId = async (req, res) => {
   const { partnerId } = req.params;
 
