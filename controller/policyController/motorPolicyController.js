@@ -108,7 +108,7 @@ export const uploadMotorPolicy = async (req, res) => {
         netPremium: row.netPremium || row["Net Premium"] || "",
         finalPremium: row.finalPremium || row["Final Premium"] || "",
         paymentMode: row.paymentMode || row["Payment Mode"] || "",
-        policyCreatedBy: "admin",
+        policyCreatedBy: "partner",
         partnerId: row.partnerId || row["Partner ID"] || "",
         partnerName: row.partnerName || row["Partner Name"] || "",
         relationshipManagerId:
@@ -939,6 +939,7 @@ export const updateMotorPolicy = async (req, res) => {
         updatedBy: updatedBy || "system",
         updatedOn: new Date(),
       };
+
       if (partnerId !== undefined) {
         formData.partnerId = partnerId;
       }
@@ -966,6 +967,74 @@ export const updateMotorPolicy = async (req, res) => {
           .status(404)
           .json({ status: "error", message: "Motor Policy not found" });
       }
+
+      // Commission calculation and update
+      const { od: updatedOD, tp: updatedTP } = formData;
+
+      const payInODPercentage = req.body.payInODPercentage;
+      const payInTPPercentage = req.body.payInTPPercentage;
+      const payOutODPercentage = req.body.payOutODPercentage;
+      const payOutTPPercentage = req.body.payOutTPPercentage;
+
+      let payInCommission = 0;
+      let payOutCommission = 0;
+      let updatedFields = {};
+
+      if (
+        payInODPercentage !== undefined &&
+        payInTPPercentage !== undefined
+      ) {
+        const calculatedPayInODAmount = Math.round(
+          (updatedOD * payInODPercentage) / 100
+        );
+        const calculatedPayInTPAmount = Math.round(
+          (updatedTP * payInTPPercentage) / 100
+        );
+        payInCommission = Math.round(
+          calculatedPayInODAmount + calculatedPayInTPAmount
+        );
+
+        updatedFields = {
+          ...updatedFields,
+          payInODPercentage,
+          payInTPPercentage,
+          payInODAmount: calculatedPayInODAmount,
+          payInTPAmount: calculatedPayInTPAmount,
+          payInCommission,
+        };
+      }
+
+      if (
+        payOutODPercentage !== undefined &&
+        payOutTPPercentage !== undefined
+      ) {
+        const calculatedPayOutODAmount = Math.round(
+          (updatedOD * payOutODPercentage) / 100
+        );
+        const calculatedPayOutTPAmount = Math.round(
+          (updatedTP * payOutTPPercentage) / 100
+        );
+        payOutCommission = Math.round(
+          calculatedPayOutODAmount + calculatedPayOutTPAmount
+        );
+
+        updatedFields = {
+          ...updatedFields,
+          payOutODPercentage,
+          payOutTPPercentage,
+          payOutODAmount: calculatedPayOutODAmount,
+          payOutTPAmount: calculatedPayOutTPAmount,
+          payOutCommission,
+        };
+      }
+
+      if (Object.keys(updatedFields).length > 0) {
+        await MotorPolicyPaymentModel.updateOne(
+          { policyNumber: updatedForm.policyNumber },
+          { $set: updatedFields }
+        );
+      }
+
       if (partnerId !== undefined || partnerName !== undefined) {
         await MotorPolicyPaymentModel.updateMany(
           { policyNumber: updatedForm.policyNumber },

@@ -126,6 +126,7 @@ export const policyStatusManage = async (req, res) => {
       policyNumber,
       payInAmount,
       payOutAmount,
+      payOutCommission,
       payInPaymentStatus,
       payOutPaymentStatus,
       payInBalance,
@@ -139,6 +140,7 @@ export const policyStatusManage = async (req, res) => {
           policyNumber,
           payInAmount,
           payOutAmount,
+          payOutCommission,
           payInPaymentStatus,
           payOutPaymentStatus,
           payInBalance,
@@ -162,18 +164,21 @@ export const policyStatusManage = async (req, res) => {
         let existingDebit = await debitModel.findOne({ policyNumber });
 
         if (existingDebit) {
-          existingDebit.paidAmount = payOutAmount;
-          existingDebit.payOutAmount = payOutAmount;
+          // Update existing debit record
+          existingDebit.payOutAmount = payOutAmount; 
+          existingDebit.payOutCommission = payOutCommission;
           existingDebit.payOutPaymentStatus = payOutPaymentStatus;
           existingDebit.payOutBalance = payOutBalance;
           existingDebit.updatedBy = updatedBy;
           existingDebit.updatedOn = Date.now();
+          await existingDebit.save();
         } else {
+          // Create new debit record
           const newDebit = new debitModel({
             policyNumber,
             partnerId: existingPayment.partnerId,
-            paidAmount: payOutAmount,
-            payOutAmount: payOutAmount,
+            payOutAmount,
+            payOutCommission, 
             payOutPaymentStatus,
             payOutBalance,
             policyDate: existingPayment.policyDate,
@@ -396,7 +401,6 @@ export const updateMotorPolicyPayment = async (req, res) => {
   }
 };
 
-
 // Delete motor policy payment by policyId
 export const deleteMotorPolicyPayment = async (req, res) => {
   try {
@@ -423,4 +427,3 @@ export const deleteMotorPolicyPayment = async (req, res) => {
     });
   }
 };
-motorPolicyPayment
