@@ -2,7 +2,7 @@ import MotorPolicyModel from '../../models/policyModel/motorpolicySchema.js';
 import MotorPolicyPaymentModel from '../../models/policyModel/motorPolicyPaymentSchema.js';
 import Lead from '../../models/partnerModels/leadGenerateSchema.js';
 import BookingRequest from "../../models/bookingModel/bookingRequestSchema.js";
-import StatementManage from "../../models/accountsModels/statementManageSchema.js";
+import creditAndDebitSchema from '../../models/accountsModels/creditAndDebitSchema.js';
 
 // Controller function to count policies by partnerId and category
 export const getPartnerDashboardCount = async (req, res) => {
@@ -100,7 +100,7 @@ export const getPartnerDashboardCount = async (req, res) => {
     });
 
     // Aggregate total balance for the specified partnerId
-    const balanceAggregate = await StatementManage.aggregate([
+    const balanceAggregate = await creditAndDebitSchema.aggregate([
       { $match: { partnerId } },
       { $group: { _id: null, totalBalance: { $sum: '$partnerBalance' } } },
     ]);
