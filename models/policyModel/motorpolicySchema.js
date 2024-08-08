@@ -18,7 +18,7 @@ const MotorPolicySchema = new mongoose.Schema({
   fuelType: { type: String, trim: true },
   rto: { type: String, trim: true },
   vehicleNumber: { type: String, trim: true },
-  seatingCapacity: { type: Number, trim: true },
+  seatingCapacity: { type: String, trim: true },
   weight: { type: Number, trim: true },
   cc: { type: Number, trim: true },
   ncb: { type: String, trim: true },

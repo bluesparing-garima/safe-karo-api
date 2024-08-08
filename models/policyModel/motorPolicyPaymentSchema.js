@@ -21,8 +21,8 @@ const motorPolicyPaymentSchema = new mongoose.Schema({
   payOutCommission: { type: Number, trim: true }, // payOutOD + payOutTP
   payInAmount: { type: Number, default: 0 },
   payOutAmount: { type: Number, default: 0 },
-  payInPaymentStatus: { type: String, trim: true,default: "UnPaid"},
-  payOutPaymentStatus: { type: String, trim: true,default: "UnPaid"},
+  payInPaymentStatus: { type: String, trim: true,default: "Unpaid"},
+  payOutPaymentStatus: { type: String, trim: true,default: "Unpaid"},
   payInBalance: { type: Number, default: 0 },
   payOutBalance: { type: Number, default: 0 },
   policyDate:{ type: Date},
