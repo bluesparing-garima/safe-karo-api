@@ -258,29 +258,15 @@ export const getUnPaidAndPartialPaidPayments = async (req, res) => {
       },
     ]);
 
-    const partnerStatements = await StatementManage.aggregate([
-      {
-        $match: { partnerId },
-      },
-      {
-        $group: {
-          _id: null,
-          totalPartnerBalance: { $sum: "$partnerBalance" },
-        },
-      },
-    ]);
+    const partnerStatement = await StatementManage.findOne({ partnerId }).sort({ _id: -1 });
 
-    const totalPartnerBalance =
-      partnerStatements.length > 0
-        ? partnerStatements[0].totalPartnerBalance
-        : 0;
+    const totalPartnerBalance = partnerStatement ? partnerStatement.partnerBalance : 0;
 
     const result = results[0] || { totalAmount: 0, payments: [] };
     const adjustedTotalAmount = result.totalAmount - totalPartnerBalance;
 
     res.status(200).json({
-      message:
-        "Motor policy payments for status UnPaid and Partial Paid retrieved successfully",
+      message: "Motor policy payments for status UnPaid and Partial Paid retrieved successfully",
       data: {
         payments: result.payments,
         totalAmount: result.totalAmount,
@@ -437,3 +423,4 @@ export const deleteMotorPolicyPayment = async (req, res) => {
     });
   }
 };
+motorPolicyPayment
