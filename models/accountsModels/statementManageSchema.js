@@ -23,8 +23,7 @@ const statementManageSchema = new Schema({
     trim: true,
   },
   accountId:{
-    type: String,
-    trim: true,
+     type: mongoose.Schema.Types.ObjectId, ref: 'Account' 
   },
   createdOn: { type: Date, default: Date.now },
   updatedOn: { type: Date, default: Date.now },

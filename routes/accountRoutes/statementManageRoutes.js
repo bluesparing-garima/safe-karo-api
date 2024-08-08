@@ -6,14 +6,30 @@ import {
   getStatementsByPartnerId,
   getStatementById,
   updateStatement,
-  deleteStatement
+  deleteStatement,
+  getStatementsByPartnerIdAndDateRangeQuery
 } from '../../controller/accountsController/statementManageController.js';
 import logActivity from '../../middlewares/logActivity.js';
-router.post('/manage', logActivity,createStatement);
-router.get('/manage', logActivity,getAllStatements);
-router.get('/manage/:partnerId', getStatementsByPartnerId);
-router.get('/manage/:id', logActivity,getStatementById);
-router.put('/manage/:id', logActivity,updateStatement);
-router.delete('/manage/:id',logActivity, deleteStatement);
+
+// Create a new statement
+router.post('/manage', logActivity, createStatement);
+
+// Get all statements
+router.get('/manage', logActivity, getAllStatements);
+
+// Get statements by partner ID
+router.get('/manage/:partnerId', logActivity, getStatementsByPartnerId);
+
+// Get a single statement by ID
+router.get('/manage/:id', logActivity, getStatementById);
+
+// Update a statement by ID
+router.put('/manage/:id', logActivity, updateStatement);
+
+// Delete a statement by ID
+router.delete('/manage/:id', logActivity, deleteStatement);
+
+// Get statements by partnerId and date range (query parameters)
+router.get('/date-range', logActivity, getStatementsByPartnerIdAndDateRangeQuery);
 
 export default router;
