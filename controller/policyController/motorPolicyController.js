@@ -869,14 +869,14 @@ export const updateMotorPolicy = async (req, res) => {
         vehicleAge,
         make,
         model,
-        fuelType,
+        fuelType, 
         rto,
         vehicleNumber,
         seatingCapacity,
         weight,
         cc,
         ncb,
-        policyNumber,
+        policyNumber, // First declaration of policyNumber
         fullName,
         emailId,
         phoneNumber,
@@ -956,6 +956,7 @@ export const updateMotorPolicy = async (req, res) => {
         Object.assign(formData, fileDetails);
       }
 
+      // Update the MotorPolicyModel with new form data
       const updatedForm = await MotorPolicyModel.findByIdAndUpdate(
         req.params.id,
         formData,
@@ -968,89 +969,63 @@ export const updateMotorPolicy = async (req, res) => {
           .json({ status: "error", message: "Motor Policy not found" });
       }
 
-      // Commission calculation and update
-      const { od: updatedOD, tp: updatedTP } = formData;
+      // Now update the MotorPolicyPaymentModel with the updated od and tp values
+      const { policyNumber: updatedPolicyNumber, od: updatedOD, tp: updatedTP } = updatedForm;
 
-      const payInODPercentage = req.body.payInODPercentage;
-      const payInTPPercentage = req.body.payInTPPercentage;
-      const payOutODPercentage = req.body.payOutODPercentage;
-      const payOutTPPercentage = req.body.payOutTPPercentage;
+      // Fetch the existing payment record to get dynamic percentages
+      const existingPayment = await MotorPolicyPaymentModel.findOne({ policyNumber: updatedPolicyNumber });
 
-      let payInCommission = 0;
-      let payOutCommission = 0;
-      let updatedFields = {};
-
-      if (
-        payInODPercentage !== undefined &&
-        payInTPPercentage !== undefined
-      ) {
-        const calculatedPayInODAmount = Math.round(
-          (updatedOD * payInODPercentage) / 100
-        );
-        const calculatedPayInTPAmount = Math.round(
-          (updatedTP * payInTPPercentage) / 100
-        );
-        payInCommission = Math.round(
-          calculatedPayInODAmount + calculatedPayInTPAmount
-        );
-
-        updatedFields = {
-          ...updatedFields,
-          payInODPercentage,
-          payInTPPercentage,
-          payInODAmount: calculatedPayInODAmount,
-          payInTPAmount: calculatedPayInTPAmount,
-          payInCommission,
-        };
+      if (!existingPayment) {
+        return res.status(404).json({
+          status: "error",
+          message: "Motor Policy Payment record not found",
+        });
       }
 
-      if (
-        payOutODPercentage !== undefined &&
-        payOutTPPercentage !== undefined
-      ) {
-        const calculatedPayOutODAmount = Math.round(
-          (updatedOD * payOutODPercentage) / 100
-        );
-        const calculatedPayOutTPAmount = Math.round(
-          (updatedTP * payOutTPPercentage) / 100
-        );
-        payOutCommission = Math.round(
-          calculatedPayOutODAmount + calculatedPayOutTPAmount
-        );
+      const {
+        payInODPercentage,
+        payInTPPercentage,
+        payOutODPercentage,
+        payOutTPPercentage,
+      } = existingPayment;
 
-        updatedFields = {
-          ...updatedFields,
-          payOutODPercentage,
-          payOutTPPercentage,
-          payOutODAmount: calculatedPayOutODAmount,
-          payOutTPAmount: calculatedPayOutTPAmount,
-          payOutCommission,
-        };
-      }
+      // Calculate the dynamic amounts and commissions based on the fetched percentages
+      const calculatedPayInODAmount = Math.round((updatedOD * payInODPercentage) / 100);
+      const calculatedPayInTPAmount = Math.round((updatedTP * payInTPPercentage) / 100);
+      const payInCommission = Math.round(calculatedPayInODAmount + calculatedPayInTPAmount);
 
-      if (Object.keys(updatedFields).length > 0) {
-        await MotorPolicyPaymentModel.updateOne(
-          { policyNumber: updatedForm.policyNumber },
-          { $set: updatedFields }
-        );
-      }
+      const calculatedPayOutODAmount = Math.round((updatedOD * payOutODPercentage) / 100);
+      const calculatedPayOutTPAmount = Math.round((updatedTP * payOutTPPercentage) / 100);
+      const payOutCommission = Math.round(calculatedPayOutODAmount + calculatedPayOutTPAmount);
 
-      if (partnerId !== undefined || partnerName !== undefined) {
-        await MotorPolicyPaymentModel.updateMany(
-          { policyNumber: updatedForm.policyNumber },
-          {
-            $set: {
-              partnerId: partnerId || updatedForm.partnerId,
-              partnerName: partnerName || updatedForm.partnerName,
-              updatedOn: new Date(),
-            },
-          }
-        );
+      const updatedPaymentFields = {
+        od: updatedOD,
+        tp: updatedTP,
+        payInODAmount: calculatedPayInODAmount,
+        payInTPAmount: calculatedPayInTPAmount,
+        payInCommission,
+        payOutODAmount: calculatedPayOutODAmount,
+        payOutTPAmount: calculatedPayOutTPAmount,
+        payOutCommission,
+      };
+
+      const updatedPayment = await MotorPolicyPaymentModel.findOneAndUpdate(
+        { policyNumber: updatedPolicyNumber },
+        { $set: updatedPaymentFields },
+        { new: true }
+      );
+
+      if (!updatedPayment) {
+        return res.status(404).json({
+          status: "error",
+          message: "Motor Policy Payment not found for the given policy number",
+        });
       }
 
       res.status(200).json({
-        message: `Motor Policy with ID ${req.params.id} updated successfully`,
-        data: updatedForm,
+        message: `Motor Policy and Payment updated successfully.`,
+        updatedForm,
+        updatedPayment,
         status: "success",
       });
     } catch (error) {
