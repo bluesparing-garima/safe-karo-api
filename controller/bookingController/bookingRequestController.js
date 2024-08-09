@@ -77,7 +77,7 @@ export const createBookingRequest = async (req, res) => {
         const updateStatus = "Booked";
         if (lead) {
           lead.status = updateStatus;
-          await lead.save();
+          await lead.updateOne();
           await newBooking.save();
           res.status(200).json({
             message: "Booking Request generated successfully",
