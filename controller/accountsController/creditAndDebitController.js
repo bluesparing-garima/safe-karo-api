@@ -76,6 +76,7 @@ export const createCreditAndDebit = async (req, res) => {
         { partnerId, policyNumber },
         {
           payOutAmount: amount,
+          payOutCommission: amount,
           payOutPaymentStatus: "Paid",
           payOutBalance: 0,
         },
@@ -94,6 +95,7 @@ export const createCreditAndDebit = async (req, res) => {
         policyNumber,
         partnerId,
         payOutAmount: motorPolicy.payOutAmount,
+        payOutCommission:motorPolicy.payOutCommission,
         payOutPaymentStatus: motorPolicy.payOutPaymentStatus,
         payOutBalance: 0,
         policyDate: motorPolicy.policyDate,
