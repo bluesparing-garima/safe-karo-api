@@ -51,7 +51,7 @@ export const createCreditAndDebit = async (req, res) => {
       partnerId,
       policyNumber,
       type: "debit",
-      accountType: "cutPay",
+      accountType: "CutPay",
     });
 
     if (existingMotorPolicyPayment && existingDebitEntry && existingCreditAndDebit) {
@@ -70,7 +70,7 @@ export const createCreditAndDebit = async (req, res) => {
       });
     }
 
-    if (accountType === "cutPay" && transactionType === "debit") {
+    if (accountType === "CutPay" && transactionType === "debit") {
       // Handle CutPay Debit Logic
       const motorPolicy = await MotorPolicyPayment.findOneAndUpdate(
         { partnerId, policyNumber },
