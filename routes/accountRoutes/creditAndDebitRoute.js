@@ -25,7 +25,6 @@ router.get("/broker-id", logActivity, getCreditDetailsByBrokerId);
 // Get All Details by PartnerId.
 router.get("/partner-id", logActivity, getDebitDetailsByPartnerId);
 
-
 // Filter
 router.get(
   "/broker-name",
