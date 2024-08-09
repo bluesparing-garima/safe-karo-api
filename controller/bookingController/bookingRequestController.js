@@ -1,5 +1,6 @@
 import upload from "../../middlewares/uploadMiddleware.js";
 import BookingRequestModel from "../../models/bookingModel/bookingRequestSchema.js";
+import leadGenerateModel from "../../models/partnerModels/leadGenerateSchema.js";
 import fs from "fs";
 import path from "path";
 
@@ -18,6 +19,7 @@ export const createBookingRequest = async (req, res) => {
 
     const {
       partnerId,
+      leadId,
       partnerName,
       relationshipManagerId,
       relationshipManagerName,
@@ -52,6 +54,7 @@ export const createBookingRequest = async (req, res) => {
       // Create new booking if policy number doesn't exist
       const newBooking = new BookingRequestModel({
         partnerId,
+        leadId,
         partnerName,
         relationshipManagerId,
         relationshipManagerName,
@@ -69,7 +72,15 @@ export const createBookingRequest = async (req, res) => {
         createdBy,
         isActive: isActive !== undefined ? isActive : true,
       });
+      // Update lead status if leadId is provided
 
+      if (leadId) {
+        const lead = await leadGenerateModel.findByIdAndUpdate(
+          leadId,
+          { status: "Booking Pending" },
+          { new: true } // This option returns the updated document
+        );
+      }
       await newBooking.save();
       res.status(200).json({
         message: "Booking Request generated successfully",
@@ -121,7 +132,6 @@ export const getAllBookingRequests = async (req, res) => {
       status: "success",
     });
   } catch (error) {
-    console.error("Error retrieving bookings:", error);
     res.status(500).json({
       message: "Error retrieving bookings",
       error: error.message,
@@ -316,8 +326,8 @@ export const updateBookingRequest = async (req, res) => {
 
 export const uploadFilesAndData = (req, res) => {
   upload.fields([
-    { name: 'rcFront', maxCount: 1 },
-    { name: 'rcBack', maxCount: 1 },
+    { name: "rcFront", maxCount: 1 },
+    { name: "rcBack", maxCount: 1 },
   ])(req, res, (err) => {
     if (err) {
       return res.status(400).json({ message: err });
