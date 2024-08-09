@@ -72,34 +72,27 @@ export const createBookingRequest = async (req, res) => {
         createdBy,
         isActive: isActive !== undefined ? isActive : true,
       });
-      if (leadId) {
-        const lead = leadGenerateModel.findOne(leadId);
-        const updateStatus = "Booked";
-        if (lead) {
-          lead.status = updateStatus;
-          await lead.updateOne();
-          await newBooking.save();
-          res.status(200).json({
-            message: "Booking Request generated successfully",
-            data: newBooking,
-            status: "success",
-          });
-        }
-      } else {
-        await newBooking.save();
-        res.status(200).json({
-          message: "Booking Request generated successfully",
-          data: newBooking,
-          status: "success",
-        });
+     // Update lead status if leadId is provided
+     if (leadId) {
+      const lead = await leadGenerateModel.findById(leadId);
+      if (lead) {
+        lead.status = "Booked";
+        await lead.updateOne();
       }
-    } catch (error) {
-      res.status(500).json({
-        message: "Error creating booking",
-        error: error.message,
-      });
     }
-  });
+    await newBooking.save();
+    res.status(200).json({
+      message: "Booking Request generated successfully",
+      data: newBooking,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error creating booking",
+      error: error.message,
+    });
+  }
+});
 };
 
 // Check PolicyNumber exist.
