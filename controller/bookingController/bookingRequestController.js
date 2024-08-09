@@ -1,5 +1,6 @@
 import upload from "../../middlewares/uploadMiddleware.js";
 import BookingRequestModel from "../../models/bookingModel/bookingRequestSchema.js";
+import leadGenerateModel from "../../models/partnerModels/leadGenerateSchema.js";
 import fs from "fs";
 import path from "path";
 
@@ -18,6 +19,7 @@ export const createBookingRequest = async (req, res) => {
 
     const {
       partnerId,
+      leadId,
       partnerName,
       relationshipManagerId,
       relationshipManagerName,
@@ -52,6 +54,7 @@ export const createBookingRequest = async (req, res) => {
       // Create new booking if policy number doesn't exist
       const newBooking = new BookingRequestModel({
         partnerId,
+        leadId,
         partnerName,
         relationshipManagerId,
         relationshipManagerName,
@@ -69,13 +72,27 @@ export const createBookingRequest = async (req, res) => {
         createdBy,
         isActive: isActive !== undefined ? isActive : true,
       });
-
-      await newBooking.save();
-      res.status(200).json({
-        message: "Booking Request generated successfully",
-        data: newBooking,
-        status: "success",
-      });
+      if (leadId) {
+        const lead = leadGenerateModel.findOne(leadId);
+        const updateStatus = "Booked";
+        if (lead) {
+          lead.status = updateStatus;
+          await lead.save();
+          await newBooking.save();
+          res.status(200).json({
+            message: "Booking Request generated successfully",
+            data: newBooking,
+            status: "success",
+          });
+        }
+      } else {
+        await newBooking.save();
+        res.status(200).json({
+          message: "Booking Request generated successfully",
+          data: newBooking,
+          status: "success",
+        });
+      }
     } catch (error) {
       res.status(500).json({
         message: "Error creating booking",
@@ -316,8 +333,8 @@ export const updateBookingRequest = async (req, res) => {
 
 export const uploadFilesAndData = (req, res) => {
   upload.fields([
-    { name: 'rcFront', maxCount: 1 },
-    { name: 'rcBack', maxCount: 1 },
+    { name: "rcFront", maxCount: 1 },
+    { name: "rcBack", maxCount: 1 },
   ])(req, res, (err) => {
     if (err) {
       return res.status(400).json({ message: err });
