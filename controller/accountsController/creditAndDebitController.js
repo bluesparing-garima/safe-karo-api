@@ -1,6 +1,9 @@
 import CreditAndDebit from "../../models/accountsModels/creditAndDebitSchema.js";
 import Account from "../../models/accountsModels/accountSchema.js";
+import MotorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
+import Debit from "../../models/accountsModels/debitsSchema.js";
 import motorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
+
 
 // Create a new credit and debit transaction
 export const createCreditAndDebit = async (req, res) => {
@@ -31,6 +34,121 @@ export const createCreditAndDebit = async (req, res) => {
 
     const transactionType = type.toLowerCase();
 
+    // Check if the CutPay amount has already been paid
+    const existingMotorPolicyPayment = await MotorPolicyPayment.findOne({
+      partnerId,
+      policyNumber,
+      payOutPaymentStatus: "Paid",
+    });
+
+    const existingDebitEntry = await Debit.findOne({
+      partnerId,
+      policyNumber,
+      payOutPaymentStatus: "Paid",
+    });
+
+    const existingCreditAndDebit = await CreditAndDebit.findOne({
+      partnerId,
+      policyNumber,
+      type: "debit",
+      accountType: "cutPay",
+    });
+
+    if (existingMotorPolicyPayment && existingDebitEntry && existingCreditAndDebit) {
+      return res.status(400).json({
+        status: "error",
+        message: "The CutPay amount has already been paid for this partner for this policy number.",
+      });
+    }
+
+    // Update the account balance and handle CutPay debit transactions
+    const account = await Account.findById(accountId);
+    if (!account) {
+      return res.status(404).json({
+        message: "Account not found",
+        status: "error",
+      });
+    }
+
+    if (accountType === "cutPay" && transactionType === "debit") {
+      // Handle CutPay Debit Logic
+      const motorPolicy = await MotorPolicyPayment.findOneAndUpdate(
+        { partnerId, policyNumber },
+        {
+          payOutAmount: amount,
+          payOutPaymentStatus: "Paid",
+          payOutBalance: 0,
+        },
+        { new: true } // Return the updated document
+      );
+
+      if (!motorPolicy) {
+        return res.status(404).json({
+          status: "error",
+          message: "Motor policy payment not found.",
+        });
+      }
+
+      // Create a new Debit entry using the updated motorPolicy data
+      const newDebitEntry = new Debit({
+        policyNumber,
+        partnerId,
+        payOutAmount: motorPolicy.payOutAmount,
+        payOutPaymentStatus: motorPolicy.payOutPaymentStatus,
+        payOutBalance: 0,
+        policyDate: motorPolicy.policyDate,
+        createdBy,
+      });
+
+      await newDebitEntry.save();
+
+      // Update the account balance
+      account.amount -= amount;
+      await account.save();
+
+      // Create a new CreditAndDebit entry
+      const newCreditAndDebit = new CreditAndDebit({
+        accountType,
+        type: transactionType,
+        employeeId,
+        employeeName,
+        accountId,
+        accountCode,
+        amount,
+        userName,
+        userId,
+        partnerId,
+        partnerName,
+        brokerId,
+        brokerName,
+        policyNumber,
+        startDate,
+        endDate,
+        distributedDate,
+        remarks,
+        createdBy,
+        createdOn,
+        partnerBalance,
+      });
+
+      await newCreditAndDebit.save();
+
+      return res.status(201).json({
+        status: "success",
+        message: "CutPay debit transaction processed successfully.",
+        data: newCreditAndDebit,
+      });
+    }
+
+    // Handle regular Credit or Debit transactions
+    if (transactionType === "credit") {
+      account.amount += amount;
+    } else if (transactionType === "debit") {
+      account.amount -= amount;
+    }
+
+    await account.save();
+
     const newCreditAndDebit = new CreditAndDebit({
       accountType,
       type: transactionType,
@@ -56,23 +174,6 @@ export const createCreditAndDebit = async (req, res) => {
     });
 
     await newCreditAndDebit.save();
-
-    // Update the account balance
-    const account = await Account.findById(accountId);
-    if (!account) {
-      return res.status(404).json({
-        message: "Account not found",
-        status: "error",
-      });
-    }
-
-    if (transactionType === "credit") {
-      account.amount += amount;
-    } else if (transactionType === "debit") {
-      account.amount -= amount;
-    }
-
-    await account.save();
 
     res.status(201).json({
       message: "Transaction created successfully",
@@ -376,7 +477,7 @@ export const getTotalAmountByDateRangeAndBrokerName = async (req, res) => {
     const endDateObj = new Date(endDate);
     endDateObj.setHours(23, 59, 59, 999);
 
-    const creditAndDebits = await creditAndDebit.find({
+    const creditAndDebits = await CreditAndDebit.find({
       startDate: { $gte: startDateObj },
       endDate: { $lte: endDateObj },
       brokerName,
@@ -495,7 +596,7 @@ export const getTotalAmountByDateRangeAndPartnerId = async (req, res) => {
     const endDateObj = new Date(endDate);
     endDateObj.setHours(23, 59, 59, 999);
 
-    const creditAndDebits = await creditAndDebit.find({
+    const creditAndDebits = await CreditAndDebit.find({
       startDate: { $gte: startDateObj },
       endDate: { $lte: endDateObj },
       partnerId,
