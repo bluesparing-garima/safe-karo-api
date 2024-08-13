@@ -51,7 +51,9 @@ const createMake = async (req, res) => {
 // Get all makes
 const getAllMakes = async (req, res) => {
   try {
-    const makes = await Make.find();
+    //const makes = await Make.find();
+    // Fetch and sort makes alphabetically by makeName
+    const makes = await Make.find().sort({ makeName: 1 });
     res.status(200).json({
       message: "Success! Here are all makes",
       data: makes,
