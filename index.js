@@ -18,7 +18,7 @@ import addRolesRoutes from "./routes/adminRoutes/rolesRoutes.js";
 import payInexcelRoutes from "./routes/adminRoutes/payInExcelRoutes.js";
 import payOutExcelRoutes from "./routes/adminRoutes/payOutExcelRoutes.js";
 import payInRoutes from "./routes/adminRoutes/payInRoutes.js";
-import percentageUpdate from './routes/adminRoutes/percentageUpdateRoute.js';
+import percentageUpdate from "./routes/adminRoutes/percentageUpdateRoute.js";
 import vehicleType from "./routes/adminRoutes/productSubTypeRoutes.js";
 import partnerRoutes from "./routes/adminRoutes/partnerRoutes.js";
 import productName from "./routes/adminRoutes/productRoutes.js";
@@ -36,7 +36,8 @@ import bookingRequestRoute from "./routes/bookingRequestRoutes/bookingRequestRou
 import adminDashboard from "./routes/dashboardRoutes/adminDashboardRoute.js";
 import partnerDashboardRoutes from "./routes/dashboardRoutes/partnerDashboardRoutes.js";
 import bookingDashboardRoutes from "./routes/dashboardRoutes/bookingDashboardRoute.js";
-import accountDashboardRoutes from './routes/dashboardRoutes/accountDashboardRoute.js';
+import operationDashboardRoutes from "./routes/dashboardRoutes/operationDashboardRoute.js";
+import accountDashboardRoutes from "./routes/dashboardRoutes/accountDashboardRoute.js";
 
 import activityLogRoutes from "./routes/adminRoutes/activityLogRoutes.js";
 
@@ -49,18 +50,18 @@ import leadGenerate from "./routes/partnerRoutes/leadGenerateRoutes.js";
 import leadQuotation from "./routes/partnerRoutes/leadQuotationRoutes.js";
 import leadPayment from "./routes/partnerRoutes/leadPaymentRoutes.js";
 
-// Accounts 
+// Accounts
 import accountRoute from "./routes/accountRoutes/accountRoute.js";
-import creditAndDebit from './routes/accountRoutes/creditAndDebitRoute.js';
+import creditAndDebit from "./routes/accountRoutes/creditAndDebitRoute.js";
 import debitRoute from "./routes/accountRoutes/debitRoute.js";
 // Excel Compare
 import excelCompare from "./routes/excelCompareRoutes.js";
 
 // Bar and Line chart routes
-import partnerChart from './routes/barAndLineChartRoutes/partnerChartRoutes.js';
-import adminChart from './routes/barAndLineChartRoutes/adminChartRoutes.js';
-import bookingChart from './routes/barAndLineChartRoutes/bookingChartRoutes.js';
-import brokerChart from './routes/barAndLineChartRoutes/brokerChartRoutes.js';
+import partnerChart from "./routes/barAndLineChartRoutes/partnerChartRoutes.js";
+import adminChart from "./routes/barAndLineChartRoutes/adminChartRoutes.js";
+import bookingChart from "./routes/barAndLineChartRoutes/bookingChartRoutes.js";
+import brokerChart from "./routes/barAndLineChartRoutes/brokerChartRoutes.js";
 
 import testRoutes from "./routes/testRoutes.js";
 
@@ -100,7 +101,7 @@ app.use("/api/policy/motor", motorPolicyRoutes);
 app.use("/api/policy/motor/payment", motorPolicyPayment);
 
 // filter policy Routes
-app.use('/api/policy/motor/filter', filterPolicy);
+app.use("/api/policy/motor/filter", filterPolicy);
 
 //Partner lead generate.
 app.use("/api/lead-Generate", leadGenerate);
@@ -133,7 +134,7 @@ app.use("/api/pay-in/excel", payInexcelRoutes);
 app.use("/api/pay-out/excel", payOutExcelRoutes);
 
 // percentage Update manually
-app.use('/api/policy/motor/commission',percentageUpdate);
+app.use("/api/policy/motor/commission", percentageUpdate);
 
 // PayIn Routes
 app.use("/api/calculate", payInRoutes);
@@ -177,11 +178,12 @@ app.use("/api/dashboard", adminDashboard);
 // partner dashboard
 app.use("/api/partner-dashboard", partnerDashboardRoutes);
 
-// partner dashboard
+// booking dashboard
 app.use("/api/booking-dashboard", bookingDashboardRoutes);
-
+// operation dashboard
+app.use("/api/operation-dashboard", operationDashboardRoutes);
 // account dashboard
-app.use('/api/account-dashboard', accountDashboardRoutes);
+app.use("/api/account-dashboard", accountDashboardRoutes);
 
 // activity logs
 app.use("/api/activityLog", activityLogRoutes);
@@ -189,23 +191,22 @@ app.use("/api/activityLog", activityLogRoutes);
 // --------------------------------------- Account Route --------------------------------
 
 // Account routes
-app.use('/api/account', accountRoute);
+app.use("/api/account", accountRoute);
 
 // Credit and Debit
-app.use('/api/credit-debit', creditAndDebit);
+app.use("/api/credit-debit", creditAndDebit);
 
-// Debit details 
-app.use('/api',debitRoute);
+// Debit details
+app.use("/api", debitRoute);
 
 // excel compare
-app.use('/api', excelCompare);
+app.use("/api", excelCompare);
 
 // ---------------------------------------- Bar and Line charts ------------------------------
-app.use('/api/partner-dashboard', partnerChart);
-app.use('/api/admin-dashboard', adminChart);
-app.use('/api/booking-dashboard', bookingChart);
-app.use('/api/broker-dashboard', brokerChart);
-
+app.use("/api/partner-dashboard", partnerChart);
+app.use("/api/admin-dashboard", adminChart);
+app.use("/api/booking-dashboard", bookingChart);
+app.use("/api/broker-dashboard", brokerChart);
 
 // Test Routes
 app.use("/api", testRoutes);
