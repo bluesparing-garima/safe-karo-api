@@ -4,6 +4,25 @@ import MotorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchem
 import Debit from "../../models/accountsModels/debitsSchema.js";
 import motorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
 
+// Function to generate transaction code
+const generateTransactionCode = async () => {
+  const lastTransaction = await CreditAndDebit.findOne({})
+    .sort({ createdOn: -1 })
+    .exec();
+
+  let newTransactionCode;
+
+  if (lastTransaction && lastTransaction.transactionCode) {
+    const lastCode = lastTransaction.transactionCode;
+    const numericPart = parseInt(lastCode.slice(5), 10);
+    const nextNumber = numericPart + 1;
+    newTransactionCode = `SAFEK${String(nextNumber).padStart(3, '0')}`;
+  } else {
+    newTransactionCode = "SAFEK001";
+  }
+
+  return newTransactionCode;
+};
 
 // Create a new credit and debit transaction
 export const createCreditAndDebit = async (req, res) => {
@@ -90,16 +109,20 @@ export const createCreditAndDebit = async (req, res) => {
         });
       }
 
+      // Generate a transaction code for the new debit
+      const transactionCode = await generateTransactionCode();
+
       // Create a new Debit entry using the updated motorPolicy data
       const newDebitEntry = new Debit({
         policyNumber,
         partnerId,
         payOutAmount: motorPolicy.payOutAmount,
-        payOutCommission:motorPolicy.payOutCommission,
+        payOutCommission: motorPolicy.payOutCommission,
         payOutPaymentStatus: motorPolicy.payOutPaymentStatus,
         payOutBalance: 0,
         policyDate: motorPolicy.policyDate,
         createdBy,
+        transactionCode, // Save the transaction code in the Debit entry
       });
 
       await newDebitEntry.save();
@@ -131,6 +154,7 @@ export const createCreditAndDebit = async (req, res) => {
         createdBy,
         createdOn,
         partnerBalance,
+        transactionCode, // Save the transaction code in the CreditAndDebit entry
       });
 
       await newCreditAndDebit.save();
@@ -150,6 +174,8 @@ export const createCreditAndDebit = async (req, res) => {
     }
 
     await account.save();
+
+    const transactionCode = await generateTransactionCode();
 
     const newCreditAndDebit = new CreditAndDebit({
       accountType,
@@ -173,6 +199,7 @@ export const createCreditAndDebit = async (req, res) => {
       createdBy,
       createdOn,
       partnerBalance,
+      transactionCode, // Save the transaction code in the CreditAndDebit entry
     });
 
     await newCreditAndDebit.save();
@@ -190,6 +217,7 @@ export const createCreditAndDebit = async (req, res) => {
     });
   }
 };
+
 
 // Get all credit and debit transactions
 export const getCreditAndDebit = async (req, res) => {

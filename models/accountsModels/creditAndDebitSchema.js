@@ -1,6 +1,10 @@
 import mongoose from "mongoose";
 
 const creditAndDebitSchema = new mongoose.Schema({
+  transactionCode:{
+    type:String,
+    trim:true,
+  },
   accountType: {
     type: String,
     trim: true,
