@@ -8,10 +8,10 @@ const debitSchema = new mongoose.Schema({
   payOutPaymentStatus: { type: String, trim: true, default: "UnPaid" },
   payOutBalance: { type: Number, default: 0 },
   policyDate: { type: String, trim: true },
-  createdBy: { type: String, trim: true },
-  updatedBy: { type: String, default: null },
-  createdOn: { type: Date, default: Date.now },
-  updatedOn: { type: Date, default: Date.now },
+  paymentCreatedBy: { type: String, trim: true },
+  paymentUpdatedBy: { type: String, default: null },
+  paymentCreatedOn: { type: Date, default: Date.now },
+  paymentUpdatedOn: { type: Date, default: Date.now },
 });
 
 const debits = mongoose.model("debit", debitSchema);
