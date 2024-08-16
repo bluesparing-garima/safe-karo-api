@@ -149,7 +149,7 @@ export const policyStatusManage = async (req, res) => {
             payOutPaymentStatus,
             payInBalance,
             payOutBalance,
-            createdOn: Date.now(),
+            createdOn: new Date(),
             updatedOn,
           });
         } else {
@@ -167,6 +167,8 @@ export const policyStatusManage = async (req, res) => {
         if (["UnPaid", "Partial", "Paid"].includes(payOutPaymentStatus)) {
           let existingDebit = await debitModel.findOne({ policyNumber });
 
+          const policyDate = new Date(existingPayment.policyDate);
+
           if (existingDebit) {
             // Update existing debit record
             existingDebit.payOutAmount = payOutAmount;
@@ -175,6 +177,7 @@ export const policyStatusManage = async (req, res) => {
             existingDebit.payOutBalance = payOutBalance;
             existingDebit.updatedBy = updatedBy;
             existingDebit.updatedOn = updatedOn;
+            existingDebit.policyDate = policyDate;
             await existingDebit.save();
           } else {
             // Create new debit record
@@ -185,7 +188,7 @@ export const policyStatusManage = async (req, res) => {
               payOutCommission,
               payOutPaymentStatus,
               payOutBalance,
-              policyDate: existingPayment.policyDate,
+              policyDate: policyDate,
               createdBy: existingPayment.createdBy,
               updatedBy,
               createdOn: existingPayment.createdOn,
@@ -217,6 +220,7 @@ export const policyStatusManage = async (req, res) => {
     });
   }
 };
+
 
 // Get UnPaid and Partial Paid by date range and partnerId
 export const getUnPaidAndPartialPaidPayments = async (req, res) => {
