@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 
 const debitSchema = new mongoose.Schema({
+  transactionCode:{type:String,trim:true},
   policyNumber: { type: String, trim: true },
   partnerId: { type: String, trim: true },
   payOutAmount: { type: Number, trim: true },
