@@ -2,26 +2,32 @@ import CreditAndDebit from "../../models/accountsModels/creditAndDebitSchema.js"
 import Account from "../../models/accountsModels/accountSchema.js";
 import MotorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
 import Debit from "../../models/accountsModels/debitsSchema.js";
-import motorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
+import moment from "moment"; 
 
-// Function to generate transaction code
-const generateTransactionCode = async () => {
-  const lastTransaction = await CreditAndDebit.findOne({})
-    .sort({ createdOn: -1 })
-    .exec();
+const generateTransactionCode = async (startDate, endDate, credit, debit) => {
+  try {
+    if (!moment(startDate).isValid()) {
+      throw new Error("Invalid startDate");
+    }
+    if (!moment(endDate).isValid()) {
+      throw new Error("Invalid endDate");
+    }
 
-  let newTransactionCode;
+    const formattedStartDate = moment(startDate).format("DDMMYY");
+    const formattedEndDate = moment(endDate).format("DDMMYY");
 
-  if (lastTransaction && lastTransaction.transactionCode) {
-    const lastCode = lastTransaction.transactionCode;
-    const numericPart = parseInt(lastCode.slice(5), 10);
-    const nextNumber = numericPart + 1;
-    newTransactionCode = `SAFEK${String(nextNumber).padStart(3, '0')}`;
-  } else {
-    newTransactionCode = "SAFEK001";
+    const formattedAmount = credit ? String(credit): debit ? String(debit): '0000';
+
+    const currentDate = moment().format("DDMMYYYY");
+    const currentTime = moment().format("[T]HH:mm:ss");
+
+    const newTransactionCode = `PC${formattedStartDate}${formattedEndDate}AM${formattedAmount}${currentDate}${currentTime}`;
+
+    return newTransactionCode;
+  } catch (error) {
+    console.error("Error generating transaction code:", error.message);
+    throw new Error("Invalid startDate or endDate");
   }
-
-  return newTransactionCode;
 };
 
 // Create a new credit and debit transaction
@@ -29,12 +35,12 @@ export const createCreditAndDebit = async (req, res) => {
   try {
     const {
       accountType,
-      type,
+      credit,
+      debit,
       employeeId,
       employeeName,
       accountId,
       accountCode,
-      amount,
       userName,
       userId,
       partnerId,
@@ -51,9 +57,6 @@ export const createCreditAndDebit = async (req, res) => {
       partnerBalance,
     } = req.body;
 
-    const transactionType = type.toLowerCase();
-
-    // Check if the CutPay amount has already been paid
     const existingMotorPolicyPayment = await MotorPolicyPayment.findOne({
       partnerId,
       policyNumber,
@@ -69,7 +72,7 @@ export const createCreditAndDebit = async (req, res) => {
     const existingCreditAndDebit = await CreditAndDebit.findOne({
       partnerId,
       policyNumber,
-      type: "debit",
+      debit: { $ne: null },  // Checking if a debit value exists
       accountType: "CutPay",
     });
 
@@ -80,7 +83,6 @@ export const createCreditAndDebit = async (req, res) => {
       });
     }
 
-    // Update the account balance and handle CutPay debit transactions
     const account = await Account.findById(accountId);
     if (!account) {
       return res.status(404).json({
@@ -89,17 +91,17 @@ export const createCreditAndDebit = async (req, res) => {
       });
     }
 
-    if (accountType === "CutPay" && transactionType === "debit") {
-      // Handle CutPay Debit Logic
+    // If debit entry with CutPay type
+    if (accountType === "CutPay" && debit) {
       const motorPolicy = await MotorPolicyPayment.findOneAndUpdate(
         { partnerId, policyNumber },
         {
-          payOutAmount: amount,
-          payOutCommission: amount,
+          payOutAmount: debit,
+          payOutCommission: debit,
           payOutPaymentStatus: "Paid",
           payOutBalance: 0,
         },
-        { new: true } // Return the updated document
+        { new: true }
       );
 
       if (!motorPolicy) {
@@ -109,10 +111,8 @@ export const createCreditAndDebit = async (req, res) => {
         });
       }
 
-      // Generate a transaction code for the new debit
-      const transactionCode = await generateTransactionCode();
+      const transactionCode = await generateTransactionCode(startDate, endDate, credit, debit);
 
-      // Create a new Debit entry using the updated motorPolicy data
       const newDebitEntry = new Debit({
         policyNumber,
         partnerId,
@@ -122,24 +122,21 @@ export const createCreditAndDebit = async (req, res) => {
         payOutBalance: 0,
         policyDate: motorPolicy.policyDate,
         createdBy,
-        transactionCode, // Save the transaction code in the Debit entry
+        transactionCode,
       });
 
       await newDebitEntry.save();
 
-      // Update the account balance
-      account.amount -= amount;
+      account.amount -= parseFloat(debit);  // Adjust account balance
       await account.save();
 
-      // Create a new CreditAndDebit entry
       const newCreditAndDebit = new CreditAndDebit({
         accountType,
-        type: transactionType,
+        debit: parseFloat(debit),
         employeeId,
         employeeName,
         accountId,
         accountCode,
-        amount,
         userName,
         userId,
         partnerId,
@@ -154,7 +151,7 @@ export const createCreditAndDebit = async (req, res) => {
         createdBy,
         createdOn,
         partnerBalance,
-        transactionCode, // Save the transaction code in the CreditAndDebit entry
+        transactionCode,
       });
 
       await newCreditAndDebit.save();
@@ -166,25 +163,25 @@ export const createCreditAndDebit = async (req, res) => {
       });
     }
 
-    // Handle regular Credit or Debit transactions
-    if (transactionType === "credit") {
-      account.amount += amount;
-    } else if (transactionType === "debit") {
-      account.amount -= amount;
+    // If it's a regular credit or debit entry
+    if (credit) {
+      account.amount += parseFloat(credit);
+    } else if (debit) {
+      account.amount -= parseFloat(debit);
     }
 
     await account.save();
 
-    const transactionCode = await generateTransactionCode();
+    const transactionCode = await generateTransactionCode(startDate, endDate, credit, debit);
 
     const newCreditAndDebit = new CreditAndDebit({
       accountType,
-      type: transactionType,
+      credit: credit ? parseFloat(credit) : 0,
+      debit: debit ? parseFloat(debit) : 0,
       employeeId,
       employeeName,
       accountId,
       accountCode,
-      amount,
       userName,
       userId,
       partnerId,
@@ -199,7 +196,7 @@ export const createCreditAndDebit = async (req, res) => {
       createdBy,
       createdOn,
       partnerBalance,
-      transactionCode, // Save the transaction code in the CreditAndDebit entry
+      transactionCode,
     });
 
     await newCreditAndDebit.save();
@@ -217,7 +214,6 @@ export const createCreditAndDebit = async (req, res) => {
     });
   }
 };
-
 
 // Get all credit and debit transactions
 export const getCreditAndDebit = async (req, res) => {
@@ -360,7 +356,7 @@ export const getCreditAndDebitById = async (req, res) => {
 export const updateCreditAndDebitById = async (req, res) => {
   try {
     const { id } = req.params;
-    const { amount, type, accountId } = req.body;
+    const { credit, debit, accountId } = req.body;
 
     const existingTransaction = await CreditAndDebit.findById(id);
     if (!existingTransaction) {
@@ -379,25 +375,27 @@ export const updateCreditAndDebitById = async (req, res) => {
     }
 
     // Revert the balance change of the existing transaction
-    if (existingTransaction.type === "credit") {
-      account.amount -= existingTransaction.amount;
-    } else if (existingTransaction.type === "debit") {
-      account.amount += existingTransaction.amount;
+    if (existingTransaction.credit) {
+      account.amount -= parseFloat(existingTransaction.credit);
+    } else if (existingTransaction.debit) {
+      account.amount += parseFloat(existingTransaction.debit);
     }
 
     // Apply the new balance change
-    const transactionType = type.toLowerCase();
-    if (transactionType === "credit") {
-      account.amount += amount;
-    } else if (transactionType === "debit") {
-      account.amount -= amount;
+    const creditAmount = credit ? parseFloat(credit) : 0;
+    const debitAmount = debit ? parseFloat(debit) : 0;
+
+    if (creditAmount) {
+      account.amount += creditAmount;
+    } else if (debitAmount) {
+      account.amount -= debitAmount;
     }
 
     await account.save();
 
     const updatedTransaction = await CreditAndDebit.findByIdAndUpdate(
       id,
-      { ...req.body, type: transactionType },
+      { ...req.body, credit: creditAmount ? String(creditAmount) : null, debit: debitAmount ? String(debitAmount) : null },
       { new: true }
     );
 
