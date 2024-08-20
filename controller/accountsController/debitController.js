@@ -102,3 +102,46 @@ export const getDebitsByPartnerIdAndDateRange = async (req, res) => {
     });
   }
 };
+
+// get Debit data by TransactionCode and partnerId
+export const getDebitDetailsByTransactionCodeAndPartnerId = async (req, res) => {
+  console.log("first")
+  const { transactionCode, partnerId } = req.query;
+
+  if (!transactionCode || !partnerId) {
+    return res.status(400).json({
+      status: "error",
+      success: false,
+      message: "Transaction code and partner ID are required.",
+    });
+  }
+
+  try {
+    const debitDetails = await debits.findOne({
+      transactionCode,
+      partnerId,
+    });
+
+    if (!debitDetails) {
+      return res.status(404).json({
+        status: "error",
+        success: false,
+        message: "No debit details found for the provided transaction code and partner ID.",
+      });
+    }
+
+    res.status(200).json({
+      status: "success",
+      success: true,
+      message: "Debit details retrieved successfully.",
+      data: debitDetails,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      success: false,
+      message: "Error retrieving debit details.",
+      error: error.message,
+    });
+  }
+};

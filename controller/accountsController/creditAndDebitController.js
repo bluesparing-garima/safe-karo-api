@@ -3,6 +3,7 @@ import Account from "../../models/accountsModels/accountSchema.js";
 import MotorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
 import Debit from "../../models/accountsModels/debitsSchema.js";
 import moment from "moment"; 
+import creditAndDebitSchema from "../../models/accountsModels/creditAndDebitSchema.js";
 
 const generateTransactionCode = async (startDate, endDate, credit, debit) => {
   try {
@@ -655,6 +656,48 @@ export const getTotalAmountByDateRangeAndPartnerId = async (req, res) => {
       status: "error",
       success: false,
       message: "Error retrieving credit and debit data.",
+      error: error.message,
+    });
+  }
+};
+
+// get credit and debit data by TransactionCode and partnerId
+export const getCreditAndDebitDetailsByTransactionCodeAndPartnerId = async (req, res) => {
+  const { transactionCode, partnerId } = req.query;
+
+  if (!transactionCode || !partnerId) {
+    return res.status(400).json({
+      status: "error",
+      success: false,
+      message: "Transaction code and partner ID are required.",
+    });
+  }
+
+  try {
+    const debitDetails = await creditAndDebitSchema.findOne({
+      transactionCode,
+      partnerId,
+    });
+
+    if (!debitDetails) {
+      return res.status(404).json({
+        status: "error",
+        success: false,
+        message: "No debit details found for the provided transaction code and partner ID.",
+      });
+    }
+
+    res.status(200).json({
+      status: "success",
+      success: true,
+      message: "Debit details retrieved successfully.",
+      data: debitDetails,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      success: false,
+      message: "Error retrieving debit details.",
       error: error.message,
     });
   }
