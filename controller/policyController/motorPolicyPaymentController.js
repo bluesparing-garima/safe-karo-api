@@ -180,8 +180,8 @@ export const policyStatusManage = async (req, res) => {
             existingDebit.policyDate = policyDate;
             await existingDebit.save();
           } else {
-            // Create new debit record
             const newDebit = new debitModel({
+              transactionCode,
               policyNumber,
               partnerId: existingPayment.partnerId,
               payOutAmount,
@@ -220,7 +220,6 @@ export const policyStatusManage = async (req, res) => {
     });
   }
 };
-
 
 // Get UnPaid and Partial Paid by date range and partnerId
 export const getUnPaidAndPartialPaidPayments = async (req, res) => {

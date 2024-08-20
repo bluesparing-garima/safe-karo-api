@@ -9,9 +9,17 @@ const creditAndDebitSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
-  type: {
-    type: String,
-    trim: true,
+  // type: {
+  //   type: String,
+  //   trim: true,
+  // },
+  credit:{
+    type:Number,
+    trim:true
+  },
+  debit:{
+    type:Number,
+    trim:true
   },
   accountId: {
     type: String,
@@ -21,10 +29,10 @@ const creditAndDebitSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
-  amount: {
-    type: Number,
-    trim: true,
-  },
+  // amount: {
+  //   type: Number,
+  //   trim: true,
+  // },
   userName: {
     type: String,
     trim: true,
