@@ -3,30 +3,39 @@ import Account from "../../models/accountsModels/accountSchema.js";
 import MotorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
 import Debit from "../../models/accountsModels/debitsSchema.js";
 import motorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
+import moment from 'moment'; // Ensure moment is imported
 
-// Function to generate transaction code
-const generateTransactionCode = async (startDate, endDate, credit, debit) => {
-    try {
-      if (!moment(startDate).isValid()) {
-        throw new Error("Invalid startDate");
-      }
-      if (!moment(endDate).isValid()) {
-        throw new Error("Invalid endDate");
-      }
-  
-      const formattedStartDate = moment(startDate).format("DDMMYY");
-      const formattedEndDate = moment(endDate).format("DDMMYY");
-      const formattedAmount = credit ? String(credit) : debit ? String(debit) : '0000';
-      const currentDate = moment().format("DDMMYYYY");
-      const currentTime = moment().format("[T]HH:mm:ss");
-  
-      const newTransactionCode = `PC${formattedStartDate}${formattedEndDate}AM${formattedAmount}${currentDate}${currentTime}`;
-      return newTransactionCode;
-    } catch (error) {
-      console.error("Error generating transaction code:", error.message);
-      throw new Error("Invalid startDate or endDate");
+const generateTransactionCode = async (startDate, endDate, type, amount) => {
+  try {
+    // Check if the startDate and endDate are valid dates
+    if (!moment(startDate, "YYYY-MM-DD", true).isValid()) {
+      console.error("Invalid startDate:", startDate);
+      throw new Error("Invalid startDate");
     }
-  };
+    if (!moment(endDate, "YYYY-MM-DD", true).isValid()) {
+      console.error("Invalid endDate:", endDate);
+      throw new Error("Invalid endDate");
+    }
+
+    // Format dates
+    const formattedStartDate = moment(startDate).format("DDMMYY");
+    const formattedEndDate = moment(endDate).format("DDMMYY");
+
+    // Format amount with leading zeros if necessary
+    const formattedAmount = amount ? String(amount).padStart(4, '0') : '0000';
+
+    // Get current date and time
+    const currentDate = moment().format("DDMMYYYY");
+    const currentTime = moment().format("[T]HH:mm:ss");
+
+    // Generate transaction code
+    const newTransactionCode = `PC${formattedStartDate}${formattedEndDate}AM${formattedAmount}${currentDate}${currentTime}`;
+    return newTransactionCode;
+  } catch (error) {
+    console.error("Error generating transaction code:", error.message);
+    throw new Error("Error generating transaction code");
+  }
+};
 
 // Create a new credit and debit transaction
 export const createAccountManage = async (req, res) => {
@@ -114,7 +123,7 @@ export const createAccountManage = async (req, res) => {
       }
 
       // Generate a transaction code for the new debit
-      const transactionCode = await generateTransactionCode();
+      const transactionCode = await generateTransactionCode(startDate, endDate, transactionType, amount);
 
       // Create a new Debit entry using the updated motorPolicy data
       const newDebitEntry = new Debit({
@@ -179,7 +188,7 @@ export const createAccountManage = async (req, res) => {
 
     await account.save();
 
-    const transactionCode = await generateTransactionCode();
+    const transactionCode = await generateTransactionCode(startDate, endDate, transactionType, amount);
 
     const newAccountManage = new AccountManage({
       accountType,
