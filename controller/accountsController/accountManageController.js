@@ -1,43 +1,44 @@
-import CreditAndDebit from "../../models/accountsModels/creditAndDebitSchema.js";
+import AccountManage from "../../models/accountsModels/accountManageSchema.js";
 import Account from "../../models/accountsModels/accountSchema.js";
 import MotorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
 import Debit from "../../models/accountsModels/debitsSchema.js";
-import moment from "moment"; 
+import motorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
 
+// Function to generate transaction code
 const generateTransactionCode = async (startDate, endDate, credit, debit) => {
-  try {
-    if (!moment(startDate).isValid()) {
-      throw new Error("Invalid startDate");
+    try {
+      if (!moment(startDate).isValid()) {
+        throw new Error("Invalid startDate");
+      }
+      if (!moment(endDate).isValid()) {
+        throw new Error("Invalid endDate");
+      }
+  
+      const formattedStartDate = moment(startDate).format("DDMMYY");
+      const formattedEndDate = moment(endDate).format("DDMMYY");
+      const formattedAmount = credit ? String(credit) : debit ? String(debit) : '0000';
+      const currentDate = moment().format("DDMMYYYY");
+      const currentTime = moment().format("[T]HH:mm:ss");
+  
+      const newTransactionCode = `PC${formattedStartDate}${formattedEndDate}AM${formattedAmount}${currentDate}${currentTime}`;
+      return newTransactionCode;
+    } catch (error) {
+      console.error("Error generating transaction code:", error.message);
+      throw new Error("Invalid startDate or endDate");
     }
-    if (!moment(endDate).isValid()) {
-      throw new Error("Invalid endDate");
-    }
-
-    const formattedStartDate = moment(startDate).format("DDMMYY");
-    const formattedEndDate = moment(endDate).format("DDMMYY");
-    const formattedAmount = credit ? String(credit) : debit ? String(debit) : '0000';
-    const currentDate = moment().format("DDMMYYYY");
-    const currentTime = moment().format("[T]HH:mm:ss");
-
-    const newTransactionCode = `PC${formattedStartDate}${formattedEndDate}AM${formattedAmount}${currentDate}${currentTime}`;
-    return newTransactionCode;
-  } catch (error) {
-    console.error("Error generating transaction code:", error.message);
-    throw new Error("Invalid startDate or endDate");
-  }
-};
+  };
 
 // Create a new credit and debit transaction
-export const createCreditAndDebit = async (req, res) => {
+export const createAccountManage = async (req, res) => {
   try {
     const {
       accountType,
-      credit,
-      debit,
+      type,
       employeeId,
       employeeName,
       accountId,
       accountCode,
+      amount,
       userName,
       userId,
       partnerId,
@@ -54,7 +55,9 @@ export const createCreditAndDebit = async (req, res) => {
       partnerBalance,
     } = req.body;
 
-    // Check for existing motor policy payment, debit, and CutPay transactions
+    const transactionType = type.toLowerCase();
+
+    // Check if the CutPay amount has already been paid
     const existingMotorPolicyPayment = await MotorPolicyPayment.findOne({
       partnerId,
       policyNumber,
@@ -67,32 +70,125 @@ export const createCreditAndDebit = async (req, res) => {
       payOutPaymentStatus: "Paid",
     });
 
-    const existingCreditAndDebit = await CreditAndDebit.findOne({
+    const existingAccountManage = await AccountManage.findOne({
       partnerId,
       policyNumber,
-      debit: { $ne: null },
+      type: "debit",
       accountType: "CutPay",
     });
 
-    if (existingMotorPolicyPayment && existingDebitEntry && existingCreditAndDebit) {
+    if (existingMotorPolicyPayment && existingDebitEntry && existingAccountManage) {
       return res.status(400).json({
         status: "error",
         message: "The CutPay amount has already been paid for this partner for this policy number.",
       });
     }
 
-    // Generate transaction code
-    const transactionCode = await generateTransactionCode(startDate, endDate, credit, debit);
+    // Update the account balance and handle CutPay debit transactions
+    const account = await Account.findById(accountId);
+    if (!account) {
+      return res.status(404).json({
+        message: "Account not found",
+        status: "error",
+      });
+    }
 
-    // Create a new CreditAndDebit entry
-    const newCreditAndDebit = new CreditAndDebit({
+    if (accountType === "CutPay" && transactionType === "debit") {
+      // Handle CutPay Debit Logic
+      const motorPolicy = await MotorPolicyPayment.findOneAndUpdate(
+        { partnerId, policyNumber },
+        {
+          payOutAmount: amount,
+          payOutCommission: amount,
+          payOutPaymentStatus: "Paid",
+          payOutBalance: 0,
+        },
+        { new: true } // Return the updated document
+      );
+
+      if (!motorPolicy) {
+        return res.status(404).json({
+          status: "error",
+          message: "Motor policy payment not found.",
+        });
+      }
+
+      // Generate a transaction code for the new debit
+      const transactionCode = await generateTransactionCode();
+
+      // Create a new Debit entry using the updated motorPolicy data
+      const newDebitEntry = new Debit({
+        policyNumber,
+        partnerId,
+        payOutAmount: motorPolicy.payOutAmount,
+        payOutCommission: motorPolicy.payOutCommission,
+        payOutPaymentStatus: motorPolicy.payOutPaymentStatus,
+        payOutBalance: 0,
+        policyDate: motorPolicy.policyDate,
+        createdBy,
+        transactionCode, // Save the transaction code in the Debit entry
+      });
+
+      await newDebitEntry.save();
+
+      // Update the account balance
+      account.amount -= amount;
+      await account.save();
+
+      // Create a new AccountManage entry
+      const newAccountManage = new AccountManage({
+        accountType,
+        type: transactionType,
+        employeeId,
+        employeeName,
+        accountId,
+        accountCode,
+        amount,
+        userName,
+        userId,
+        partnerId,
+        partnerName,
+        brokerId,
+        brokerName,
+        policyNumber,
+        startDate,
+        endDate,
+        distributedDate,
+        remarks,
+        createdBy,
+        createdOn,
+        partnerBalance,
+        transactionCode, // Save the transaction code in the AccountManage entry
+      });
+
+      await newAccountManage.save();
+
+      return res.status(201).json({
+        status: "success",
+        message: "CutPay debit transaction processed successfully.",
+        data: newAccountManage,
+      });
+    }
+
+    // Handle regular Credit or Debit transactions
+    if (transactionType === "credit") {
+      account.amount += amount;
+    } else if (transactionType === "debit") {
+      account.amount -= amount;
+    }
+
+    await account.save();
+
+    const transactionCode = await generateTransactionCode();
+
+    const newAccountManage = new AccountManage({
       accountType,
-      credit: credit ? parseFloat(credit) : 0,
-      debit: debit ? parseFloat(debit) : 0,
+      type: transactionType,
       employeeId,
       employeeName,
       accountId,
       accountCode,
+      amount,
       userName,
       userId,
       partnerId,
@@ -107,14 +203,14 @@ export const createCreditAndDebit = async (req, res) => {
       createdBy,
       createdOn,
       partnerBalance,
-      transactionCode,
+      transactionCode, // Save the transaction code in the AccountManage entry
     });
 
-    await newCreditAndDebit.save();
+    await newAccountManage.save();
 
     res.status(201).json({
       message: "Transaction created successfully",
-      data: newCreditAndDebit,
+      data: newAccountManage,
       status: "success",
     });
   } catch (error) {
@@ -127,9 +223,9 @@ export const createCreditAndDebit = async (req, res) => {
 };
 
 // Get all credit and debit transactions
-export const getCreditAndDebit = async (req, res) => {
+export const getAccountManage = async (req, res) => {
   try {
-    const transactions = await CreditAndDebit.find();
+    const transactions = await AccountManage.find();
     res.status(200).json({
       message: "Transactions retrieved successfully",
       data: transactions,
@@ -145,7 +241,7 @@ export const getCreditAndDebit = async (req, res) => {
 };
 
 // Get credit details by date range and broker ID
-export const getCreditDetailsByBrokerId = async (req, res) => {
+export const getAccountDetailsByBrokerId = async (req, res) => {
   const { startDate, endDate, brokerId } = req.query;
 
   if (!startDate || !endDate || !brokerId) {
@@ -155,14 +251,14 @@ export const getCreditDetailsByBrokerId = async (req, res) => {
     });
   }
 
-  try {    
+  try {
     const startDateObj = new Date(startDate);
     startDateObj.setHours(0, 0, 0, 0);
 
     const endDateObj = new Date(endDate);
     endDateObj.setHours(23, 59, 59, 999);
 
-    const transactions = await CreditAndDebit.find({
+    const transactions = await AccountManage.find({
       startDate: { $gte: startDateObj },
       endDate: { $lte: endDateObj },
       brokerId,
@@ -171,26 +267,27 @@ export const getCreditDetailsByBrokerId = async (req, res) => {
     if (transactions.length === 0) {
       return res.status(404).json({
         status: "error",
-        message: "No credit data found for the specified date range and broker ID.",
+        message:
+          "No credit data found within the specified date range and broker ID.",
       });
     }
 
     res.status(200).json({
       status: "success",
-      message: "Credit data retrieved successfully.",
+      message: "Credit and debit data retrieved successfully.",
       data: transactions,
     });
   } catch (error) {
     res.status(500).json({
       status: "error",
-      message: "Error retrieving credit data.",
+      message: "Error retrieving credit and debit data.",
       error: error.message,
     });
   }
 };
 
 // Get debit details by date range and partner ID
-export const getDebitDetailsByPartnerId = async (req, res) => {
+export const getAccountDetailsByPartnerId = async (req, res) => {
   const { startDate, endDate, partnerId } = req.query;
 
   if (!startDate || !endDate || !partnerId) {
@@ -200,14 +297,14 @@ export const getDebitDetailsByPartnerId = async (req, res) => {
     });
   }
 
-  try { 
+  try {
     const startDateObj = new Date(startDate);
     startDateObj.setHours(0, 0, 0, 0);
 
     const endDateObj = new Date(endDate);
     endDateObj.setHours(23, 59, 59, 999);
-    
-    const transactions = await CreditAndDebit.find({
+
+    const transactions = await AccountManage.find({
       startDate: { $gte: startDateObj },
       endDate: { $lte: endDateObj },
       partnerId,
@@ -216,7 +313,8 @@ export const getDebitDetailsByPartnerId = async (req, res) => {
     if (transactions.length === 0) {
       return res.status(404).json({
         status: "error",
-        message: "No debit data found for the specified date range and partner ID.",
+        message:
+          "No debit data found within the specified date range and partner ID.",
       });
     }
 
@@ -235,10 +333,10 @@ export const getDebitDetailsByPartnerId = async (req, res) => {
 };
 
 // Get a credit and debit transaction by ID
-export const getCreditAndDebitById = async (req, res) => {
+export const getAccountManageById = async (req, res) => {
   try {
     const { id } = req.params;
-    const transaction = await CreditAndDebit.findById(id);
+    const transaction = await AccountManage.findById(id);
 
     if (!transaction) {
       return res.status(404).json({
@@ -262,23 +360,49 @@ export const getCreditAndDebitById = async (req, res) => {
 };
 
 // Update a credit and debit transaction by ID
-export const updateCreditAndDebitById = async (req, res) => {
+export const updateAccountManageById = async (req, res) => {
   try {
     const { id } = req.params;
-    const { credit, debit } = req.body;
+    const { amount, type, accountId } = req.body;
 
-    const updatedTransaction = await CreditAndDebit.findByIdAndUpdate(
-      id,
-      { credit: credit ? parseFloat(credit) : 0, debit: debit ? parseFloat(debit) : 0, ...req.body },
-      { new: true }
-    );
-
-    if (!updatedTransaction) {
+    const existingTransaction = await AccountManage.findById(id);
+    if (!existingTransaction) {
       return res.status(404).json({
         message: "Transaction not found",
         status: "error",
       });
     }
+
+    const account = await Account.findById(accountId);
+    if (!account) {
+      return res.status(404).json({
+        message: "Account not found",
+        status: "error",
+      });
+    }
+
+    // Revert the balance change of the existing transaction
+    if (existingTransaction.type === "credit") {
+      account.amount -= existingTransaction.amount;
+    } else if (existingTransaction.type === "debit") {
+      account.amount += existingTransaction.amount;
+    }
+
+    // Apply the new balance change
+    const transactionType = type.toLowerCase();
+    if (transactionType === "credit") {
+      account.amount += amount;
+    } else if (transactionType === "debit") {
+      account.amount -= amount;
+    }
+
+    await account.save();
+
+    const updatedTransaction = await AccountManage.findByIdAndUpdate(
+      id,
+      { ...req.body, type: transactionType },
+      { new: true }
+    );
 
     res.status(200).json({
       message: "Transaction updated successfully",
@@ -295,11 +419,11 @@ export const updateCreditAndDebitById = async (req, res) => {
 };
 
 // Delete a credit and debit transaction by ID
-export const deleteCreditAndDebitById = async (req, res) => {
+export const deleteAccountManageById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const deletedTransaction = await CreditAndDebit.findByIdAndDelete(id);
+    const deletedTransaction = await AccountManage.findByIdAndDelete(id);
 
     if (!deletedTransaction) {
       return res.status(404).json({
@@ -321,9 +445,8 @@ export const deleteCreditAndDebitById = async (req, res) => {
   }
 };
 
-
 // Get credit and debit by date range and broker name
-export const getCreditAndDebitByDateRangeAndBrokerName = async (req, res) => {
+export const getAccountDetailsByDateRangeAndBrokerName = async (req, res) => {
   const { startDate, endDate, brokerName } = req.query;
 
   if (!startDate || !endDate || !brokerName) {
@@ -340,7 +463,7 @@ export const getCreditAndDebitByDateRangeAndBrokerName = async (req, res) => {
     const endDateObj = new Date(endDate);
     endDateObj.setHours(23, 59, 59, 999);
 
-    const transactions = await CreditAndDebit.find({
+    const transactions = await AccountManage.find({
       startDate: { $gte: startDateObj },
       endDate: { $lte: endDateObj },
       brokerName,
@@ -387,13 +510,13 @@ export const getTotalAmountByDateRangeAndBrokerName = async (req, res) => {
     const endDateObj = new Date(endDate);
     endDateObj.setHours(23, 59, 59, 999);
 
-    const creditAndDebits = await CreditAndDebit.find({
+    const AccountManages = await AccountManage.find({
       startDate: { $gte: startDateObj },
       endDate: { $lte: endDateObj },
       brokerName,
     });
 
-    if (creditAndDebits.length === 0) {
+    if (AccountManages.length === 0) {
       return res.status(404).json({
         status: "error",
         success: false,
@@ -402,7 +525,7 @@ export const getTotalAmountByDateRangeAndBrokerName = async (req, res) => {
       });
     }
 
-    const totalAmount = creditAndDebits.reduce(
+    const totalAmount = AccountManages.reduce(
       (total, record) => total + record.amount,
       0
     );
@@ -424,7 +547,7 @@ export const getTotalAmountByDateRangeAndBrokerName = async (req, res) => {
 };
 
 // Get Total Payout Commission by Date Range and Partner ID
-export const getCreditAndDebitByDateRangeAndPartnerId = async (req, res) => {
+export const getAccountDetailsByDateRangeAndPartnerId = async (req, res) => {
   const { startDate, endDate, partnerId } = req.query;
 
   if (!startDate || !endDate || !partnerId) {
@@ -506,13 +629,13 @@ export const getTotalAmountByDateRangeAndPartnerId = async (req, res) => {
     const endDateObj = new Date(endDate);
     endDateObj.setHours(23, 59, 59, 999);
 
-    const creditAndDebits = await CreditAndDebit.find({
+    const AccountManages = await AccountManage.find({
       startDate: { $gte: startDateObj },
       endDate: { $lte: endDateObj },
       partnerId,
     });
 
-    if (creditAndDebits.length === 0) {
+    if (AccountManages.length === 0) {
       return res.status(404).json({
         status: "error",
         success: false,
@@ -521,7 +644,7 @@ export const getTotalAmountByDateRangeAndPartnerId = async (req, res) => {
       });
     }
 
-    const totalAmount = creditAndDebits.reduce(
+    const totalAmount = AccountManages.reduce(
       (total, record) => total + record.amount,
       0
     );
@@ -537,48 +660,6 @@ export const getTotalAmountByDateRangeAndPartnerId = async (req, res) => {
       status: "error",
       success: false,
       message: "Error retrieving credit and debit data.",
-      error: error.message,
-    });
-  }
-};
-
-// get credit and debit data by TransactionCode and partnerId
-export const getCreditAndDebitDetailsByTransactionCodeAndPartnerId = async (req, res) => {
-  const { transactionCode, partnerId } = req.query;
-
-  if (!transactionCode || !partnerId) {
-    return res.status(400).json({
-      status: "error",
-      success: false,
-      message: "Transaction code and partner ID are required.",
-    });
-  }
-
-  try {
-    const debitDetails = await creditAndDebitSchema.findOne({
-      transactionCode,
-      partnerId,
-    });
-
-    if (!debitDetails) {
-      return res.status(404).json({
-        status: "error",
-        success: false,
-        message: "No debit details found for the provided transaction code and partner ID.",
-      });
-    }
-
-    res.status(200).json({
-      status: "success",
-      success: true,
-      message: "Debit details retrieved successfully.",
-      data: debitDetails,
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: "error",
-      success: false,
-      message: "Error retrieving debit details.",
       error: error.message,
     });
   }

@@ -54,6 +54,8 @@ import leadPayment from "./routes/partnerRoutes/leadPaymentRoutes.js";
 import accountRoute from "./routes/accountRoutes/accountRoute.js";
 import creditAndDebit from "./routes/accountRoutes/creditAndDebitRoute.js";
 import debitRoute from "./routes/accountRoutes/debitRoute.js";
+import accountManage from "./routes/accountRoutes/accountManageRoute.js";
+
 // Excel Compare
 import excelCompare from "./routes/excelCompareRoutes.js";
 
@@ -201,6 +203,9 @@ app.use("/api", debitRoute);
 
 // excel compare
 app.use("/api", excelCompare);
+
+// account Manage
+app.use("/api/account-manage",accountManage);
 
 // ---------------------------------------- Bar and Line charts ------------------------------
 app.use("/api/partner-dashboard", partnerChart);
