@@ -134,6 +134,7 @@ export const policyStatusManage = async (req, res) => {
         payOutBalance,
         updatedBy,
         updatedOn,
+        transactionCode,
       }) => {
         let existingPayment = await motorPolicyPayment.findOne({
           policyNumber,
@@ -220,6 +221,7 @@ export const policyStatusManage = async (req, res) => {
     });
   }
 };
+
 
 // Get UnPaid and Partial Paid by date range and partnerId
 export const getUnPaidAndPartialPaidPayments = async (req, res) => {
