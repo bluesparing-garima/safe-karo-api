@@ -1,21 +1,21 @@
 import express from "express";
 import {
     getAllCredits,
-  getCreditsByPartnerId,
-  getCreditsByPartnerIdAndDateRange,
+    getCreditsByBrokerId,
+    getCreditsByBrokerIdAndDateRange,
   getDCreditDetailsByTransactionCodeAndBrokerId
 } from "../../controller/accountsController/creditController.js";
 import logActivity from "../../middlewares/logActivity.js";
 
 const router = express.Router();
 
-router.get("/credits", logActivity, getAllCredits);
-router.get("/credits/:partnerId", logActivity, getCreditsByPartnerId);
+router.get("/", logActivity, getAllCredits);
+router.get("/:brokerId", logActivity, getCreditsByBrokerId);
 router.get(
-  "/credits/date-range/:partnerId",
+  "/date-range/:brokerId",
   logActivity,
-  getCreditsByPartnerIdAndDateRange
+  getCreditsByBrokerIdAndDateRange
 );
-router.get("/credits/transaction", logActivity, getDCreditDetailsByTransactionCodeAndBrokerId);
+router.get("/transactions", logActivity, getDCreditDetailsByTransactionCodeAndBrokerId);
 
 export default router;

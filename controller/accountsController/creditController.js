@@ -28,7 +28,7 @@ export const getAllCredits = async (req, res) => {
   }
 };
 
-export const getCreditsByPartnerId = async (req, res) => {
+export const getCreditsByBrokerId = async (req, res) => {
   const { brokerId } = req.params;
 
   try {
@@ -58,7 +58,7 @@ export const getCreditsByPartnerId = async (req, res) => {
   }
 };
 
-export const getCreditsByPartnerIdAndDateRange = async (req, res) => {
+export const getCreditsByBrokerIdAndDateRange = async (req, res) => {
   const { brokerId } = req.params;
   const { startDate, endDate } = req.query;
 
@@ -105,7 +105,6 @@ export const getCreditsByPartnerIdAndDateRange = async (req, res) => {
 
 // get Credit data by TransactionCode and brokerId
 export const getDCreditDetailsByTransactionCodeAndBrokerId = async (req, res) => {
-  console.log("first")
   const { transactionCode, brokerId } = req.query;
 
   if (!transactionCode || !brokerId) {
