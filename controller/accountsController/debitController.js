@@ -117,7 +117,7 @@ export const getDebitDetailsByTransactionCodeAndPartnerId = async (req, res) => 
   }
 
   try {
-    const debitDetails = await debits.findOne({
+    const debitDetails = await debits.find({
       transactionCode,
       partnerId,
     });
