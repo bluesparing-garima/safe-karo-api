@@ -3,11 +3,10 @@ import Account from "../../models/accountsModels/accountSchema.js";
 import MotorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
 import Debit from "../../models/accountsModels/debitsSchema.js";
 import motorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
-import moment from 'moment'; // Ensure moment is imported
+import moment from 'moment';
 
 const generateTransactionCode = async (startDate, endDate, type, amount) => {
   try {
-    // Check if the startDate and endDate are valid dates
     if (!moment(startDate, "YYYY-MM-DD", true).isValid()) {
       console.error("Invalid startDate:", startDate);
       throw new Error("Invalid startDate");
@@ -17,18 +16,14 @@ const generateTransactionCode = async (startDate, endDate, type, amount) => {
       throw new Error("Invalid endDate");
     }
 
-    // Format dates
     const formattedStartDate = moment(startDate).format("DDMMYY");
     const formattedEndDate = moment(endDate).format("DDMMYY");
 
-    // Format amount with leading zeros if necessary
     const formattedAmount = amount ? String(amount).padStart(4, '0') : '0000';
 
-    // Get current date and time
     const currentDate = moment().format("DDMMYYYY");
     const currentTime = moment().format("[T]HH:mm:ss");
 
-    // Generate transaction code
     const newTransactionCode = `PC${formattedStartDate}${formattedEndDate}AM${formattedAmount}${currentDate}${currentTime}`;
     return newTransactionCode;
   } catch (error) {
@@ -66,7 +61,6 @@ export const createAccountManage = async (req, res) => {
 
     const transactionType = type.toLowerCase();
 
-    // Check if the CutPay amount has already been paid
     const existingMotorPolicyPayment = await MotorPolicyPayment.findOne({
       partnerId,
       policyNumber,
@@ -93,7 +87,6 @@ export const createAccountManage = async (req, res) => {
       });
     }
 
-    // Update the account balance and handle CutPay debit transactions
     const account = await Account.findById(accountId);
     if (!account) {
       return res.status(404).json({
@@ -103,7 +96,6 @@ export const createAccountManage = async (req, res) => {
     }
 
     if (accountType === "CutPay" && transactionType === "debit") {
-      // Handle CutPay Debit Logic
       const motorPolicy = await MotorPolicyPayment.findOneAndUpdate(
         { partnerId, policyNumber },
         {
@@ -112,7 +104,7 @@ export const createAccountManage = async (req, res) => {
           payOutPaymentStatus: "Paid",
           payOutBalance: 0,
         },
-        { new: true } // Return the updated document
+        { new: true }
       );
 
       if (!motorPolicy) {
@@ -122,10 +114,8 @@ export const createAccountManage = async (req, res) => {
         });
       }
 
-      // Generate a transaction code for the new debit
       const transactionCode = await generateTransactionCode(startDate, endDate, transactionType, amount);
 
-      // Create a new Debit entry using the updated motorPolicy data
       const newDebitEntry = new Debit({
         policyNumber,
         partnerId,
@@ -135,16 +125,14 @@ export const createAccountManage = async (req, res) => {
         payOutBalance: 0,
         policyDate: motorPolicy.policyDate,
         createdBy,
-        transactionCode, // Save the transaction code in the Debit entry
+        transactionCode,
       });
 
       await newDebitEntry.save();
 
-      // Update the account balance
       account.amount -= amount;
       await account.save();
 
-      // Create a new AccountManage entry
       const newAccountManage = new AccountManage({
         accountType,
         type: transactionType,
@@ -167,7 +155,7 @@ export const createAccountManage = async (req, res) => {
         createdBy,
         createdOn,
         partnerBalance,
-        transactionCode, // Save the transaction code in the AccountManage entry
+        transactionCode,
       });
 
       await newAccountManage.save();
@@ -179,7 +167,6 @@ export const createAccountManage = async (req, res) => {
       });
     }
 
-    // Handle regular Credit or Debit transactions
     if (transactionType === "credit") {
       account.amount += amount;
     } else if (transactionType === "debit") {
@@ -212,7 +199,7 @@ export const createAccountManage = async (req, res) => {
       createdBy,
       createdOn,
       partnerBalance,
-      transactionCode, // Save the transaction code in the AccountManage entry
+      transactionCode, 
     });
 
     await newAccountManage.save();
