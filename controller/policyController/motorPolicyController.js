@@ -535,16 +535,13 @@ export const createMotorPolicy = async (req, res) => {
 
 // Get Motor Policies
 export const getMotorPolicies = async (req, res) => {
-  // const page = parseInt(req.query.page) || 1;
-  // const limit = parseInt(req.query.limit) || 20;
-  // const skip = (page - 1) * limit;
-
   try {
-    const forms = await MotorPolicyModel.find();
-    // .sort({ createdAt: -1 })
-    // .skip(skip)
-    // .limit(limit);
+    // Fetch motor policies and sort by creation date (newest first)
+    const forms = await MotorPolicyModel.find({ isActive: true }).sort({
+      createdOn: -1,
+    });
 
+    // Get the total count of active motor policies
     const totalCount = await MotorPolicyModel.countDocuments({
       isActive: true,
     });
@@ -554,9 +551,7 @@ export const getMotorPolicies = async (req, res) => {
       data: forms,
       success: true,
       status: "success",
-      // totalCount,
-      // totalPages: Math.ceil(totalCount / limit),
-      // currentPage: page
+      totalCount,
     });
   } catch (error) {
     res
@@ -869,7 +864,7 @@ export const updateMotorPolicy = async (req, res) => {
         vehicleAge,
         make,
         model,
-        fuelType, 
+        fuelType,
         rto,
         vehicleNumber,
         seatingCapacity,
@@ -976,7 +971,9 @@ export const updateMotorPolicy = async (req, res) => {
         issueDate: updatedIssueDate,
       } = updatedForm;
 
-      const existingPayment = await MotorPolicyPaymentModel.findOne({ policyNumber: updatedPolicyNumber });
+      const existingPayment = await MotorPolicyPaymentModel.findOne({
+        policyNumber: updatedPolicyNumber,
+      });
 
       if (!existingPayment) {
         return res.status(404).json({
@@ -993,13 +990,25 @@ export const updateMotorPolicy = async (req, res) => {
       } = existingPayment;
 
       // Calculate the dynamic amounts and commissions based on the fetched percentages
-      const calculatedPayInODAmount = Math.round((updatedOD * payInODPercentage) / 100);
-      const calculatedPayInTPAmount = Math.round((updatedTP * payInTPPercentage) / 100);
-      const payInCommission = Math.round(calculatedPayInODAmount + calculatedPayInTPAmount);
+      const calculatedPayInODAmount = Math.round(
+        (updatedOD * payInODPercentage) / 100
+      );
+      const calculatedPayInTPAmount = Math.round(
+        (updatedTP * payInTPPercentage) / 100
+      );
+      const payInCommission = Math.round(
+        calculatedPayInODAmount + calculatedPayInTPAmount
+      );
 
-      const calculatedPayOutODAmount = Math.round((updatedOD * payOutODPercentage) / 100);
-      const calculatedPayOutTPAmount = Math.round((updatedTP * payOutTPPercentage) / 100);
-      const payOutCommission = Math.round(calculatedPayOutODAmount + calculatedPayOutTPAmount);
+      const calculatedPayOutODAmount = Math.round(
+        (updatedOD * payOutODPercentage) / 100
+      );
+      const calculatedPayOutTPAmount = Math.round(
+        (updatedTP * payOutTPPercentage) / 100
+      );
+      const payOutCommission = Math.round(
+        calculatedPayOutODAmount + calculatedPayOutTPAmount
+      );
 
       // Prepare the updated fields for MotorPolicyPaymentModel
       const updatedPaymentFields = {
