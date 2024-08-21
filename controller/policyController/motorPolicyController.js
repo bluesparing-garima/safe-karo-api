@@ -876,7 +876,7 @@ export const updateMotorPolicy = async (req, res) => {
         weight,
         cc,
         ncb,
-        policyNumber, // First declaration of policyNumber
+        policyNumber,
         fullName,
         emailId,
         phoneNumber,
@@ -969,10 +969,13 @@ export const updateMotorPolicy = async (req, res) => {
           .json({ status: "error", message: "Motor Policy not found" });
       }
 
-      // Now update the MotorPolicyPaymentModel with the updated od and tp values
-      const { policyNumber: updatedPolicyNumber, od: updatedOD, tp: updatedTP } = updatedForm;
+      const {
+        policyNumber: updatedPolicyNumber,
+        od: updatedOD,
+        tp: updatedTP,
+        issueDate: updatedIssueDate,
+      } = updatedForm;
 
-      // Fetch the existing payment record to get dynamic percentages
       const existingPayment = await MotorPolicyPaymentModel.findOne({ policyNumber: updatedPolicyNumber });
 
       if (!existingPayment) {
@@ -998,6 +1001,7 @@ export const updateMotorPolicy = async (req, res) => {
       const calculatedPayOutTPAmount = Math.round((updatedTP * payOutTPPercentage) / 100);
       const payOutCommission = Math.round(calculatedPayOutODAmount + calculatedPayOutTPAmount);
 
+      // Prepare the updated fields for MotorPolicyPaymentModel
       const updatedPaymentFields = {
         od: updatedOD,
         tp: updatedTP,
@@ -1007,6 +1011,7 @@ export const updateMotorPolicy = async (req, res) => {
         payOutODAmount: calculatedPayOutODAmount,
         payOutTPAmount: calculatedPayOutTPAmount,
         payOutCommission,
+        policyDate: issueDate,
       };
 
       const updatedPayment = await MotorPolicyPaymentModel.findOneAndUpdate(
