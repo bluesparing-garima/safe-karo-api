@@ -168,9 +168,9 @@ export const createAccountManage = async (req, res) => {
     }
 
     if (transactionType === "credit") {
-      account.amount += amount;
-    } else if (transactionType === "debit") {
       account.amount -= amount;
+    } else if (transactionType === "debit") {
+      account.amount += amount;
     }
 
     await account.save();
@@ -387,9 +387,9 @@ export const updateAccountManageById = async (req, res) => {
     // Apply the new balance change
     const transactionType = type.toLowerCase();
     if (transactionType === "credit") {
-      account.amount += amount;
-    } else if (transactionType === "debit") {
       account.amount -= amount;
+    } else if (transactionType === "debit") {
+      account.amount += amount;
     }
 
     await account.save();
