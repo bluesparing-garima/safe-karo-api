@@ -2,32 +2,25 @@ import AccountManage from "../../models/accountsModels/accountManageSchema.js";
 import Account from "../../models/accountsModels/accountSchema.js";
 import MotorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
 import Debit from "../../models/accountsModels/debitsSchema.js";
-import motorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
 import moment from 'moment';
 
 const generateTransactionCode = async (startDate, endDate, type, amount) => {
   try {
     if (!moment(startDate, "YYYY-MM-DD", true).isValid()) {
-      console.error("Invalid startDate:", startDate);
       throw new Error("Invalid startDate");
     }
     if (!moment(endDate, "YYYY-MM-DD", true).isValid()) {
-      console.error("Invalid endDate:", endDate);
       throw new Error("Invalid endDate");
     }
 
     const formattedStartDate = moment(startDate).format("DDMMYY");
     const formattedEndDate = moment(endDate).format("DDMMYY");
-
     const formattedAmount = amount ? String(amount).padStart(4, '0') : '0000';
-
     const currentDate = moment().format("DDMMYYYY");
     const currentTime = moment().format("[T]HH:mm:ss");
 
-    const newTransactionCode = `PC${formattedStartDate}${formattedEndDate}AM${formattedAmount}${currentDate}${currentTime}`;
-    return newTransactionCode;
+    return `PC${formattedStartDate}${formattedEndDate}AM${formattedAmount}${currentDate}${currentTime}`;
   } catch (error) {
-    console.error("Error generating transaction code:", error.message);
     throw new Error("Error generating transaction code");
   }
 };
@@ -57,6 +50,7 @@ export const createAccountManage = async (req, res) => {
       createdBy,
       createdOn,
       partnerBalance,
+      brokerBalance = 0
     } = req.body;
 
     const transactionType = type.toLowerCase();
@@ -155,6 +149,7 @@ export const createAccountManage = async (req, res) => {
         createdBy,
         createdOn,
         partnerBalance,
+        brokerBalance,
         transactionCode,
       });
 
@@ -199,6 +194,7 @@ export const createAccountManage = async (req, res) => {
       createdBy,
       createdOn,
       partnerBalance,
+      brokerBalance,
       transactionCode, 
     });
 

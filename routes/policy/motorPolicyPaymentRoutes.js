@@ -7,16 +7,19 @@ import {
   updateMotorPolicyPayment,
   deleteMotorPolicyPayment,
   policyStatusManage,
+  policyBrokerStatusManage,
   getUnPaidAndPartialPaidPayments
-
 } from '../../controller/policyController/motorPolicyPaymentController.js';
 
 const router = express.Router();
+
 router.post('/', logActivity, createMotorPolicyPayment);
 router.get('/', logActivity, getAllMotorPolicyPayments);
 router.get('/partner-id/status', logActivity, getUnPaidAndPartialPaidPayments);
 router.get('/:policyId', logActivity, getMotorPolicyPaymentByPolicyId);
-router.put('/status-manage',logActivity,policyStatusManage);
+router.put('/status-manage', logActivity, policyStatusManage);
+router.put('/broker-status-manage', logActivity, policyBrokerStatusManage);
+
 router.put('/:policyId', logActivity, updateMotorPolicyPayment);
 router.delete('/:id', logActivity, deleteMotorPolicyPayment);
 

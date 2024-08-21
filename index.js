@@ -55,6 +55,7 @@ import accountRoute from "./routes/accountRoutes/accountRoute.js";
 import creditAndDebit from "./routes/accountRoutes/creditAndDebitRoute.js";
 import debitRoute from "./routes/accountRoutes/debitRoute.js";
 import accountManage from "./routes/accountRoutes/accountManageRoute.js";
+import creditRoute from "./routes/accountRoutes/creditRoute.js";
 
 // Excel Compare
 import excelCompare from "./routes/excelCompareRoutes.js";
@@ -201,6 +202,8 @@ app.use("/api/credit-debit", creditAndDebit);
 // Debit details
 app.use("/api", debitRoute);
 
+// Credit details
+app.use("/api/credits",creditRoute);
 // excel compare
 app.use("/api", excelCompare);
 
