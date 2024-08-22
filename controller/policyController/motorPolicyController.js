@@ -642,7 +642,6 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
   }
 };
 
-
 // Check Vehicle Number exist or not.
 export const validateVehicleNumber = async (req, res) => {
   try {
@@ -1132,24 +1131,60 @@ export const updateMotorPolicy = async (req, res) => {
   });
 };
 
-// Delete Motor Policy by ID
-export const deleteMotorPolicy = async (req, res) => {
+// deactivate Motor Policy by ID
+export const deactivateMotorPolicy = async (req, res) => {
   try {
-    const deletedForm = await MotorPolicyModel.findByIdAndDelete(req.params.id);
-    if (!deletedForm) {
+    const policy = await MotorPolicyModel.findById(req.params.id);
+    if (!policy) {
       return res
         .status(404)
         .json({ status: "error", message: "Motor Policy not found" });
     }
 
-    deletedForm.isActive = false;
-    await deletedForm.save();
+    const payInPaymentStatus = policy.payInPaymentStatus || "UnPaid";
+    const payOutPaymentStatus = policy.payOutPaymentStatus || "UnPaid";
+
+    if (payInPaymentStatus !== "UnPaid" || payOutPaymentStatus !== "UnPaid") {
+      return res.status(400).json({
+        status: "error",
+        message: "Cannot deactivate policy: PayIn or PayOut has already been paid.",
+      });
+    }
+
+    policy.isActive = false;
+    await policy.save();
+
+    await MotorPolicyPaymentModel.updateMany(
+      { policyId: req.params.id },
+      { $set: { isActive: false } }
+    );
 
     res.status(200).json({
       status: "success",
-      message: "Motor Policy deleted successfully",
+      message: "Motor Policy deactivated successfully",
     });
   } catch (error) {
     res.status(500).json({ status: "error", message: error.message });
   }
 };
+
+// get inactive policies.
+export const getInactiveMotorPolicies = async (req, res) => {
+  try {
+    const inactivePolicies = await MotorPolicyModel.find({ isActive: false });
+
+    if (!inactivePolicies || inactivePolicies.length === 0) {
+      return res.status(404).json({
+        status: "error",
+        message: "No inactive motor policies found",
+      });
+    }
+    res.status(200).json({
+      status: "success",
+      data: inactivePolicies,
+    });
+  } catch (error) {
+    res.status(500).json({ status: "error", message: error.message });
+  }
+};
+
