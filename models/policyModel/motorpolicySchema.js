@@ -57,6 +57,10 @@ const MotorPolicySchema = new mongoose.Schema({
   proposal: { type: String, trim: true },
   currentPolicy: { type: String, trim: true },
   other: { type: String, trim: true },
+  bookingTimer:{type:String,trim:true},
+  leadTimer:{type:String,trim:true},
+  bookingDate:{type:Date,trim:true},
+  leadDate:{type:Date,trim:true},
   createdBy: {
     type: String,
     required: true,
