@@ -3,10 +3,11 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import moment from "moment";
-import BookingRequestModel from "../../models/bookingModel/bookingRequestSchema.js";
+import upload from "../../middlewares/uploadMiddleware.js";
 import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
 import MotorPolicyPaymentModel from "../../models/policyModel/motorPolicyPaymentSchema.js";
-import upload from "../../middlewares/uploadMiddleware.js";
+import BookingRequestModel from "../../models/bookingModel/bookingRequestSchema.js";
+import leadModel from "../../models/partnerModels/leadGenerateSchema.js";
 
 const dataFilePath = path.join(process.cwd(), "data", "motorpolicy_data.json");
 const hashFilePath = path.join(
@@ -27,8 +28,8 @@ const computeHash = (data) => {
 
 // Custom function to convert Excel serial date to formatted date string
 function excelDateToFormattedDate(serial) {
-  const epoch = new Date(Date.UTC(1899, 11, 30)); // Excel epoch
-  const jsDate = new Date(epoch.getTime() + serial * 86400000); // 86400000 = ms per day
+  const epoch = new Date(Date.UTC(1899, 11, 30));
+  const jsDate = new Date(epoch.getTime() + serial * 86400000);
   return moment(jsDate).format("YYYY-MM-DD");
 }
 
@@ -559,6 +560,78 @@ export const getMotorPolicies = async (req, res) => {
       .json({ status: "error", success: false, message: error.message });
   }
 };
+
+// Get motor policies with date filter.
+export const getMotorPoliciesByDateRange = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        message: "Please provide both startDate and endDate.",
+        success: false,
+        status: "error",
+      });
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    const policies = await MotorPolicyModel.find({
+      isActive: true,
+      issueDate: { $gte: start, $lte: end },
+    }).sort({ issueDate: -1 });
+
+    const policiesWithTimers = [];
+
+    for (const policy of policies) {
+      let bookingTimer = null;
+      let leadTimer = null;
+      let bookingDate = null;
+      let leadDate = null;
+
+      const booking = await BookingRequestModel.findOne({
+        policyNumber: policy.policyNumber,
+      });
+
+      if (booking) {
+        bookingTimer = booking.timer;
+        bookingDate = booking.createdOn;
+
+        if (booking.leadId) {
+          const lead = await leadModel.findById(booking.leadId);
+
+          if (lead) {
+            leadTimer = lead.timer;
+            leadDate = lead.createdOn;
+          }
+        }
+      }
+      policiesWithTimers.push({
+        ...policy._doc,
+        bookingTimer,
+        leadTimer,
+        bookingDate,
+        leadDate,
+      });
+    }
+
+    const totalCount = policies.length;
+
+    res.status(200).json({
+      message: `Motor Policies from ${startDate} to ${endDate}.`,
+      data: policiesWithTimers,
+      success: true,
+      status: "success",
+      totalCount,
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ status: "error", success: false, message: error.message });
+  }
+};
+
 
 // Check Vehicle Number exist or not.
 export const validateVehicleNumber = async (req, res) => {
