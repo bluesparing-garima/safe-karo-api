@@ -582,7 +582,7 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
       issueDate: { $gte: start, $lte: end },
     }).sort({ issueDate: -1 });
 
-    const policiesWithTimers = [];
+    const policiesWithDetails = [];
 
     for (const policy of policies) {
       let bookingTimer = null;
@@ -607,12 +607,22 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
           }
         }
       }
-      policiesWithTimers.push({
+
+      const payment = await MotorPolicyPaymentModel.findOne({
+        policyNumber: policy.policyNumber,
+      });
+
+      const payInPaymentStatus = payment.payInPaymentStatus;
+      const payOutPaymentStatus = payment.payOutPaymentStatus;
+
+      policiesWithDetails.push({
         ...policy._doc,
         bookingTimer,
         leadTimer,
         bookingDate,
         leadDate,
+        payInPaymentStatus,
+        payOutPaymentStatus,
       });
     }
 
@@ -620,7 +630,7 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
 
     res.status(200).json({
       message: `Motor Policies from ${startDate} to ${endDate}.`,
-      data: policiesWithTimers,
+      data: policiesWithDetails,
       success: true,
       status: "success",
       totalCount,
