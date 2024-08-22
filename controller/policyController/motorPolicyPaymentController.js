@@ -246,7 +246,7 @@ export const getUnPaidAndPartialPaidPayments = async (req, res) => {
           partnerId,
           policyDate: { $gte: start, $lte: end },
           payOutPaymentStatus: { $in: ["UnPaid", "Partial"] },
-          isActive: true, // Only include active records
+          isActive: true,
         },
       },
       {
@@ -295,6 +295,56 @@ export const getUnPaidAndPartialPaidPayments = async (req, res) => {
         partnerBalance: totalPartnerBalance,
         adjustedTotalAmount,
       },
+      success: true,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving motor policy payments",
+      error: error.message,
+      success: false,
+      status: "error",
+    });
+  }
+};
+
+// Get Paid by date range and partnerId
+export const getPaidPayments = async (req, res) => {
+  try {
+    const { partnerId, startDate, endDate } = req.query;
+
+    if (!partnerId || !startDate || !endDate) {
+      return res.status(400).json({
+        message: "Missing required query parameters",
+        success: false,
+        status: "error",
+      });
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    const results = await motorPolicyPayment.aggregate([
+      {
+        $match: {
+          partnerId,
+          policyDate: { $gte: start, $lte: end },
+          payOutPaymentStatus: "Paid",
+          isActive: true,
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalAmount: { $sum: "$payOutCommission" },
+          payments: { $push: "$$ROOT" },
+        },
+      },
+    ]);
+
+    res.status(200).json({
+      message: "Motor policy payments for status Paid retrieved successfully",
+      data: results[0] || { totalAmount: 0, payments: [] },
       success: true,
       status: "success",
     });
