@@ -32,6 +32,7 @@ export const createMotorPolicyPayment = async (req, res) => {
     payInBalance,
     payOutBalance,
     createdBy,
+    isActive
   } = req.body;
 
   try {
@@ -80,6 +81,7 @@ export const createMotorPolicyPayment = async (req, res) => {
       payOutBalance,
       policyDate: motorPolicy.issueDate,
       createdBy,
+      isActive: isActive !== undefined ? isActive : true,
     });
 
     const savedMotorPolicyPayment = await newMotorPolicyPayment.save();
@@ -222,7 +224,6 @@ export const policyStatusManage = async (req, res) => {
   }
 };
 
-
 // Get UnPaid and Partial Paid by date range and partnerId
 export const getUnPaidAndPartialPaidPayments = async (req, res) => {
   try {
@@ -245,6 +246,7 @@ export const getUnPaidAndPartialPaidPayments = async (req, res) => {
           partnerId,
           policyDate: { $gte: start, $lte: end },
           payOutPaymentStatus: { $in: ["UnPaid", "Partial"] },
+          isActive: true, // Only include active records
         },
       },
       {
@@ -309,7 +311,7 @@ export const getUnPaidAndPartialPaidPayments = async (req, res) => {
 // Get all motor policy payments
 export const getAllMotorPolicyPayments = async (req, res) => {
   try {
-    const motorPolicyPayments = await motorPolicyPayment.find();
+    const motorPolicyPayments = await motorPolicyPayment.find({ isActive: true });
     res.status(200).json({
       message: "All Motor Policy Payments retrieved successfully",
       data: motorPolicyPayments,
@@ -330,6 +332,7 @@ export const getMotorPolicyPaymentByPolicyId = async (req, res) => {
   try {
     const motorPolicyPaymentData = await motorPolicyPayment.findOne({
       policyId: req.params.policyId,
+      isActive: true, // Ensure only active records are retrieved
     });
     if (!motorPolicyPaymentData) {
       return res.status(404).json({

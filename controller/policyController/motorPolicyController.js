@@ -1155,13 +1155,13 @@ export const deactivateMotorPolicy = async (req, res) => {
     await policy.save();
 
     await MotorPolicyPaymentModel.updateMany(
-      { policyId: req.params.id },
-      { $set: { isActive: false } }
+      { policyId: policy._id }, 
+      { $set: { isActive: false } } 
     );
 
     res.status(200).json({
       status: "success",
-      message: "Motor Policy deactivated successfully",
+      message: "Motor Policy and related payments deactivated successfully",
     });
   } catch (error) {
     res.status(500).json({ status: "error", message: error.message });
@@ -1171,14 +1171,30 @@ export const deactivateMotorPolicy = async (req, res) => {
 // get inactive policies.
 export const getInactiveMotorPolicies = async (req, res) => {
   try {
-    const inactivePolicies = await MotorPolicyModel.find({ isActive: false });
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        status: "error",
+        message: "Start date and end date are required",
+      });
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    const inactivePolicies = await MotorPolicyModel.find({
+      isActive: false,
+      issueDate: { $gte: start, $lte: end },
+    });
 
     if (!inactivePolicies || inactivePolicies.length === 0) {
       return res.status(404).json({
         status: "error",
-        message: "No inactive motor policies found",
+        message: "No inactive motor policies found in the specified date range",
       });
     }
+
     res.status(200).json({
       status: "success",
       data: inactivePolicies,
@@ -1187,4 +1203,5 @@ export const getInactiveMotorPolicies = async (req, res) => {
     res.status(500).json({ status: "error", message: error.message });
   }
 };
+
 
