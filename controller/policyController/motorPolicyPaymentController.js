@@ -334,7 +334,6 @@ export const getPaidPayments = async (req, res) => {
         status: "error",
       });
     }
-
     const start = new Date(startDate);
     const end = new Date(endDate);
 
@@ -356,17 +355,18 @@ export const getPaidPayments = async (req, res) => {
       },
     ]);
 
-    let partnerBalance = 0;
-    if (results.length > 0 && results[0].payments.length > 0) {
-      partnerBalance = results[0].payments[0].partnerBalance || 0;
-    }
+    const creditAndDebitData = await creditAndDebitSchema.findOne({ partnerId });
 
+    let partnerBalance = 0;
+    if (creditAndDebitData) {
+      partnerBalance = creditAndDebitData.partnerBalance || 0;
+    }
     res.status(200).json({
       message: "Motor policy payments for status Paid retrieved successfully",
       data: {
+        partnerBalance: partnerBalance,
         totalAmount: results[0]?.totalAmount || 0,
         payments: results[0]?.payments || [],
-        partnerBalance: partnerBalance,
       },
       success: true,
       status: "success",
@@ -380,6 +380,7 @@ export const getPaidPayments = async (req, res) => {
     });
   }
 };
+
 
 // Get all motor policy payments
 export const getAllMotorPolicyPayments = async (req, res) => {
