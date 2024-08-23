@@ -5,6 +5,7 @@ const motorPolicyPaymentSchema = new mongoose.Schema({
   policyId: { type: String, trim: true },
   policyNumber: { type: String, trim: true },
   bookingId: { type: String, trim: true },
+  brokerId:{type:String,trim:true},
   od: { type: Number, trim: true },
   tp: { type: Number, trim: true },
   netPremium: { type: Number, trim: true },

@@ -16,17 +16,14 @@ const hashFilePath = path.join(
   "motorpolicy_hashes.json"
 );
 
-// Ensure the data directory exists
 if (!fs.existsSync(path.join(process.cwd(), "data"))) {
   fs.mkdirSync(path.join(process.cwd(), "data"));
 }
 
-// Function to compute hash of file data
 const computeHash = (data) => {
   return crypto.createHash("md5").update(data).digest("hex");
 };
 
-// Custom function to convert Excel serial date to formatted date string
 function excelDateToFormattedDate(serial) {
   const epoch = new Date(Date.UTC(1899, 11, 30));
   const jsDate = new Date(epoch.getTime() + serial * 86400000);
@@ -49,7 +46,6 @@ export const uploadMotorPolicy = async (req, res) => {
       storedHashes = JSON.parse(rawHashData);
     }
 
-    // Check if the file has already been uploaded
     if (storedHashes.includes(fileHash)) {
       return res
         .status(400)
@@ -84,6 +80,7 @@ export const uploadMotorPolicy = async (req, res) => {
           row.subCategory || row["SubCategory"] || row["Sub Category"] || "",
         companyName: row.companyName || row["Company Name"] || "",
         broker: row.broker || row["Broker"] || "",
+        brokerId: row.brokerId || row["Broker ID"] || "",
         vehicleAge: row.vehicleAge || row["Vehicle Age"] || "",
         make: row.make || row["Make"] || "",
         model: row.model || row["Model"] || "",
@@ -159,6 +156,7 @@ export const uploadMotorPolicy = async (req, res) => {
         existingRecord.subCategory = data.subCategory;
         existingRecord.companyName = data.companyName;
         existingRecord.broker = data.broker;
+        existingRecord.brokerId = data.brokerId;
         existingRecord.vehicleAge = data.vehicleAge;
         existingRecord.make = data.make;
         existingRecord.model = data.model;
@@ -204,6 +202,7 @@ export const uploadMotorPolicy = async (req, res) => {
         });
 
         if (paymentRecord) {
+          paymentRecord.brokerId = existingRecord.brokerId;
           paymentRecord.partnerId = existingRecord.partnerId;
           paymentRecord.policyNumber = existingRecord.policyNumber;
           paymentRecord.bookingId = existingRecord.bookingId;
@@ -232,6 +231,7 @@ export const uploadMotorPolicy = async (req, res) => {
         const newMotorPolicyPayment = new MotorPolicyPaymentModel({
           partnerId: newPolicy.partnerId,
           policyId: newPolicy._id,
+          brokerId: newPolicy.brokerId,
           policyNumber: newPolicy.policyNumber,
           bookingId: newPolicy.bookingId,
           od: newPolicy.od,
@@ -286,7 +286,6 @@ export const updateMotorPolicyDates = async (req, res) => {
       storedHashes = JSON.parse(rawHashData);
     }
 
-    // Check if the file has already been uploaded
     if (storedHashes.includes(fileHash)) {
       return res
         .status(400)
@@ -328,7 +327,6 @@ export const updateMotorPolicyDates = async (req, res) => {
       }
     }
 
-    // Save hashes to avoid re-uploading the same file
     storedHashes.push(fileHash);
     fs.writeFileSync(hashFilePath, JSON.stringify(storedHashes, null, 2));
 
@@ -367,6 +365,7 @@ export const createMotorPolicy = async (req, res) => {
       subCategory,
       companyName,
       broker,
+      brokerId,
       vehicleAge,
       make,
       model,
@@ -414,7 +413,6 @@ export const createMotorPolicy = async (req, res) => {
       return acc;
     }, {});
 
-    // Format issueDate to ISO 8601 format
     const formattedIssueDate = new Date(issueDate).toISOString();
 
     const newMotorPolicy = new MotorPolicyModel({
@@ -432,6 +430,7 @@ export const createMotorPolicy = async (req, res) => {
       subCategory,
       companyName,
       broker,
+      brokerId: brokerId || "",
       vehicleAge,
       make,
       model,
@@ -450,7 +449,7 @@ export const createMotorPolicy = async (req, res) => {
       tenure,
       registrationDate,
       endDate,
-      issueDate: formattedIssueDate, // Use formatted date
+      issueDate: formattedIssueDate,
       idv,
       od,
       tp,
@@ -483,6 +482,7 @@ export const createMotorPolicy = async (req, res) => {
       const newMotorPolicyPayment = new MotorPolicyPaymentModel({
         partnerId: savedMotorPolicy.partnerId,
         policyId: savedMotorPolicy._id,
+        brokerId: savedMotorPolicy.brokerId,
         policyNumber: savedMotorPolicy.policyNumber,
         bookingId: savedMotorPolicy.bookingId,
         od: savedMotorPolicy.od,
@@ -503,13 +503,12 @@ export const createMotorPolicy = async (req, res) => {
         payOutAmount: savedMotorPolicy.payOutAmount || 0,
         payInPaymentStatus: savedMotorPolicy.payInPaymentStatus || "UnPaid",
         payOutPaymentStatus: savedMotorPolicy.payOutPaymentStatus || "UnPaid",
-        policyDate: formattedIssueDate, // Use formatted date
+        policyDate: formattedIssueDate,
         createdBy: savedMotorPolicy.createdBy,
       });
 
       const savedMotorPolicyPayment = await newMotorPolicyPayment.save();
 
-      // Update booking status
       const existingBookingRequest = await BookingRequestModel.findOne({
         policyNumber,
       });
@@ -537,12 +536,10 @@ export const createMotorPolicy = async (req, res) => {
 // Get Motor Policies
 export const getMotorPolicies = async (req, res) => {
   try {
-    // Fetch motor policies and sort by creation date (newest first)
     const forms = await MotorPolicyModel.find({ isActive: true }).sort({
       createdOn: -1,
     });
 
-    // Get the total count of active motor policies
     const totalCount = await MotorPolicyModel.countDocuments({
       isActive: true,
     });
@@ -732,19 +729,6 @@ export const getMotorPolicyByPartnerId = async (req, res) => {
 export const getMotorPolicyWithPaymentDetails = async (req, res) => {
   try {
     const { policyId } = req.params;
-    // const policyWithPaymentDetails = await MotorPolicyModel.aggregate([
-    //   {
-    //     $match: { _id: mongoose.Types.ObjectId.policyId },
-    //   },
-    //   {
-    //     $lookup: {
-    //       from: 'motorPolicyPayments', // Collection name for MotorPolicyPaymentModel
-    //     localField: '_id',
-    //   foreignField: 'policyId',
-    //   as: 'payments',
-    //     },
-    //   },
-    // ]);
     const motorPolicy = await MotorPolicyModel.findById(policyId);
     if (!motorPolicy) {
       return res
@@ -752,12 +736,10 @@ export const getMotorPolicyWithPaymentDetails = async (req, res) => {
         .json({ message: `Motor Policy with ID ${policyId} not found` });
     }
 
-    // Find motor policy payments by policyId
     const motorPolicyPayments = await MotorPolicyPaymentModel.findOne({
       policyId,
     });
 
-    // Combine motor policy and payments into a single response
     const combinedData = {
       // motorPolicy,
       // motorPolicyPayments,
@@ -767,6 +749,7 @@ export const getMotorPolicyWithPaymentDetails = async (req, res) => {
       subCategory: motorPolicy.subCategory,
       companyName: motorPolicy.companyName,
       broker: motorPolicy.broker,
+      brokerId: motorPolicy.brokerId,
       vehicleAge: motorPolicy.vehicleAge,
       make: motorPolicy.make,
       model: motorPolicy.model,
@@ -943,6 +926,7 @@ export const updateMotorPolicy = async (req, res) => {
         subCategory,
         companyName,
         broker,
+        brokerId,
         vehicleAge,
         make,
         model,
@@ -982,6 +966,7 @@ export const updateMotorPolicy = async (req, res) => {
         subCategory,
         companyName,
         broker,
+        brokerId,
         vehicleAge,
         make,
         model,
@@ -1147,7 +1132,8 @@ export const deactivateMotorPolicy = async (req, res) => {
     if (payInPaymentStatus !== "UnPaid" || payOutPaymentStatus !== "UnPaid") {
       return res.status(400).json({
         status: "error",
-        message: "Cannot deactivate policy: PayIn or PayOut has already been paid.",
+        message:
+          "Cannot deactivate policy: PayIn or PayOut has already been paid.",
       });
     }
 
@@ -1155,8 +1141,8 @@ export const deactivateMotorPolicy = async (req, res) => {
     await policy.save();
 
     await MotorPolicyPaymentModel.updateMany(
-      { policyId: policy._id }, 
-      { $set: { isActive: false } } 
+      { policyId: policy._id },
+      { $set: { isActive: false } }
     );
 
     res.status(200).json({
@@ -1203,5 +1189,3 @@ export const getInactiveMotorPolicies = async (req, res) => {
     res.status(500).json({ status: "error", message: error.message });
   }
 };
-
-

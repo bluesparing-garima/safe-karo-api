@@ -12,6 +12,7 @@ const MotorPolicySchema = new mongoose.Schema({
   subCategory: { type: String, trim: true, default: "" }, //
   companyName: { type: String, trim: true },
   broker: { type: String, trim: true },
+  brokerId:{type:String,trim:true},
   vehicleAge: { type: String, trim: true },
   make: { type: String, trim: true }, //company of vehicle
   model: { type: String, trim: true }, // company
