@@ -691,6 +691,8 @@ export const getMotorPolicyByPolicyId = async (req, res) => {
         payOutTPPercentage: 1,
         payOutODAmount: 1,
         payOutTPAmount: 1,
+        payOutPaymentStatus:1,
+        payOutBalance:1,
       }
     );
 
