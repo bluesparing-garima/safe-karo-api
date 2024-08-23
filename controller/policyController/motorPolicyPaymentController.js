@@ -3,6 +3,7 @@ import motorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchem
 import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
 import debitModel from "../../models/accountsModels/debitsSchema.js";
 import creditAndDebitSchema from "../../models/accountsModels/creditAndDebitSchema.js";
+import creditModel from "../../models/accountsModels/creditSchema.js";
 
 // Create a new motor policy payment
 export const createMotorPolicyPayment = async (req, res) => {
@@ -177,10 +178,10 @@ export const policyStatusManage = async (req, res) => {
 
         const savedPayment = await existingPayment.save();
 
+        const policyDate = new Date(existingPayment.policyDate);
+
         if (["UnPaid", "Partial", "Paid"].includes(payOutPaymentStatus)) {
           let existingDebit = await debitModel.findOne({ policyNumber });
-
-          const policyDate = new Date(existingPayment.policyDate);
 
           if (existingDebit) {
             existingDebit.transactionCode = transactionCode;
@@ -211,6 +212,36 @@ export const policyStatusManage = async (req, res) => {
             });
 
             await newDebit.save();
+          }
+        }
+
+        if (["UnPaid", "Partial", "Paid"].includes(payInPaymentStatus)) {
+          let existingCredit = await creditModel.findOne({ policyNumber });
+
+          if (existingCredit) {
+            existingCredit.payInAmount = payInAmount;
+            existingCredit.payInPaymentStatus = payInPaymentStatus;
+            existingCredit.payInBalance = payInBalance;
+            existingCredit.updatedBy = updatedBy;
+            existingCredit.updatedOn = updatedOn;
+            existingCredit.policyDate = policyDate;
+            await existingCredit.save();
+          } else {
+            const newCredit = new creditModel({
+              transactionCode,
+              policyNumber,
+              partnerId: existingPayment.partnerId,
+              payInAmount,
+              payInPaymentStatus,
+              payInBalance,
+              policyDate: policyDate,
+              createdBy: existingPayment.createdBy,
+              updatedBy,
+              createdOn: existingPayment.createdOn,
+              updatedOn: updatedOn,
+            });
+
+            await newCredit.save();
           }
         }
 
