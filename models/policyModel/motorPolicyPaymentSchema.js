@@ -28,6 +28,7 @@ const motorPolicyPaymentSchema = new mongoose.Schema({
   partnerBalance:{type:Number,default:0},
   policyDate: { type: Date },
   issueDate: { type: Date },
+  transactionCode:{type:String,trim:true},
   isActive: { type: Boolean, default: true },
   createdBy: { type: String },
   updatedBy: { type: String, default: null },
