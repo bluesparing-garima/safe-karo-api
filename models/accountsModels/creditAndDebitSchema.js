@@ -53,6 +53,10 @@ const creditAndDebitSchema = new mongoose.Schema({
     type:Number,
     trim:true,
   },
+  brokerBalance:{
+    type:Number,
+    trim:true,
+  },
   brokerId: {
     type: String,
     trim: true,
