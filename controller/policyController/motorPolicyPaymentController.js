@@ -32,7 +32,8 @@ export const createMotorPolicyPayment = async (req, res) => {
     payInBalance,
     payOutBalance,
     createdBy,
-    isActive
+    transactionCode,
+    isActive,
   } = req.body;
 
   try {
@@ -81,6 +82,7 @@ export const createMotorPolicyPayment = async (req, res) => {
       payOutBalance,
       policyDate: motorPolicy.issueDate,
       createdBy,
+      transactionCode,
       isActive: isActive !== undefined ? isActive : true,
     });
 
@@ -90,6 +92,7 @@ export const createMotorPolicyPayment = async (req, res) => {
       const newDebit = new debitModel({
         policyNumber,
         partnerId,
+        transactionCode: transactionCode,
         paidAmount: payOutAmount,
         payOutAmount: payOutCommission,
         payOutPaymentStatus,
@@ -155,6 +158,7 @@ export const policyStatusManage = async (req, res) => {
             payOutBalance,
             partnerBalance,
             createdOn: new Date(),
+            transactionCode,
             updatedOn,
           });
         } else {
@@ -166,6 +170,7 @@ export const policyStatusManage = async (req, res) => {
           existingPayment.payOutBalance = payOutBalance;
           existingPayment.partnerBalance = partnerBalance;
           existingPayment.updatedOn = updatedOn;
+          existingPayment.transactionCode = transactionCode;
         }
 
         const savedPayment = await existingPayment.save();
@@ -176,7 +181,7 @@ export const policyStatusManage = async (req, res) => {
           const policyDate = new Date(existingPayment.policyDate);
 
           if (existingDebit) {
-            // Update existing debit record
+            existingDebit.transactionCode = transactionCode;
             existingDebit.payOutAmount = payOutAmount;
             existingDebit.payOutCommission = payOutCommission;
             existingDebit.payOutPaymentStatus = payOutPaymentStatus;
@@ -245,7 +250,7 @@ export const getUnPaidAndPartialPaidPayments = async (req, res) => {
 
     const start = new Date(startDate);
     const end = new Date(endDate);
-    
+
     const normalizedStart = new Date(start.setHours(0, 0, 0, 0));
     const normalizedEnd = new Date(end.setHours(23, 59, 59, 999));
 
@@ -379,7 +384,9 @@ export const getPaidPayments = async (req, res) => {
 // Get all motor policy payments
 export const getAllMotorPolicyPayments = async (req, res) => {
   try {
-    const motorPolicyPayments = await motorPolicyPayment.find({ isActive: true });
+    const motorPolicyPayments = await motorPolicyPayment.find({
+      isActive: true,
+    });
     res.status(200).json({
       message: "All Motor Policy Payments retrieved successfully",
       data: motorPolicyPayments,
