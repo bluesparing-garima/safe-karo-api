@@ -415,6 +415,65 @@ export const getPaidPayments = async (req, res) => {
   }
 };
 
+// Get Paid by date range and partnerId
+export const getPaidPaymentsOfBroker = async (req, res) => {
+  try {
+    const { brokerId, startDate, endDate } = req.query;
+
+    if (!brokerId || !startDate || !endDate) {
+      return res.status(400).json({
+        message: "Missing required query parameters",
+        success: false,
+        status: "error",
+      });
+    }
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    const results = await motorPolicyPayment.aggregate([
+      {
+        $match: {
+          brokerId,
+          policyDate: { $gte: start, $lte: end },
+          payInPaymentStatus: "Paid",
+          isActive: true,
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalAmount: { $sum: "$payInCommission" },
+          payments: { $push: "$$ROOT" },
+        },
+      },
+    ]);
+
+    const creditAndDebitData = await creditAndDebitSchema
+      .findOne({ brokerId })
+      .sort({ _id: -1 });
+    
+    const brokerBalance = creditAndDebitData?.brokerBalance || 0;
+
+    res.status(200).json({
+      message: "Motor policy payments for status Paid retrieved successfully",
+      data: {
+        brokerBalance: brokerBalance,
+        totalAmount: results[0]?.totalAmount || 0,
+        payments: results[0]?.payments || [],
+      },
+      success: true,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving motor policy payments",
+      error: error.message,
+      success: false,
+      status: "error",
+    });
+  }
+};
 
 // Get all motor policy payments
 export const getAllMotorPolicyPayments = async (req, res) => {
