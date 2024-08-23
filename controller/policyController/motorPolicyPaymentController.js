@@ -358,8 +358,11 @@ export const getPaidPayments = async (req, res) => {
 
     res.status(200).json({
       message: "Motor policy payments for status Paid retrieved successfully",
-      data: results[0] || { totalAmount: 0, payments: [] },
-      partnerBalance: partnerBalance,
+      data: {
+        totalAmount: results[0]?.totalAmount || 0,
+        payments: results[0]?.payments || [],
+        partnerBalance: partnerBalance,
+      },
       success: true,
       status: "success",
     });
@@ -372,7 +375,6 @@ export const getPaidPayments = async (req, res) => {
     });
   }
 };
-
 
 // Get all motor policy payments
 export const getAllMotorPolicyPayments = async (req, res) => {
