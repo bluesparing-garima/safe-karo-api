@@ -230,7 +230,6 @@ export const policyStatusManage = async (req, res) => {
   }
 };
 
-
 // Get UnPaid and Partial Paid by date range and partnerId
 export const getUnPaidAndPartialPaidPayments = async (req, res) => {
   try {
@@ -246,12 +245,15 @@ export const getUnPaidAndPartialPaidPayments = async (req, res) => {
 
     const start = new Date(startDate);
     const end = new Date(endDate);
+    
+    const normalizedStart = new Date(start.setHours(0, 0, 0, 0));
+    const normalizedEnd = new Date(end.setHours(23, 59, 59, 999));
 
     const results = await motorPolicyPayment.aggregate([
       {
         $match: {
           partnerId,
-          policyDate: { $gte: start, $lte: end },
+          policyDate: { $gte: normalizedStart, $lte: normalizedEnd },
           payOutPaymentStatus: { $in: ["UnPaid", "Partial"] },
           isActive: true,
         },
