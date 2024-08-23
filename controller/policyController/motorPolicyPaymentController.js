@@ -355,6 +355,93 @@ export const getUnPaidAndPartialPaidPayments = async (req, res) => {
   }
 };
 
+// Get UnPaid and Partial Paid by date range and brokerId
+export const getBrokerUnPaidAndPartialPaidPayments = async (req, res) => {
+  try {
+    const { brokerId, startDate, endDate } = req.query;
+
+    if (!brokerId || !startDate || !endDate) {
+      return res.status(400).json({
+        message: "Missing required query parameters",
+        success: false,
+        status: "error",
+      });
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    const normalizedStart = new Date(start.setHours(0, 0, 0, 0));
+    const normalizedEnd = new Date(end.setHours(23, 59, 59, 999));
+
+    const results = await motorPolicyPayment.aggregate([
+      {
+        $match: {
+          brokerId,
+          policyDate: { $gte: normalizedStart, $lte: normalizedEnd },
+          payInPaymentStatus: { $in: ["UnPaid", "Partial"] },
+          isActive: true,
+        },
+      },
+      {
+        $addFields: {
+          relevantAmount: {
+            $cond: [
+              { $eq: ["$payInPaymentStatus", "UnPaid"] },
+              "$payInCommission",
+              {
+                $cond: [
+                  { $eq: ["$payInPaymentStatus", "Partial"] },
+                  "$payInBalance",
+                  0,
+                ],
+              },
+            ],
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalAmount: { $sum: "$relevantAmount" },
+          payments: { $push: "$$ROOT" },
+        },
+      },
+    ]);
+
+    const brokerStatement = await creditAndDebitSchema
+      .findOne({ brokerId })
+      .sort({ _id: -1 });
+
+    const totalBrokerBalance = brokerStatement
+      ? brokerStatement.brokerBalance
+      : 0;
+
+    const result = results[0] || { totalAmount: 0, payments: [] };
+    const adjustedTotalAmount = result.totalAmount - totalBrokerBalance;
+
+    res.status(200).json({
+      message:
+        "Motor policy payments for status UnPaid and Partial Paid retrieved successfully",
+      data: {
+        payments: result.payments,
+        totalAmount: result.totalAmount,
+        brokerBalance: totalBrokerBalance,
+        adjustedTotalAmount,
+      },
+      success: true,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving motor policy payments",
+      error: error.message,
+      success: false,
+      status: "error",
+    });
+  }
+};
+
 // Get Paid by date range and partnerId
 export const getPaidPayments = async (req, res) => {
   try {
