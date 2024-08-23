@@ -134,6 +134,7 @@ export const policyStatusManage = async (req, res) => {
         payOutPaymentStatus,
         payInBalance,
         payOutBalance,
+        partnerBalance,
         updatedBy,
         updatedOn,
         transactionCode,
@@ -152,6 +153,7 @@ export const policyStatusManage = async (req, res) => {
             payOutPaymentStatus,
             payInBalance,
             payOutBalance,
+            partnerBalance,
             createdOn: new Date(),
             updatedOn,
           });
@@ -162,6 +164,7 @@ export const policyStatusManage = async (req, res) => {
           existingPayment.payOutPaymentStatus = payOutPaymentStatus;
           existingPayment.payInBalance = payInBalance;
           existingPayment.payOutBalance = payOutBalance;
+          existingPayment.partnerBalance = partnerBalance;
           existingPayment.updatedOn = updatedOn;
         }
 
@@ -178,6 +181,7 @@ export const policyStatusManage = async (req, res) => {
             existingDebit.payOutCommission = payOutCommission;
             existingDebit.payOutPaymentStatus = payOutPaymentStatus;
             existingDebit.payOutBalance = payOutBalance;
+            existingDebit.partnerBalance = partnerBalance;
             existingDebit.updatedBy = updatedBy;
             existingDebit.updatedOn = updatedOn;
             existingDebit.policyDate = policyDate;
@@ -191,6 +195,7 @@ export const policyStatusManage = async (req, res) => {
               payOutCommission,
               payOutPaymentStatus,
               payOutBalance,
+              partnerBalance,
               policyDate: policyDate,
               createdBy: existingPayment.createdBy,
               updatedBy,
@@ -211,6 +216,7 @@ export const policyStatusManage = async (req, res) => {
     res.status(200).json({
       message: "Motor Policy Payments updated successfully",
       data: savedPayments,
+      partnerBalance: req.body.partnerBalance,
       success: true,
       status: "success",
     });
@@ -223,6 +229,7 @@ export const policyStatusManage = async (req, res) => {
     });
   }
 };
+
 
 // Get UnPaid and Partial Paid by date range and partnerId
 export const getUnPaidAndPartialPaidPayments = async (req, res) => {
