@@ -25,6 +25,7 @@ const motorPolicyPaymentSchema = new mongoose.Schema({
   payOutPaymentStatus: { type: String, trim: true, default: "UnPaid" },
   payInBalance: { type: Number, default: 0 },
   payOutBalance: { type: Number, default: 0 },
+  partnerBalance:{type:Number,default:0},
   policyDate: { type: Date },
   issueDate: { type: Date },
   isActive: { type: Boolean, default: true },
