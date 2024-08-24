@@ -638,6 +638,7 @@ export const updateMotorPolicyPayment = async (req, res) => {
   } = req.body;
 
   try {
+    // Find the existing motor policy payment by policyId
     const existingProfile = await motorPolicyPayment.findOne({
       policyId: req.params.policyId,
     });
@@ -650,6 +651,7 @@ export const updateMotorPolicyPayment = async (req, res) => {
       });
     }
 
+    // Update the motor policy payment
     const updatedMotorPolicyPayment =
       await motorPolicyPayment.findByIdAndUpdate(
         existingProfile._id,
@@ -665,9 +667,13 @@ export const updateMotorPolicyPayment = async (req, res) => {
       });
     }
 
+    // Explicitly include policyId in the response
     res.status(200).json({
       message: "Motor Policy Payment updated successfully",
-      data: updatedMotorPolicyPayment,
+      data: {
+        ...updatedMotorPolicyPayment.toObject(),
+        policyId: updatedMotorPolicyPayment.policyId,
+      },
       success: true,
       status: "success",
     });
@@ -675,6 +681,7 @@ export const updateMotorPolicyPayment = async (req, res) => {
     res.status(400).json({ message: err.message, status: "error" });
   }
 };
+
 
 // Delete motor policy payment by policyId
 export const deleteMotorPolicyPayment = async (req, res) => {
