@@ -1,7 +1,5 @@
 import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
 import MotorPolicyPaymentModel from "../../models/policyModel/motorPolicyPaymentSchema.js";
-import PayInExcelDataModel from "../../models/adminModels/payInExcelDataSchema.js";
-import PayOutExcelDataModel from "../../models/adminModels/payOutExcelDataSchema.js";
 
 // Get Policies by Date Range
 export const getPoliciesByDateRange = async (req, res) => {
@@ -101,11 +99,11 @@ export const getPoliciesByDateRange = async (req, res) => {
         payInCommission: payment ? payment.payInCommission : 0,
         payOutCommission: payment ? payment.payOutCommission : 0,
         payInAmount: payment ? payment.payInAmount : 0,
-        payOutAmount: payment ? payment.payOutAmount : 0,
-        payInPaymentStatus: payment ? payment.payInPaymentStatus : "UnPaid",
-        payOutPaymentStatus: payment ? payment.payOutPaymentStatus : "UnPaid",
-        payInBalance: payment ? payment.payInBalance : 0,
-        payOutBalance: payment ? payment.payOutBalance : 0,
+        payOutAmount:payment? payment.payOutAmount:0,
+        payInPaymentStatus: payment ? payment.payInPaymentStatus: "UnPaid",
+        payOutPaymentStatus: payment ? payment.payOutPaymentStatus: "UnPaid",
+        payInBalance: payment? payment.payInBalance:0,
+        payOutBalance: payment? payment.payOutBalance:0,
         paymentCreatedBy: payment ? payment.createdBy : 0,
         paymentCreatedOn: payment ? payment.createdOn : 0,
         paymentUpdatedBy: payment ? payment.updatedBy : 0,
@@ -231,11 +229,11 @@ export const getAllMatchingRecords = async (req, res) => {
         payInCommission: payment ? payment.payInCommission : null,
         payOutCommission: payment ? payment.payOutCommission : null,
         payInAmount: payment ? payment.payInAmount : 0,
-        payOutAmount: payment ? payment.payOutAmount : 0,
-        payInPaymentStatus: payment ? payment.payInPaymentStatus : "UnPaid",
-        payOutPaymentStatus: payment ? payment.payOutPaymentStatus : "UnPaid",
-        payInBalance: payment ? payment.payInBalance : 0,
-        payOutBalance: payment ? payment.payOutBalance : 0,
+        payOutAmount:payment? payment.payOutAmount:0,
+        payInPaymentStatus: payment ? payment.payInPaymentStatus: "UnPaid",
+        payOutPaymentStatus: payment ? payment.payOutPaymentStatus: "UnPaid",
+        payInBalance: payment? payment.payInBalance:0,
+        payOutBalance: payment? payment.payOutBalance:0,
         paymentCreatedBy: payment ? payment.createdBy : null,
         paymentCreatedOn: payment ? payment.createdOn : null,
         paymentUpdatedBy: payment ? payment.updatedBy : null,
@@ -381,15 +379,9 @@ export const updateCommissionByDateRange = async (req, res) => {
           payInODPercentage !== undefined &&
           payInTPPercentage !== undefined
         ) {
-          const calculatedPayInODAmount = Math.round(
-            (od * payInODPercentage) / 100
-          );
-          const calculatedPayInTPAmount = Math.round(
-            (tp * payInTPPercentage) / 100
-          );
-          payInCommission = Math.round(
-            calculatedPayInODAmount + calculatedPayInTPAmount
-          );
+          const calculatedPayInODAmount = Math.round((od * payInODPercentage) / 100);
+          const calculatedPayInTPAmount = Math.round((tp * payInTPPercentage) / 100);
+          payInCommission = Math.round(calculatedPayInODAmount + calculatedPayInTPAmount);
 
           updatedFields = {
             ...updatedFields,
@@ -405,15 +397,9 @@ export const updateCommissionByDateRange = async (req, res) => {
           payOutODPercentage !== undefined &&
           payOutTPPercentage !== undefined
         ) {
-          const calculatedPayOutODAmount = Math.round(
-            (od * payOutODPercentage) / 100
-          );
-          const calculatedPayOutTPAmount = Math.round(
-            (tp * payOutTPPercentage) / 100
-          );
-          payOutCommission = Math.round(
-            calculatedPayOutODAmount + calculatedPayOutTPAmount
-          );
+          const calculatedPayOutODAmount = Math.round((od * payOutODPercentage) / 100);
+          const calculatedPayOutTPAmount = Math.round((tp * payOutTPPercentage) / 100);
+          payOutCommission = Math.round(calculatedPayOutODAmount + calculatedPayOutTPAmount);
 
           updatedFields = {
             ...updatedFields,
@@ -449,6 +435,7 @@ export const updateCommissionByDateRange = async (req, res) => {
     });
   }
 };
+
 
 // Get Policies by Date Range and Broker Name
 export const getPoliciesByDateRangeAndBrokerName = async (req, res) => {
@@ -554,10 +541,10 @@ export const getPoliciesByDateRangeAndBrokerName = async (req, res) => {
           payOutCommission: payment ? payment.payOutCommission : 0,
           payInAmount: payment ? payment.payInAmount : 0,
           payOutAmount: payment ? payment.payOutAmount : 0,
-          payInPaymentStatus: payment ? payment.payInPaymentStatus : "UnPaid",
-          payOutPaymentStatus: payment ? payment.payOutPaymentStatus : "UnPaid",
-          payInBalance: payment ? payment.payInBalance : 0,
-          payOutBalance: payment ? payment.payOutBalance : 0,
+          payInPaymentStatus: payment ? payment.payInPaymentStatus: "Unpaid",
+          payOutPaymentStatus: payment ? payment.payOutPaymentStatus : "Unpaid",
+          payInBalance:payment ? payment.payInBalance:0,
+          payOutBalance:payment ? payment.payOutBalance:0,
           paymentCreatedBy: payment ? payment.createdBy : 0,
           paymentCreatedOn: payment ? payment.createdOn : 0,
           paymentUpdatedBy: payment ? payment.updatedBy : 0,
@@ -580,15 +567,15 @@ export const getPoliciesByDateRangeAndBrokerName = async (req, res) => {
   }
 };
 
-// Get Policies by Date Range and PartnerId
-export const getPoliciesByDateRangeAndPartnerId = async (req, res) => {
-  const { startDate, endDate, partnerId } = req.query;
+// Get Policies by Date Range and Partner Name
+export const getPoliciesByDateRangeAndPartnerName = async (req, res) => {
+  const { startDate, endDate, partnerName } = req.query;
 
-  if (!startDate || !endDate || !partnerId) {
+  if (!startDate || !endDate || !partnerName) {
     return res.status(400).json({
       status: "error",
       success: false,
-      message: "Start date, end date, and partnerId are required.",
+      message: "Start date, end date, and broker name are required.",
     });
   }
 
@@ -604,13 +591,13 @@ export const getPoliciesByDateRangeAndPartnerId = async (req, res) => {
         $gte: startDateObj,
         $lte: endDateObj,
       },
-      partnerId: partnerId,
+      partnerName: partnerName,
     });
 
     if (policies.length === 0) {
       return res.status(404).json({
         message:
-          "No policies found within the specified date range and partnerId.",
+          "No policies found within the specified date range and partner name.",
         success: false,
         status: "error",
       });
@@ -670,7 +657,7 @@ export const getPoliciesByDateRangeAndPartnerId = async (req, res) => {
           updatedOn: policy.updatedOn,
           isActive: policy.isActive,
           createdOn: policy.createdOn,
-          policyDate: policy.issueDate,
+          issueDate: policy.issueDate,
           paymentId: payment ? payment._id : null,
           payInODPercentage: payment ? payment.payInODPercentage : null,
           payInTPPercentage: payment ? payment.payInTPPercentage : null,
@@ -684,10 +671,10 @@ export const getPoliciesByDateRangeAndPartnerId = async (req, res) => {
           payOutCommission: payment ? payment.payOutCommission : null,
           payInAmount: payment ? payment.payInAmount : 0,
           payOutAmount: payment ? payment.payOutAmount : 0,
-          payInPaymentStatus: payment ? payment.payInPaymentStatus : "UnPaid",
-          payOutPaymentStatus: payment ? payment.payOutPaymentStatus : "UnPaid",
-          payInBalance: payment ? payment.payInBalance : 0,
-          payOutBalance: payment ? payment.payOutBalance : 0,
+          payInPaymentStatus: payment ? payment.payInPaymentStatus : "Unpaid",
+          payOutPaymentStatus: payment ? payment.payOutPaymentStatus : "Unpaid",
+          payInBalance:payment ? payment.payInBalance:0,
+          payOutBalance:payment ? payment.payOutBalance:0,
           paymentCreatedBy: payment ? payment.createdBy : null,
           paymentCreatedOn: payment ? payment.createdOn : null,
           paymentUpdatedBy: payment ? payment.updatedBy : null,

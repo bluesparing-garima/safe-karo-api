@@ -1,11 +1,9 @@
 import * as XLSX from "xlsx";
-import fs from "fs";
-import path from "path";
-import crypto from "crypto";
 import moment from "moment";
-import bcrypt from "bcryptjs";
 import UserProfileModel from "../../models/adminModels/userProfileSchema.js";
 import UserModel from "../../models/userSchema.js";
+import bcrypt from "bcryptjs";
+import crypto from "crypto";
 
 const hashPassword = async (password) => {
   const salt = await bcrypt.genSalt(10);
@@ -38,54 +36,26 @@ const generatePartnerId = async () => {
 };
 
 const requiredFields = ["fullName", "email", "password"];
-const dataFilePath = path.join(process.cwd(), "data", "partner_data.json");
-const hashFilePath = path.join(process.cwd(), "data", "partner_hashes.json");
 
-// Ensure the data directory exists
-if (!fs.existsSync(path.join(process.cwd(), "data"))) {
-  fs.mkdirSync(path.join(process.cwd(), "data"));
-}
-
-// Function to compute hash of file data
-const computeHash = (data) => {
-  return crypto.createHash("md5").update(data).digest("hex");
-};
-
-// Upload Partner Excel Data
+// Upload
 export const uploadPartnerExcel = async (req, res) => {
   try {
-    if (!req.file) {
+    if (!req.files || !req.files.excel) {
       return res.status(400).send("No files were uploaded.");
     }
 
-    const file = req.file;
-    const fileHash = computeHash(file.buffer);
+    const file = req.files.excel;
 
-    let storedHashes = [];
-    if (fs.existsSync(hashFilePath)) {
-      const rawHashData = fs.readFileSync(hashFilePath);
-      storedHashes = JSON.parse(rawHashData);
-    }
-
-    // Check if the file has already been uploaded
-    if (storedHashes.includes(fileHash)) {
-      return res
-        .status(400)
-        .json({ message: "File has already been uploaded." });
-    }
-
-    const workbook = XLSX.read(file.buffer, { type: "buffer" });
+    const workbook = XLSX.read(file.data, { type: "buffer" });
+    // const workbook = XLSX.readFile(file.path);
     const sheetName = workbook.SheetNames[0];
-    const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
-      raw: true,
-    });
-
+    const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
     const extractedData = worksheet.map((row) => ({
       role: row.role || "",
       branchName: row.branchName || "",
       fullName: row.fullName || row["Full Name"] || "",
       phoneNumber: row.phoneNumber || "",
-      email: row.email || "",
+      email: row.email || "", // engine = cc
       password: row.password || "",
       headRM: row.headRM || "",
       headRMId: row.headRMId || "",
@@ -100,7 +70,6 @@ export const uploadPartnerExcel = async (req, res) => {
       salary: row.salary || "",
       partnerId: row.partnerId || row["Partner Id"] || "",
     }));
-
     const missingFields = [];
 
     for (const record of extractedData) {
@@ -112,6 +81,8 @@ export const uploadPartnerExcel = async (req, res) => {
           missing,
         });
       } else {
+        // const formattedJoiningDate = moment(record.joiningDate, 'DD MMM YYYY').toDate();
+        //  const formattedDateOfBirth = moment(record.dateOfBirth, 'DD MMM YYYY').toDate();
         const hashedPassword = await hashPassword(record.password);
 
         const userProfile = new UserProfileModel({
@@ -137,6 +108,7 @@ export const uploadPartnerExcel = async (req, res) => {
           createdBy: record.createdBy,
           isActive: record.isActive !== undefined ? record.isActive : true,
           partnerId: record.partnerId || (await generatePartnerId()),
+          originalPassword: record.password,
         });
 
         const newUser = new UserModel({
@@ -156,10 +128,6 @@ export const uploadPartnerExcel = async (req, res) => {
       }
     }
 
-    // Save hashes to avoid re-uploading the same file
-    storedHashes.push(fileHash);
-    fs.writeFileSync(hashFilePath, JSON.stringify(storedHashes, null, 2));
-
     if (missingFields.length > 0) {
       return res.status(400).json({
         message: "Some records have missing fields",
@@ -173,7 +141,6 @@ export const uploadPartnerExcel = async (req, res) => {
       status: "success",
     });
   } catch (error) {
-    console.error(error);
     res
       .status(500)
       .json({ message: "Error processing Excel file", error: error.message });
