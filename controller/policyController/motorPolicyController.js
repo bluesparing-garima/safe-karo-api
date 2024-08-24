@@ -672,16 +672,18 @@ export const getMotorPolicyByPolicyId = async (req, res) => {
   try {
     const { policyId } = req.params;
 
+    // Find the motor policy by policyId
     const policy = await MotorPolicyModel.findById(policyId);
 
     if (!policy) {
       return res.status(404).json({
         message: `No Motor Policy found for policyId ${policyId}`,
         success: false,
-        status: "success",
+        status: "error",
       });
     }
 
+    // Find the corresponding payout details by policyNumber
     const payoutDetails = await MotorPolicyPaymentModel.findOne(
       { policyNumber: policy.policyNumber },
       {
@@ -691,16 +693,19 @@ export const getMotorPolicyByPolicyId = async (req, res) => {
         payOutTPPercentage: 1,
         payOutODAmount: 1,
         payOutTPAmount: 1,
-        payOutPaymentStatus:1,
-        payOutBalance:1,
+        payOutPaymentStatus: 1,
+        payOutBalance: 1,
       }
     );
 
+    // Merge policy data with payout details
     const policyWithPayoutDetails = {
-      ...policy._doc,
-      ...(payoutDetails?._doc || {}),
+      ...policy._doc, // Spread the motor policy data
+      ...(payoutDetails?._doc || {}), // Spread the payout details if they exist
+      _id: policy._id, // Ensure the _id is from MotorPolicyModel (policyId)
     };
 
+    // Send the response with the correct _id
     res.status(200).json({
       message: "Motor Policy with payout details retrieved successfully.",
       data: policyWithPayoutDetails,
@@ -715,6 +720,7 @@ export const getMotorPolicyByPolicyId = async (req, res) => {
     });
   }
 };
+
 
 // Get MotorPolicy by partnerId
 export const getMotorPolicyByPartnerId = async (req, res) => {
