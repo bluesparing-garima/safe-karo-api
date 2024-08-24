@@ -720,7 +720,6 @@ export const getMotorPolicyByPolicyId = async (req, res) => {
 export const getMotorPolicyByPartnerId = async (req, res) => {
   try {
     const { partnerId } = req.params;
-
     const policies = await MotorPolicyModel.find({ partnerId });
 
     if (policies.length === 0) {
@@ -731,30 +730,9 @@ export const getMotorPolicyByPartnerId = async (req, res) => {
       });
     }
 
-    const policyWithPayoutDetails = await Promise.all(
-      policies.map(async (policy) => {
-        const payoutDetails = await MotorPolicyPaymentModel.findOne(
-          { policyNumber: policy.policyNumber },
-          {
-            payOutAmount: 1,
-            payOutCommission: 1,
-            payOutODPercentage: 1,
-            payOutTPPercentage: 1,
-            payOutODAmount: 1,
-            payOutTPAmount: 1,
-          }
-        );
-
-        return {
-          ...policy._doc,
-          ...(payoutDetails?._doc || {}),
-        };
-      })
-    );
-
     res.status(200).json({
-      message: "Motor Policies with payout details retrieved successfully.",
-      data: policyWithPayoutDetails,
+      message: "Motor Policies retrieved successfully.",
+      data: policies,
       success: true,
       status: "success",
     });
