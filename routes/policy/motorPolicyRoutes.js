@@ -5,7 +5,7 @@ import {
   getMotorPolicies,
   getMotorPolicyByPartnerId,
   updateMotorPolicy,
-  deleteMotorPolicy,
+  deactivateMotorPolicy,
   validatePolicyNumber,
   validateVehicleNumber,
   getMotorPolicyWithPaymentDetails,
@@ -34,7 +34,7 @@ router.get(
   getMotorPolicyByPolicyCompletedBy
 );
 router.put("/:id", logActivity, updateMotorPolicy);
-router.delete("/:id", logActivity, deleteMotorPolicy);
+router.delete("/:id", logActivity, deactivateMotorPolicy);
 router.get("/validatePolicyNumber", logActivity, validatePolicyNumber);
 router.get("/validateVehicleNumber", logActivity, validateVehicleNumber);
 

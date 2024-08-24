@@ -532,15 +532,10 @@ export const createMotorPolicy = async (req, res) => {
 
 // Get Motor Policies
 export const getMotorPolicies = async (req, res) => {
-  // const page = parseInt(req.query.page) || 1;
-  // const limit = parseInt(req.query.limit) || 20;
-  // const skip = (page - 1) * limit;
-
   try {
-    const forms = await MotorPolicyModel.find();
-    // .sort({ createdAt: -1 })
-    // .skip(skip)
-    // .limit(limit);
+    const forms = await MotorPolicyModel.find({ isActive: true }).sort({
+      createdOn: -1,
+    });
 
     const totalCount = await MotorPolicyModel.countDocuments({
       isActive: true,
@@ -551,9 +546,7 @@ export const getMotorPolicies = async (req, res) => {
       data: forms,
       success: true,
       status: "success",
-      // totalCount,
-      // totalPages: Math.ceil(totalCount / limit),
-      // currentPage: page
+      totalCount,
     });
   } catch (error) {
     res
@@ -981,24 +974,37 @@ export const updateMotorPolicy = async (req, res) => {
   });
 };
 
-// Delete Motor Policy by ID
-export const deleteMotorPolicy = async (req, res) => {
+// DeActivate Motor Policy by ID
+export const deactivateMotorPolicy = async (req, res) => {
   try {
-    const deletedForm = await MotorPolicyModel.findByIdAndDelete(req.params.id);
-    if (!deletedForm) {
+    const policy = await MotorPolicyModel.findById(req.params.id);
+    if (!policy) {
       return res
         .status(404)
         .json({ status: "error", message: "Motor Policy not found" });
     }
 
-    deletedForm.isActive = false;
-    await deletedForm.save();
+    const payInPaymentStatus = policy.payInPaymentStatus || "UnPaid";
+    const payOutPaymentStatus = policy.payOutPaymentStatus || "UnPaid";
+
+    if (payInPaymentStatus !== "UnPaid" || payOutPaymentStatus !== "UnPaid") {
+      return res.status(400).json({
+        status: "error",
+        message:
+          "Cannot deactivate policy: PayIn or PayOut has already been paid.",
+      });
+    }
+
+    // Deactivate the motor policy only
+    policy.isActive = false;
+    await policy.save();
 
     res.status(200).json({
       status: "success",
-      message: "Motor Policy deleted successfully",
+      message: "Motor Policy deactivated successfully",
     });
   } catch (error) {
     res.status(500).json({ status: "error", message: error.message });
   }
 };
+
