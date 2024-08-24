@@ -745,6 +745,34 @@ export const getMotorPolicyByPartnerId = async (req, res) => {
   }
 };
 
+/*export const getMotorPolicyByPartnerId = async (req, res) => {
+  try {
+    const { partnerId } = req.params;
+    const policies = await MotorPolicyModel.find({ partnerId });
+
+    if (policies.length === 0) {
+      return res.status(404).json({
+        message: `No Motor Policy for partnerId ${partnerId}`,
+        success: false,
+        status: "success",
+      });
+    }
+
+    res.status(200).json({
+      message: "Motor Policies retrieved successfully.",
+      data: policies,
+      success: true,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving motor policies",
+      success: false,
+      error: error.message,
+    });
+  }
+};
+ */
 // Get Motor Policy with Payment Details
 export const getMotorPolicyWithPaymentDetails = async (req, res) => {
   try {
