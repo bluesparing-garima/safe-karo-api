@@ -14,15 +14,12 @@ export const getPoliciesByDateRange = async (req, res) => {
   }
 
   try {
-    // Convert startDate to MongoDB date object for the start of the day
     const startDateObj = new Date(startDate);
-    startDateObj.setHours(0, 0, 0, 0); // Set hours, minutes, seconds, and milliseconds to 0
+    startDateObj.setHours(0, 0, 0, 0);
 
-    // Convert endDate to MongoDB date object for the end of the day
     const endDateObj = new Date(endDate);
-    endDateObj.setHours(23, 59, 59, 999); // Set hours, minutes, seconds, and milliseconds to end of day
+    endDateObj.setHours(23, 59, 59, 999);
 
-    // Query to find documents within the date range
     const policies = await MotorPolicyModel.find({
       issueDate: {
         $gte: startDateObj,
@@ -54,6 +51,7 @@ export const getPoliciesByDateRange = async (req, res) => {
         subCategory: policy.subCategory,
         companyName: policy.companyName,
         broker: policy.broker,
+        brokerId:policy.brokerId,
         vehicleAge: policy.vehicleAge,
         make: policy.make,
         model: policy.model,
@@ -184,6 +182,7 @@ export const getAllMatchingRecords = async (req, res) => {
         subCategory: policy.subCategory,
         companyName: policy.companyName,
         broker: policy.broker,
+        brokerId:policy.brokerId,
         vehicleAge: policy.vehicleAge,
         make: policy.make,
         model: policy.model,
@@ -269,11 +268,9 @@ export const updateODTPByDateRange = async (req, res) => {
   }
 
   try {
-    // Convert startDate to MongoDB date object for the start of the day
     const startDateObj = new Date(startDate);
     startDateObj.setHours(0, 0, 0, 0);
 
-    // Convert endDate to MongoDB date object for the end of the day
     const endDateObj = new Date(endDate);
     endDateObj.setHours(23, 59, 59, 999);
 
@@ -286,13 +283,11 @@ export const updateODTPByDateRange = async (req, res) => {
       updateFields.tp = parseFloat(tp);
     }
 
-    // Update MotorPolicyPaymentModel
     const updatePaymentResult = await MotorPolicyPaymentModel.updateMany(
       { issueDate: { $gte: startDateObj, $lte: endDateObj } },
       { $set: updateFields }
     );
 
-    // Update MotorPolicyModel
     const paymentPolicies = await MotorPolicyPaymentModel.find(
       { issueDate: { $gte: startDateObj, $lte: endDateObj } },
       { policyNumber: 1 }
@@ -354,15 +349,12 @@ export const updateCommissionByDateRange = async (req, res) => {
   }
 
   try {
-    // Convert startDate to MongoDB date object for the start of the day
     const startDateObj = new Date(startDate);
     startDateObj.setHours(0, 0, 0, 0);
 
-    // Convert endDate to MongoDB date object for the end of the day
     const endDateObj = new Date(endDate);
     endDateObj.setHours(23, 59, 59, 999);
 
-    // Find the documents to be updated
     const documentsToUpdate = await MotorPolicyPaymentModel.find({
       createdOn: { $gte: startDateObj, $lte: endDateObj },
     });
@@ -375,7 +367,6 @@ export const updateCommissionByDateRange = async (req, res) => {
       });
     }
 
-    // Calculate and update commission fields for each document
     const updatedDocumentsWithCommission = await Promise.all(
       documentsToUpdate.map(async (doc) => {
         const { od, tp } = doc;
@@ -420,7 +411,6 @@ export const updateCommissionByDateRange = async (req, res) => {
           };
         }
 
-        // Update the document with calculated fields
         const updatedDoc = await MotorPolicyPaymentModel.findByIdAndUpdate(
           doc._id,
           { $set: updatedFields },
@@ -502,6 +492,7 @@ export const getPoliciesByDateRangeAndBrokerName = async (req, res) => {
           subCategory: policy.subCategory,
           companyName: policy.companyName,
           broker: policy.broker,
+          brokerId:policy.brokerId,
           vehicleAge: policy.vehicleAge,
           make: policy.make,
           model: policy.model,
@@ -631,6 +622,7 @@ export const getPoliciesByDateRangeAndPartnerName = async (req, res) => {
           subCategory: policy.subCategory,
           companyName: policy.companyName,
           broker: policy.broker,
+          brokerId:policy.brokerId,
           vehicleAge: policy.vehicleAge,
           make: policy.make,
           model: policy.model,

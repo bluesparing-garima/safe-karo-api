@@ -27,6 +27,7 @@ const leadGenerateSchema = new mongoose.Schema({
   currentPolicy: { type: String, trim: true },
   other: { type: String, trim: true },
   remarks: { type: String },
+  timer: { type: String },
   createdBy: { type: String, trim: true },
   updatedBy: { type: String, default: null },
   createdOn: { type: Date, default: Date.now },

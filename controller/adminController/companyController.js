@@ -39,7 +39,7 @@ const createCompanyName = async (req, res) => {
 // Get all company names
 const getAllCompanyNames = async (req, res) => {
   try {
-    const CompanyNames = await CompanyModel.find();
+    const CompanyNames = await CompanyModel.find().sort({ companyName: 1 });
     res.status(200).json({
       message: "Success! Here are all company names",
       data: CompanyNames,

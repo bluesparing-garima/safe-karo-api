@@ -1,11 +1,11 @@
 import Model from "../../models/adminModels/modelSchema.js";
 import mongoose from "mongoose";
-import Make from '../../models/adminModels/modelSchema.js';
+import Make from "../../models/adminModels/modelSchema.js";
 import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
 // Endpoint to check if a model exists
 const createModel = async (req, res) => {
   try {
-    const { modelName,makeId,makeName,createdBy,isActive } = req.body;
+    const { modelName, makeId, makeName, createdBy, isActive } = req.body;
 
     const modelExists = await Model.exists({
       modelName,
@@ -44,7 +44,9 @@ const createModel = async (req, res) => {
 // Get all models
 const getAllModels = async (req, res) => {
   try {
-    const Models = await Model.find();
+    // Fetch and sort makes alphabetically by name
+    const Models = await Model.find().sort({ makeName: 1 });
+
     res.status(200).json({
       message: "Success! Here are all models",
       data: Models,

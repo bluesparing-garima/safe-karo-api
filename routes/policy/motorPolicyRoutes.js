@@ -13,11 +13,15 @@ import {
   getMotorPolicyByPolicyCompletedBy,
   uploadMotorPolicy,
   updateMotorPolicyDates,
+  getMotorPoliciesByDateRange,
+  getInactiveMotorPolicies 
 } from "../../controller/policyController/motorPolicyController.js";
 const router = express.Router();
 
 router.post("/", logActivity, createMotorPolicy);
 router.get("/", logActivity, getMotorPolicies);
+router.get("/date-range",logActivity,getMotorPoliciesByDateRange);
+router.get("/in-active",logActivity,getInactiveMotorPolicies);
 router.get("/validatePolicyNumber", logActivity, validatePolicyNumber);
 router.post("/upload", logActivity, uploadMotorPolicy);
 router.put(
@@ -25,7 +29,6 @@ router.put(
   logActivity,
   updateMotorPolicyDates
 );
-
 router.get("/policyId/:policyId", logActivity, getMotorPolicyByPolicyId);
 router.get("/partner/:partnerId", logActivity, getMotorPolicyByPartnerId);
 router.get(

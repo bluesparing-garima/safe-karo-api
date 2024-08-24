@@ -241,8 +241,6 @@ const updateLead = async (req, res) => {
   });
 };
 
-export default updateLead;
-
 // Delete Lead
 const deleteLead = async (req, res) => {
   try {

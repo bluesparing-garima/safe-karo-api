@@ -7,13 +7,17 @@ const createCaseType = async (req, res) => {
 
     // Check if all required fields are provided
     if (!caseType || !createdBy) {
-      return res.status(400).json({ status: "failed", message: "Required fields are missing" });
+      return res
+        .status(400)
+        .json({ status: "failed", message: "Required fields are missing" });
     }
 
     // Check if case type already exists
     const existingCaseType = await CaseTypeModel.findOne({ caseType });
     if (existingCaseType) {
-      return res.status(400).json({ status: "failed", message: "Case type already exists" });
+      return res
+        .status(400)
+        .json({ status: "failed", message: "Case type already exists" });
     }
 
     const newCaseType = new CaseTypeModel({
@@ -41,7 +45,7 @@ const createCaseType = async (req, res) => {
 // Get all case types
 const getAllCaseTypes = async (req, res) => {
   try {
-    const caseTypes = await CaseTypeModel.find();
+    const caseTypes = await CaseTypeModel.find().sort({ caseType: 1 });
     res.status(200).json({
       status: "success",
       data: caseTypes,
@@ -49,7 +53,9 @@ const getAllCaseTypes = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ status: "failed", message: "Unable to retrieve case types" });
+    res
+      .status(500)
+      .json({ status: "failed", message: "Unable to retrieve case types" });
   }
 };
 
@@ -59,12 +65,16 @@ const getCaseTypeByName = async (req, res) => {
     const { caseType } = req.params;
     const caseName = await CaseTypeModel.findOne({ caseType });
     if (!caseName) {
-      return res.status(404).json({ status: "failed", message: "Case type not found" });
+      return res
+        .status(404)
+        .json({ status: "failed", message: "Case type not found" });
     }
     res.status(200).json({ status: "success", data: caseName });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ status: "failed", message: "Unable to retrieve case type" });
+    res
+      .status(500)
+      .json({ status: "failed", message: "Unable to retrieve case type" });
   }
 };
 
@@ -76,7 +86,9 @@ const getCaseTypeById = async (req, res) => {
     // Check if case type exists
     const existingCaseType = await CaseTypeModel.findById(id);
     if (!existingCaseType) {
-      return res.status(404).json({ status: "failed", message: "Case type not found" });
+      return res
+        .status(404)
+        .json({ status: "failed", message: "Case type not found" });
     }
     res.status(200).json({
       status: "success",
@@ -85,7 +97,9 @@ const getCaseTypeById = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ status: "failed", message: "Unable to retrieve case type" });
+    res
+      .status(500)
+      .json({ status: "failed", message: "Unable to retrieve case type" });
   }
 };
 
@@ -98,13 +112,22 @@ const updateCaseType = async (req, res) => {
     // Check if case type exists
     const existingCaseType = await CaseTypeModel.findById(id);
     if (!existingCaseType) {
-      return res.status(404).json({ status: "failed", message: "Case type not found" });
+      return res
+        .status(404)
+        .json({ status: "failed", message: "Case type not found" });
     }
 
     // Update the case type
     const updatedCaseType = await CaseTypeModel.findByIdAndUpdate(
       id,
-      { $set: { ...updateData, updatedBy, updatedOn: new Date(), ...(isActive !== undefined && { isActive }) } },
+      {
+        $set: {
+          ...updateData,
+          updatedBy,
+          updatedOn: new Date(),
+          ...(isActive !== undefined && { isActive }),
+        },
+      },
       { new: true, runValidators: true }
     );
 
@@ -122,7 +145,6 @@ const updateCaseType = async (req, res) => {
   }
 };
 
-
 // Delete case type
 const deleteCaseType = async (req, res) => {
   try {
@@ -131,16 +153,29 @@ const deleteCaseType = async (req, res) => {
     // Check if case type exists
     const existingCaseType = await CaseTypeModel.findById(id);
     if (!existingCaseType) {
-      return res.status(404).json({ status: "failed", message: "Case type not found" });
+      return res
+        .status(404)
+        .json({ status: "failed", message: "Case type not found" });
     }
 
     // Delete the case type
     await CaseTypeModel.findByIdAndDelete(id);
-    res.status(200).json({ status: "success", message: "Case type deleted successfully" });
+    res
+      .status(200)
+      .json({ status: "success", message: "Case type deleted successfully" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ status: "failed", message: "Unable to delete case type" });
+    res
+      .status(500)
+      .json({ status: "failed", message: "Unable to delete case type" });
   }
 };
 
-export { createCaseType, getCaseTypeById, deleteCaseType, updateCaseType, getCaseTypeByName, getAllCaseTypes };
+export {
+  createCaseType,
+  getCaseTypeById,
+  deleteCaseType,
+  updateCaseType,
+  getCaseTypeByName,
+  getAllCaseTypes,
+};

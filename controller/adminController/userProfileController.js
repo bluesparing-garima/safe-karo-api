@@ -3,33 +3,48 @@ import jwt from "jsonwebtoken";
 import UserProfileModel from "../../models/adminModels/userProfileSchema.js";
 import UserModel from "../../models/userSchema.js";
 import upload from '../../middlewares/uploadMiddleware.js'
+
 // Function to generate Partner ID
-const generatePartnerId = async () => {
+const generatePartnerId = async (role) => {
+  let prefix;
+
+  // Determine the prefix based on the role
+  switch (role) {
+    case "Relationship Manager":
+    case "RM":
+      prefix = "717A";
+      break;
+    case "Booking":
+      prefix = "717B";
+      break;
+    case "Operation":
+      prefix = "717O";
+      break;
+    case "HR":
+      prefix = "717H";
+      break;
+    default:
+      throw new Error("Invalid role");
+  }
+
+  // Find the last user with a similar prefix
   const lastUser = await UserProfileModel.findOne({
-    partnerId: { $exists: true },
+    partnerId: { $regex: `^${prefix}` },
   })
     .sort({ createdOn: -1 })
     .exec();
 
-  let newPartnerId = "8717A1";
+  let newPartnerId;
 
   if (lastUser && lastUser.partnerId) {
     const lastPartnerId = lastUser.partnerId;
-    const prefix = lastPartnerId.slice(0, 4); // "8717"
-    const suffix = lastPartnerId.slice(4); // "A1", "A2", ..., "A999", "B1", ...
-    const letter = suffix[0]; // "A", "B", ...
-    let number = parseInt(suffix.slice(1), 10); // 1, 2, ..., 999
-    let newLetter = letter;
-
+    const suffix = lastPartnerId.split("-")[1]; // "1", "2", ...
+    let number = parseInt(suffix, 10); // 1, 2, ...
+    
     number++;
-    if (number > 999) {
-      number = 1;
-      newLetter = String.fromCharCode(letter.charCodeAt(0) + 1);
-    } else {
-      newLetter = letter;
-    }
-
-    newPartnerId = `${prefix}${newLetter}${number}`;
+    newPartnerId = `${prefix}-${number}`;
+  } else {
+    newPartnerId = `${prefix}-1`;
   }
 
   return newPartnerId;
@@ -104,7 +119,8 @@ export const createUserProfile = (req, res) => {
         });
       }
 
-      const partnerId = await generatePartnerId();
+      // Generate partner ID based on role
+      const partnerId = await generatePartnerId(role);
 
       const hashedPassword = await hashPassword(password);
 
@@ -161,6 +177,7 @@ export const createUserProfile = (req, res) => {
     }
   });
 };
+
 
 // Check email existence
 export const checkEmailExists = async (req, res) => {

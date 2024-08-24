@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const creditAndDebitSchema = new mongoose.Schema({
+const accountManageSchema = new mongoose.Schema({
   transactionCode:{
     type:String,
     trim:true,
@@ -9,17 +9,9 @@ const creditAndDebitSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
-  // type: {
-  //   type: String,
-  //   trim: true,
-  // },
-  credit:{
-    type:Number,
-    trim:true
-  },
-  debit:{
-    type:Number,
-    trim:true
+  type: {
+    type: String,
+    trim: true,
   },
   accountId: {
     type: String,
@@ -29,10 +21,10 @@ const creditAndDebitSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
-  // amount: {
-  //   type: Number,
-  //   trim: true,
-  // },
+  amount: {
+    type: Number,
+    trim: true,
+  },
   userName: {
     type: String,
     trim: true,
@@ -55,7 +47,7 @@ const creditAndDebitSchema = new mongoose.Schema({
   },
   brokerBalance:{
     type:Number,
-    trim:true,
+    trim:true
   },
   brokerId: {
     type: String,
@@ -78,6 +70,10 @@ const creditAndDebitSchema = new mongoose.Schema({
     trim: true,
   },
   endDate:{
+    type: Date,
+    trim: true,
+  },
+  distributedDate:{
     type: Date,
     trim: true,
   },
@@ -108,7 +104,7 @@ const creditAndDebitSchema = new mongoose.Schema({
 });
 
 // Middleware to update timestamps on save
-creditAndDebitSchema.pre("save", function (next) {
+accountManageSchema.pre("save", function (next) {
   if (this.isNew) {
     this.createdOn = Date.now();
     this.updatedOn = null;
@@ -119,9 +115,9 @@ creditAndDebitSchema.pre("save", function (next) {
 });
 
 // Middleware to handle updates specifically
-creditAndDebitSchema.pre("findOneAndUpdate", function (next) {
+accountManageSchema.pre("findOneAndUpdate", function (next) {
   this._update.updatedOn = Date.now();
   next();
 });
 
-export default mongoose.model("creditAndDebit", creditAndDebitSchema);
+export default mongoose.model("accountManage", accountManageSchema);

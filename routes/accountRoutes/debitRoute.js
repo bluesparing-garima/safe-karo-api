@@ -3,6 +3,7 @@ import {
   getAllDebits,
   getDebitsByPartnerId,
   getDebitsByPartnerIdAndDateRange,
+  getDebitDetailsByTransactionCodeAndPartnerId
 } from "../../controller/accountsController/debitController.js";
 import logActivity from "../../middlewares/logActivity.js";
 
@@ -15,4 +16,6 @@ router.get(
   logActivity,
   getDebitsByPartnerIdAndDateRange
 );
+router.get("/debit/transaction", logActivity, getDebitDetailsByTransactionCodeAndPartnerId);
+
 export default router;

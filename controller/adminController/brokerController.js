@@ -54,7 +54,7 @@ const createBrokerName = async (req, res) => {
 // Get all broker names
 const getAllBrokerNames = async (req, res) => {
   try {
-    const brokerNames = await BrokerModel.find({ isActive: true });
+    const brokerNames = await BrokerModel.find({ isActive: true }).sort({ brokerName: 1 });
     res.status(200).json({
       message: "Success! Here are all active broker names",
       data: brokerNames,
