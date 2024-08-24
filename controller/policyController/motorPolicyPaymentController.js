@@ -638,7 +638,6 @@ export const updateMotorPolicyPayment = async (req, res) => {
   } = req.body;
 
   try {
-    // Find the existing motor policy payment by policyId
     const existingProfile = await motorPolicyPayment.findOne({
       policyId: req.params.policyId,
     });
@@ -647,7 +646,7 @@ export const updateMotorPolicyPayment = async (req, res) => {
       return res.status(404).json({
         message: "Motor Policy Payment not found",
         success: false,
-        status: "error",
+        status: "success",
       });
     }
 
