@@ -31,7 +31,6 @@ router.put(
   uploadSingleExcel,
   updateMotorPolicyDates
 );
-
 router.get("/policyId/:policyId", logActivity, getMotorPolicyByPolicyId);
 router.get("/partner/:partnerId", logActivity, getMotorPolicyByPartnerId);
 router.get(
