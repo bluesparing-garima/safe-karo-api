@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import AccountManage from "../../models/accountsModels/accountManageSchema.js";
 import Account from "../../models/accountsModels/accountSchema.js";
 import MotorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
@@ -27,6 +28,9 @@ const generateTransactionCode = async (startDate, endDate, type, amount) => {
 
 // Create a new credit and debit transaction
 export const createAccountManage = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const {
       accountType,
@@ -59,30 +63,34 @@ export const createAccountManage = async (req, res) => {
       partnerId,
       policyNumber,
       payOutPaymentStatus: "Paid",
-    });
+    }).session(session);
 
     const existingDebitEntry = await Debit.findOne({
       partnerId,
       policyNumber,
       payOutPaymentStatus: "Paid",
-    });
+    }).session(session);
 
     const existingAccountManage = await AccountManage.findOne({
       partnerId,
       policyNumber,
       type: "debit",
       accountType: "CutPay",
-    });
+    }).session(session);
 
     if (existingMotorPolicyPayment && existingDebitEntry && existingAccountManage) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(400).json({
         status: "error",
         message: "The CutPay amount has already been paid for this partner for this policy number.",
       });
     }
 
-    const account = await Account.findById(accountId);
+    const account = await Account.findById(accountId).session(session);
     if (!account) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(404).json({
         message: "Account not found",
         status: "error",
@@ -99,9 +107,11 @@ export const createAccountManage = async (req, res) => {
           payOutBalance: 0,
         },
         { new: true }
-      );
+      ).session(session);
 
       if (!motorPolicy) {
+        await session.abortTransaction();
+        session.endSession();
         return res.status(404).json({
           status: "error",
           message: "Motor policy payment not found.",
@@ -122,10 +132,10 @@ export const createAccountManage = async (req, res) => {
         transactionCode,
       });
 
-      await newDebitEntry.save();
+      await newDebitEntry.save({ session });
 
       account.amount -= amount;
-      await account.save();
+      await account.save({ session });
 
       const newAccountManage = new AccountManage({
         accountType,
@@ -153,7 +163,10 @@ export const createAccountManage = async (req, res) => {
         transactionCode,
       });
 
-      await newAccountManage.save();
+      await newAccountManage.save({ session });
+
+      await session.commitTransaction();
+      session.endSession();
 
       return res.status(201).json({
         status: "success",
@@ -168,7 +181,7 @@ export const createAccountManage = async (req, res) => {
       account.amount -= amount;
     }
 
-    await account.save();
+    await account.save({ session });
 
     const transactionCode = await generateTransactionCode(startDate, endDate, transactionType, amount);
 
@@ -198,7 +211,10 @@ export const createAccountManage = async (req, res) => {
       transactionCode, 
     });
 
-    await newAccountManage.save();
+    await newAccountManage.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
 
     res.status(201).json({
       message: "Transaction created successfully",
@@ -206,6 +222,8 @@ export const createAccountManage = async (req, res) => {
       status: "success",
     });
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
     res.status(500).json({
       message: "Error creating transaction",
       error: error.message,

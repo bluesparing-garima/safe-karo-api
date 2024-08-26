@@ -1,9 +1,10 @@
+import mongoose from "mongoose";
 import CreditAndDebit from "../../models/accountsModels/creditAndDebitSchema.js";
-import Account from "../../models/accountsModels/accountSchema.js";
 import MotorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
 import Debit from "../../models/accountsModels/debitsSchema.js";
-import moment from "moment"; 
+import moment from "moment";
 
+// Generate a transaction code
 const generateTransactionCode = async (startDate, endDate, credit, debit) => {
   try {
     if (!moment(startDate).isValid()) {
@@ -29,6 +30,9 @@ const generateTransactionCode = async (startDate, endDate, credit, debit) => {
 
 // Create a new credit and debit transaction
 export const createCreditAndDebit = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const {
       accountType,
@@ -59,22 +63,24 @@ export const createCreditAndDebit = async (req, res) => {
       partnerId,
       policyNumber,
       payOutPaymentStatus: "Paid",
-    });
+    }).session(session);
 
     const existingDebitEntry = await Debit.findOne({
       partnerId,
       policyNumber,
       payOutPaymentStatus: "Paid",
-    });
+    }).session(session);
 
     const existingCreditAndDebit = await CreditAndDebit.findOne({
       partnerId,
       policyNumber,
       debit: { $ne: null },
       accountType: "CutPay",
-    });
+    }).session(session);
 
     if (existingMotorPolicyPayment && existingDebitEntry && existingCreditAndDebit) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(400).json({
         status: "error",
         message: "The CutPay amount has already been paid for this partner for this policy number.",
@@ -110,7 +116,10 @@ export const createCreditAndDebit = async (req, res) => {
       transactionCode,
     });
 
-    await newCreditAndDebit.save();
+    await newCreditAndDebit.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
 
     res.status(201).json({
       message: "Transaction created successfully",
@@ -118,6 +127,9 @@ export const createCreditAndDebit = async (req, res) => {
       status: "success",
     });
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    console.error("Error creating transaction:", error.message);
     res.status(500).json({
       message: "Error creating transaction",
       error: error.message,
@@ -261,8 +273,11 @@ export const getCreditAndDebitById = async (req, res) => {
   }
 };
 
-// Update a credit and debit transaction by ID
+// Update a credit and debit transaction by ID with transaction
 export const updateCreditAndDebitById = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const { id } = req.params;
     const { credit, debit } = req.body;
@@ -270,15 +285,20 @@ export const updateCreditAndDebitById = async (req, res) => {
     const updatedTransaction = await CreditAndDebit.findByIdAndUpdate(
       id,
       { credit: credit ? parseFloat(credit) : 0, debit: debit ? parseFloat(debit) : 0, ...req.body },
-      { new: true }
+      { new: true, session }
     );
 
     if (!updatedTransaction) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(404).json({
         message: "Transaction not found",
         status: "error",
       });
     }
+
+    await session.commitTransaction();
+    session.endSession();
 
     res.status(200).json({
       message: "Transaction updated successfully",
@@ -286,6 +306,9 @@ export const updateCreditAndDebitById = async (req, res) => {
       status: "success",
     });
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    console.error("Error updating transaction:", error.message);
     res.status(500).json({
       message: "Error updating transaction",
       error: error.message,

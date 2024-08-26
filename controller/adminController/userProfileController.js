@@ -1,11 +1,11 @@
+import mongoose from 'mongoose';
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import UserProfileModel from "../../models/adminModels/userProfileSchema.js";
 import UserModel from "../../models/userSchema.js";
-import upload from '../../middlewares/uploadMiddleware.js'
+import upload from '../../middlewares/uploadMiddleware.js';
 
 // Function to generate Partner ID
-const generatePartnerId = async (role) => {
+const generatePartnerId = async (role, session) => {
   let prefix;
 
   // Determine the prefix based on the role
@@ -32,6 +32,7 @@ const generatePartnerId = async (role) => {
     partnerId: { $regex: `^${prefix}` },
   })
     .sort({ createdOn: -1 })
+    .session(session)
     .exec();
 
   let newPartnerId;
@@ -57,15 +58,23 @@ const hashPassword = async (password) => {
 };
 
 // Create a new user profile
-export const createUserProfile = (req, res) => {
-  upload(req, res, async (err) => {
-    if (err) {
-      return res.status(400).json({ message: err.message});
-    }
-    if (!req.files || Object.keys(req.files).length === 0) {
-      return res.status(400).json({ message: "No files selected!" });
-    }
-    try {
+export const createUserProfile = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    upload(req, res, async (err) => {
+      if (err) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({ message: err.message });
+      }
+      if (!req.files || Object.keys(req.files).length === 0) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({ message: "No files selected!" });
+      }
+
       const {
         branchName,
         role,
@@ -102,25 +111,27 @@ export const createUserProfile = (req, res) => {
       if (!role) missingFields.push("role");
 
       if (missingFields.length > 0) {
+        await session.abortTransaction();
+        session.endSession();
         return res.status(400).json({
           message: "Missing required fields for user profile creation",
           missingFields,
         });
       }
 
-      const existingUserInUserModel = await UserModel.findOne({ email });
-      const existingUserInUserProfileModel = await UserProfileModel.findOne({
-        email,
-      });
+      const existingUserInUserModel = await UserModel.findOne({ email }).session(session);
+      const existingUserInUserProfileModel = await UserProfileModel.findOne({ email }).session(session);
 
       if (existingUserInUserModel || existingUserInUserProfileModel) {
+        await session.abortTransaction();
+        session.endSession();
         return res.status(400).json({
           message: "Email already exists",
         });
       }
 
       // Generate partner ID based on role
-      const partnerId = await generatePartnerId(role);
+      const partnerId = await generatePartnerId(role, session);
 
       const hashedPassword = await hashPassword(password);
 
@@ -161,23 +172,27 @@ export const createUserProfile = (req, res) => {
         partnerId: userProfile._id,
       });
 
-      await userProfile.save();
-      await newUser.save();
+      await userProfile.save({ session });
+      await newUser.save({ session });
+
+      await session.commitTransaction();
+      session.endSession();
 
       res.status(201).json({
         message: "User profile created successfully",
         data: userProfile,
         status: "success",
       });
-    } catch (error) {
-      res.status(500).json({
-        message: "Error creating user profile",
-        error: error.message,
-      });
-    }
-  });
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    res.status(500).json({
+      message: "Error creating user profile",
+      error: error.message,
+    });
+  }
 };
-
 
 // Check email existence
 export const checkEmailExists = async (req, res) => {
@@ -321,13 +336,18 @@ export const getUserProfileById = async (req, res) => {
 };
 
 // Update user profile
-export const updateUserProfile = (req, res) => {
-  upload(req, res, async (err) => {
-    if (err) {
-      return res.status(400).json({ message: err.message });
-    }
+export const updateUserProfile = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-    try {
+  try {
+    upload(req, res, async (err) => {
+      if (err) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({ message: err.message });
+      }
+
       const { password, ...rest } = req.body;
       let updatedData = { ...rest };
 
@@ -336,7 +356,7 @@ export const updateUserProfile = (req, res) => {
         updatedData.password = hashedPassword;
         updatedData.originalPassword = password;
       } else {
-        const existingProfile = await UserProfileModel.findById(req.params.id);
+        const existingProfile = await UserProfileModel.findById(req.params.id).session(session);
         if (existingProfile) {
           updatedData.originalPassword = existingProfile.originalPassword;
         }
@@ -360,7 +380,7 @@ export const updateUserProfile = (req, res) => {
       const updatedProfile = await UserProfileModel.findByIdAndUpdate(
         req.params.id,
         updateData,
-        { new: true }
+        { new: true, session }
       );
 
       const updatedUserData = { ...updatedData };
@@ -369,24 +389,32 @@ export const updateUserProfile = (req, res) => {
       const updatedUser = await UserModel.findOneAndUpdate(
         { email: updateData.email },
         updatedUserData,
-        { new: true }
+        { new: true, session }
       );
 
       if (!updatedProfile && !updatedUser) {
+        await session.abortTransaction();
+        session.endSession();
         return res.status(404).json({ message: "User profile not found" });
       }
+
+      await session.commitTransaction();
+      session.endSession();
+
       res.status(200).json({
         message: "User profile updated successfully",
         data: updatedProfile,
         originalPassword: updatedProfile.originalPassword,
       });
-    } catch (error) {
-      res.status(500).json({
-        message: "Error updating user profile",
-        error: error.message,
-      });
-    }
-  });
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    res.status(500).json({
+      message: "Error updating user profile",
+      error: error.message,
+    });
+  }
 };
 
 // Delete (deactivate) a user profile by ID

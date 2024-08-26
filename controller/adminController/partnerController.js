@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import * as XLSX from "xlsx";
 import fs from "fs";
 import path from "path";
@@ -15,25 +16,21 @@ const hashPassword = async (password) => {
 // Helper function to generate Partner ID
 const generatePartnerId = async () => {
   const lastUser = await UserProfileModel.findOne().sort({ _id: -1 }).exec();
-
   let newPartnerId = "8717A1";
   if (lastUser && lastUser.partnerId) {
     const lastPartnerId = lastUser.partnerId;
-    const prefix = lastPartnerId.slice(0, 4); // "8717"
-    const suffix = lastPartnerId.slice(4); // "A1", "A2", ..., "A999", "B1", ...
-    const letter = suffix[0]; // "A", "B", ...
-    let number = parseInt(suffix.slice(1), 10); // 1, 2, ..., 999
-
+    const prefix = lastPartnerId.slice(0, 4);
+    const suffix = lastPartnerId.slice(4);
+    const letter = suffix[0];
+    let number = parseInt(suffix.slice(1), 10);
     let newLetter = letter;
     number++;
     if (number > 999) {
       number = 1;
       newLetter = String.fromCharCode(letter.charCodeAt(0) + 1);
     }
-
     newPartnerId = `${prefix}${newLetter}${number}`;
   }
-
   return newPartnerId;
 };
 
@@ -53,6 +50,8 @@ const computeHash = (data) => {
 
 // Upload Partner Excel Data
 export const uploadPartnerExcel = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
   try {
     if (!req.file) {
       return res.status(400).send("No files were uploaded.");
@@ -69,16 +68,12 @@ export const uploadPartnerExcel = async (req, res) => {
 
     // Check if the file has already been uploaded
     if (storedHashes.includes(fileHash)) {
-      return res
-        .status(400)
-        .json({ message: "File has already been uploaded." });
+      return res.status(400).json({ message: "File has already been uploaded." });
     }
 
     const workbook = XLSX.read(file.buffer, { type: "buffer" });
     const sheetName = workbook.SheetNames[0];
-    const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
-      raw: true,
-    });
+    const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { raw: true });
 
     const extractedData = worksheet.map((row) => ({
       role: row.role || "",
@@ -107,10 +102,7 @@ export const uploadPartnerExcel = async (req, res) => {
       const missing = requiredFields.filter((field) => !record[field]);
 
       if (missing.length > 0) {
-        missingFields.push({
-          record,
-          missing,
-        });
+        missingFields.push({ record, missing });
       } else {
         const hashedPassword = await hashPassword(record.password);
 
@@ -151,8 +143,8 @@ export const uploadPartnerExcel = async (req, res) => {
           partnerCode: record.partnerId || (await generatePartnerId()),
         });
 
-        await userProfile.save();
-        await newUser.save();
+        await userProfile.save({ session });
+        await newUser.save({ session });
       }
     }
 
@@ -161,6 +153,8 @@ export const uploadPartnerExcel = async (req, res) => {
     fs.writeFileSync(hashFilePath, JSON.stringify(storedHashes, null, 2));
 
     if (missingFields.length > 0) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(400).json({
         message: "Some records have missing fields",
         missingFields,
@@ -168,20 +162,25 @@ export const uploadPartnerExcel = async (req, res) => {
       });
     }
 
+    await session.commitTransaction();
+    session.endSession();
+
     res.status(201).json({
       message: "Partners created successfully from Excel",
       status: "success",
     });
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
     console.error(error);
-    res
-      .status(500)
-      .json({ message: "Error processing Excel file", error: error.message });
+    res.status(500).json({ message: "Error processing Excel file", error: error.message });
   }
 };
 
 // Create a new partner
 export const createPartner = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
   try {
     const {
       fullName,
@@ -204,18 +203,12 @@ export const createPartner = async (req, res) => {
       isActive = true,
     } = req.body;
 
-    if (
-      !password ||
-      !fullName ||
-      !phoneNumber ||
-      !email ||
-      !gender ||
-      !wallet
-    ) {
-      return res
-        .status(400)
-        .json({ message: "Missing required fields for partner creation" });
+    if (!password || !fullName || !phoneNumber || !email || !gender || !wallet) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json({ message: "Missing required fields for partner creation" });
     }
+
     const formattedDateOfBirth = moment(dateOfBirth, "DD MM YYYY").toDate();
     const formattedJoiningDate = moment(joiningDate, "DD MMM YYYY").toDate();
 
@@ -251,11 +244,14 @@ export const createPartner = async (req, res) => {
       role,
       isActive: isActive !== undefined ? isActive : true,
       partnerId: userProfile._id,
-      partnerCode: partnerId || (await generatePartnerId()),
+      partnerCode: userProfile.partnerId,
     });
 
-    await userProfile.save();
-    await newUser.save();
+    await userProfile.save({ session });
+    await newUser.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
 
     res.status(201).json({
       message: "Partner created successfully",
@@ -263,11 +259,12 @@ export const createPartner = async (req, res) => {
       status: "success",
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error creating partner", error: error.message });
+    await session.abortTransaction();
+    session.endSession();
+    res.status(500).json({ message: "Error creating partner", error: error.message });
   }
 };
+
 // Get all partners
 export const getAllPartners = async (req, res) => {
   try {
@@ -306,24 +303,56 @@ export const getPartnerById = async (req, res) => {
 
 // Update a partner by ID
 export const updatePartner = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
-    const updatedPartner = await UserModel.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
-    if (!updatedPartner || !updatedPartner.partnerId) {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    // Fetch the current partner document
+    const currentPartner = await UserModel.findById(id).session(session);
+    if (!currentPartner) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(404).json({ message: "Partner not found" });
     }
+
+    // Update the partner document
+    const updatedPartner = await UserModel.findByIdAndUpdate(id, updateData, { new: true, session });
+    if (!updatedPartner) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(404).json({ message: "Partner update failed" });
+    }
+
+    // Optionally, update related documents if needed
+    // Example:
+    // const updatedProfile = await UserProfileModel.findOneAndUpdate(
+    //   { partnerId: updatedPartner.partnerId },
+    //   { $set: updateData },
+    //   { new: true, session }
+    // );
+
+    // If any update fails, abort the transaction
+    // Uncomment the lines above and ensure that related document updates are handled similarly
+
+    await session.commitTransaction();
+    session.endSession();
+
     res.status(200).json({
       message: "Partner updated successfully",
       data: updatedPartner,
       status: "success",
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Error updating partner", error: error.message });
+    await session.abortTransaction();
+    session.endSession();
+    console.error("Error updating partner:", error);
+    res.status(500).json({
+      message: "Error updating partner",
+      error: error.message,
+    });
   }
 };
 

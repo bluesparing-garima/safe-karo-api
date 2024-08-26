@@ -1,21 +1,26 @@
-import Model from "../../models/adminModels/modelSchema.js";
 import mongoose from "mongoose";
+import Model from "../../models/adminModels/modelSchema.js";
 import Make from "../../models/adminModels/modelSchema.js";
 import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
-// Endpoint to check if a model exists
-const createModel = async (req, res) => {
+
+// Endpoint to create a new model with transaction
+export const createModel = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  
   try {
     const { modelName, makeId, makeName, createdBy, isActive } = req.body;
 
-    const modelExists = await Model.exists({
-      modelName,
-    });
+    const modelExists = await Model.exists({ modelName }).session(session);
     if (modelExists) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(409).json({
         status: "failed",
         message: "Model with the same modelName already exists",
       });
     }
+
     const newModel = new Model({
       makeId,
       makeName,
@@ -25,24 +30,30 @@ const createModel = async (req, res) => {
       updatedOn: null,
       isActive: isActive !== undefined ? isActive : true,
     });
-    await newModel.save();
+
+    await newModel.save({ session });
+    await session.commitTransaction();
+    session.endSession();
+
     res.status(200).json({
       message: "New Model created successfully",
       data: newModel,
       status: "success",
     });
   } catch (error) {
-    console.error("Error checking model existence:", error);
+    console.error("Error creating model:", error);
+    await session.abortTransaction();
+    session.endSession();
     res.status(500).json({
       status: "failed",
-      message: "Unable to check model existence",
+      message: "Unable to create model",
       error: error.message,
     });
   }
 };
 
 // Get all models
-const getAllModels = async (req, res) => {
+export const getAllModels = async (req, res) => {
   try {
     // Fetch and sort makes alphabetically by name
     const Models = await Model.find().sort({ makeName: 1 });
@@ -61,7 +72,7 @@ const getAllModels = async (req, res) => {
 };
 
 // Check Model exist or not.
-const validateModel = async (req, res) => {
+export const validateModel = async (req, res) => {
   try {
     const { model } = req.params;
     const normalizedModel = model.toLowerCase();
@@ -91,7 +102,7 @@ const validateModel = async (req, res) => {
 };
 
 // Get model by ID
-const getModelById = async (req, res) => {
+export const getModelById = async (req, res) => {
   try {
     const { id } = req.params;
     // Check if the id is a valid ObjectId
@@ -121,18 +132,23 @@ const getModelById = async (req, res) => {
   }
 };
 
-// Update model
-const updateModel = async (req, res) => {
+// Endpoint to update an existing model with transaction
+export const updateModel = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const { id } = req.params;
     const { makeId, modelName, updatedBy, isActive } = req.body;
 
-    // Check if model exists
-    const existingModel = await Model.findById(id);
+    const existingModel = await Model.findById(id).session(session);
     if (!existingModel) {
-      return res
-        .status(404)
-        .json({ status: "failed", message: "Model name not found" });
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(404).json({
+        status: "failed",
+        message: "Model name not found",
+      });
     }
 
     const previousModelName = existingModel.modelName;
@@ -140,21 +156,21 @@ const updateModel = async (req, res) => {
 
     let makeName;
 
-    // Check if makeName is provided in the request body
     if (req.body.makeName) {
       makeName = req.body.makeName;
     } else {
-      // Fetch the make name using makeId
-      const make = await Make.findById(makeId);
+      const make = await Make.findById(makeId).session(session);
       if (!make) {
-        return res
-          .status(404)
-          .json({ status: "failed", message: "Make name not found" });
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(404).json({
+          status: "failed",
+          message: "Make name not found",
+        });
       }
       makeName = make.makeName;
     }
 
-    // Update the model
     existingModel.makeId = makeId;
     existingModel.makeName = makeName;
     existingModel.modelName = modelName;
@@ -164,20 +180,21 @@ const updateModel = async (req, res) => {
       existingModel.isActive = isActive;
     }
 
-    const updatedModel = await existingModel.save();
+    const updatedModel = await existingModel.save({ session });
 
-    // Find all motor policies that reference the previous model and make
     const motorPoliciesWithModel = await MotorPolicyModel.find({
       model: previousModelName,
       make: previousMakeName,
-    });
+    }).session(session);
 
-    // Update the model and make reference in each motor policy
     for (let motorPolicy of motorPoliciesWithModel) {
       motorPolicy.model = modelName;
       motorPolicy.make = makeName;
-      await motorPolicy.save();
+      await motorPolicy.save({ session });
     }
+
+    await session.commitTransaction();
+    session.endSession();
 
     res.status(200).json({
       message: `Model name ${id} updated successfully and referenced motor policies updated`,
@@ -186,6 +203,8 @@ const updateModel = async (req, res) => {
     });
   } catch (error) {
     console.error("Error updating model:", error);
+    await session.abortTransaction();
+    session.endSession();
     res.status(500).json({
       status: "failed",
       message: "Unable to update model",
@@ -194,7 +213,7 @@ const updateModel = async (req, res) => {
 };
 
 // Delete model
-const deleteModel = async (req, res) => {
+export const deleteModel = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -218,13 +237,4 @@ const deleteModel = async (req, res) => {
       .status(500)
       .json({ status: "failed", message: "Unable to delete model" });
   }
-};
-
-export {
-  createModel,
-  getAllModels,
-  getModelById,
-  updateModel,
-  deleteModel,
-  validateModel,
 };

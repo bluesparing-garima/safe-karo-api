@@ -1,8 +1,12 @@
+import mongoose from 'mongoose';
 import leadPaymentModel from "../../models/partnerModels/leadPaymentSchema.js";
 import leadGenerateModel from "../../models/partnerModels/leadGenerateSchema.js";
 
 // Create a new lead payment
-const createNewLeadPayment = async (req, res) => {
+export const createNewLeadPayment = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const {
       leadId,
@@ -23,6 +27,8 @@ const createNewLeadPayment = async (req, res) => {
     if (!createdBy) missingFields.push("createdBy");
 
     if (missingFields.length > 0) {
+      await session.abortTransaction();
+      session.endSession();
       return res
         .status(400)
         .json({
@@ -40,20 +46,25 @@ const createNewLeadPayment = async (req, res) => {
       partnerId,
     });
 
-    await newLeadPayment.save();
+    await newLeadPayment.save({ session });
 
     const updatedLead = await leadGenerateModel.findByIdAndUpdate(
       leadId,
       { status },
-      { new: true }
+      { new: true, session }
     );
 
     if (!updatedLead) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(404).json({
         status: "failed",
         message: "Related lead not found",
       });
     }
+
+    await session.commitTransaction();
+    session.endSession();
 
     res.status(200).json({
       message: "New Lead Payment created successfully",
@@ -61,6 +72,8 @@ const createNewLeadPayment = async (req, res) => {
       status: "success",
     });
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
     res.status(500).json({
       status: "failed",
       message: "Unable to create new lead payment",
@@ -70,7 +83,7 @@ const createNewLeadPayment = async (req, res) => {
 };
 
 // Get all payments
-const getAllLeadPayments = async (req, res) => {
+export const getAllLeadPayments = async (req, res) => {
   try {
     const payments = await leadPaymentModel.find();
     res.status(200).json({
@@ -88,7 +101,7 @@ const getAllLeadPayments = async (req, res) => {
 };
 
 // Get payments by leadId
-const getLeadPaymentsByLeadId = async (req, res) => {
+export const getLeadPaymentsByLeadId = async (req, res) => {
   try {
     const { leadId } = req.query;
     if (!leadId) {
@@ -121,7 +134,7 @@ const getLeadPaymentsByLeadId = async (req, res) => {
 };
 
 // Get payments by Id
-const getLeadPaymentById = async (req, res) => {
+export const getLeadPaymentById = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -145,17 +158,43 @@ const getLeadPaymentById = async (req, res) => {
 };
 
 // Update lead payment
-const updateLeadPayment = async (req, res) => {
+export const updateLeadPayment = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const { id } = req.params;
     const updateData = req.body;
 
-    // Check if lead payment exists and update in one step
-    const updatedLeadPayment = await leadPaymentModel.findByIdAndUpdate(id, updateData, { new: true });
+    // Check if lead payment exists
+    const updatedLeadPayment = await leadPaymentModel.findByIdAndUpdate(id, updateData, { new: true, session });
 
     if (!updatedLeadPayment) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(404).json({ status: 'failed', message: 'Lead payment not found' });
     }
+
+    // Optionally update related lead data if required
+    if (updateData.leadId) {
+      const updatedLead = await leadGenerateModel.findByIdAndUpdate(
+        updateData.leadId,
+        { status: updateData.status },
+        { new: true, session }
+      );
+
+      if (!updatedLead) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(404).json({
+          status: 'failed',
+          message: 'Related lead not found',
+        });
+      }
+    }
+
+    await session.commitTransaction();
+    session.endSession();
 
     res.status(200).json({
       message: 'Lead payment updated successfully',
@@ -163,6 +202,8 @@ const updateLeadPayment = async (req, res) => {
       status: 'success'
     });
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
     res.status(500).json({
       status: 'failed',
       message: 'Unable to update lead payment',
@@ -172,7 +213,7 @@ const updateLeadPayment = async (req, res) => {
 };
 
 // Delete lead payment
-const deleteLeadPayment = async (req, res) => {
+export const deleteLeadPayment = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -194,11 +235,3 @@ const deleteLeadPayment = async (req, res) => {
   }
 };
 
-export {
-  createNewLeadPayment,
-  getAllLeadPayments,
-  getLeadPaymentsByLeadId,
-  getLeadPaymentById,
-  updateLeadPayment,
-  deleteLeadPayment,
-};

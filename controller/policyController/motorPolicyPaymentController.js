@@ -681,7 +681,6 @@ export const updateMotorPolicyPayment = async (req, res) => {
   }
 };
 
-
 // Delete motor policy payment by policyId
 export const deleteMotorPolicyPayment = async (req, res) => {
   try {

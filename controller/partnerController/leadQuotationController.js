@@ -1,38 +1,50 @@
+import mongoose from 'mongoose';
 import leadQuotationModel from "../../models/partnerModels/leadQuotationSchema.js";
 import leadGenerateModel from "../../models/partnerModels/leadGenerateSchema.js";
 import upload from "../../middlewares/uploadMiddleware.js";
 
 // Create a new quotation
-const createNewQuotation = async (req, res) => {
-  upload(req, res, async (err) => {
-    if (err) {
-      return res.status(400).json({ message: err.message });
-    }
-    if (!req.files) {
-      return res.status(400).json({ message: "No file selected!" });
-    }
-    try {
+export const createNewQuotation = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    upload(req, res, async (err) => {
+      if (err) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({ message: err.message });
+      }
+      if (!req.files) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({ message: "No file selected!" });
+      }
+
       const {
         leadId,
         comments,
-        quotationImage,
         status,
         partnerId,
         partnerName,
         createdBy,
       } = req.body;
+
       const fileDetails = Object.keys(req.files).reduce((acc, key) => {
         req.files[key].forEach((file) => {
           acc[file.fieldname] = file.filename;
         });
         return acc;
       }, {});
+
       const missingFields = [];
       if (!leadId) missingFields.push("leadId");
       if (!status) missingFields.push("status");
       if (!partnerId) missingFields.push("partnerId");
 
       if (missingFields.length > 0) {
+        await session.abortTransaction();
+        session.endSession();
         return res.status(400).json({
           status: "failed",
           message: `Required fields are missing: ${missingFields.join(", ")}`,
@@ -49,38 +61,45 @@ const createNewQuotation = async (req, res) => {
         createdBy,
       });
 
-      await newQuotation.save();
-      if (newQuotation) {
-        // Update lead status
-        const updatedLead = await leadGenerateModel.findByIdAndUpdate(
-          leadId,
-          { status },
-          { new: true }
-        );
-        if (!updatedLead) {
-          return res.status(404).json({
-            status: "failed",
-            message: "Related lead not found",
-          });
-        }
-        res.status(200).json({
-          message: "New Quotation created successfully",
-          data: newQuotation,
-          status: "success",
+      await newQuotation.save({ session });
+
+      const updatedLead = await leadGenerateModel.findByIdAndUpdate(
+        leadId,
+        { status },
+        { new: true, session }
+      );
+
+      if (!updatedLead) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(404).json({
+          status: "failed",
+          message: "Related lead not found",
         });
       }
-    } catch (error) {
-      res.status(500).json({
-        status: "failed",
-        message: "Unable to create new quotation",
-        error: error.message,
+
+      await session.commitTransaction();
+      session.endSession();
+
+      res.status(200).json({
+        message: "New Quotation created successfully",
+        data: newQuotation,
+        status: "success",
       });
-    }
-  });
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    res.status(500).json({
+      status: "failed",
+      message: "Unable to create new quotation",
+      error: error.message,
+    });
+  }
 };
 
 // Get all quotations
-const getAllQuotation = async (req, res) => {
+export const getAllQuotation = async (req, res) => {
   try {
     const quotations = await leadQuotationModel.find();
     res.status(200).json({
@@ -98,7 +117,7 @@ const getAllQuotation = async (req, res) => {
 };
 
 // Get quotation by ID
-const getQuotationById = async (req, res) => {
+export const getQuotationById = async (req, res) => {
   try {
     const { id } = req.params;
     const quotation = await leadQuotationModel.findById(id);
@@ -122,7 +141,7 @@ const getQuotationById = async (req, res) => {
 };
 
 // Get quotations by leadId
-const getQuotationsByLeadId = async (req, res) => {
+export const getQuotationsByLeadId = async (req, res) => {
   try {
     const { leadId } = req.query;
     if (!leadId) {
@@ -154,80 +173,95 @@ const getQuotationsByLeadId = async (req, res) => {
 };
 
 // Update quotation by ID
-const updateQuotation = async (req, res) => {
-  upload(req, res, async (err) => {
-    if (err) {
-      return res.status(400).json({ message: err.message });
-    }
-    try {
+export const updateQuotation = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    upload(req, res, async (err) => {
+      if (err) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({ message: err.message });
+      }
+
       const { id } = req.params;
       const updateData = req.body;
 
-      // Check if the quotation exists
       const existingQuotation = await leadQuotationModel.findById(id);
       if (!existingQuotation) {
-        return res
-          .status(404)
-          .json({ status: "failed", message: "Quotation not found" });
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(404).json({
+          status: "failed",
+          message: "Quotation not found",
+        });
       }
 
       if (req.files) {
-        if (
-          updateData.status &&
-          updateData.status === existingQuotation.status
-        ) {
-          existingQuotation.quotationImage = req.files.filename;
+        if (updateData.status && updateData.status === existingQuotation.status) {
+          updateData.quotationImage = req.files.filename;
         } else {
           // If status is different, keep the previous file
           updateData.quotationImage = existingQuotation.quotationImage;
         }
       }
 
-      // Update the quotation
       const updatedQuotation = await leadQuotationModel.findByIdAndUpdate(
         id,
         updateData,
-        { new: true }
+        { new: true, session }
       );
 
       if (!updatedQuotation) {
-        return res
-          .status(404)
-          .json({ status: "failed", message: "Quotation not found" });
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(404).json({
+          status: "failed",
+          message: "Quotation not found",
+        });
       }
 
-      // Update lead status if quotation status has updated
+      // Update lead status if quotation status has been updated
       if (updateData.status) {
         const updatedLead = await leadGenerateModel.findByIdAndUpdate(
           updatedQuotation.leadId,
           { status: updateData.status },
-          { new: true }
+          { new: true, session }
         );
 
         if (!updatedLead) {
-          return res
-            .status(404)
-            .json({ status: "failed", message: "Related lead not found" });
+          await session.abortTransaction();
+          session.endSession();
+          return res.status(404).json({
+            status: "failed",
+            message: "Related lead not found",
+          });
         }
       }
+
+      await session.commitTransaction();
+      session.endSession();
 
       res.status(200).json({
         message: "Quotation updated successfully",
         data: updatedQuotation,
         status: "success",
       });
-    } catch (error) {
-      res.status(500).json({
-        status: "failed",
-        message: "Unable to update quotation",
-        error: error.message,
-      });
-    }
-  });
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    res.status(500).json({
+      status: "failed",
+      message: "Unable to update quotation",
+      error: error.message,
+    });
+  }
 };
 
 // Delete quotation by ID
-const deleteQuotation = async (req, res) => {
+export const deleteQuotation = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -253,11 +287,3 @@ const deleteQuotation = async (req, res) => {
   }
 };
 
-export {
-  createNewQuotation,
-  getAllQuotation,
-  getQuotationsByLeadId,
-  getQuotationById,
-  updateQuotation,
-  deleteQuotation,
-};

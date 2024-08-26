@@ -1,10 +1,16 @@
+import mongoose from "mongoose";
 import credits from "../../models/accountsModels/creditSchema.js";
 
 export const getAllCredits = async (req, res) => {
+  const session = await mongoose.startSession();
+
   try {
-    const allCreditRecords = await credits.find({});
+    session.startTransaction();
+
+    const allCreditRecords = await credits.find({}).session(session);
 
     if (!allCreditRecords || allCreditRecords.length === 0) {
+      await session.abortTransaction();
       return res.status(404).json({
         message: "No credit records found",
         success: false,
@@ -12,6 +18,7 @@ export const getAllCredits = async (req, res) => {
       });
     }
 
+    await session.commitTransaction();
     res.status(200).json({
       message: "All credit records retrieved successfully",
       data: allCreditRecords,
@@ -19,22 +26,29 @@ export const getAllCredits = async (req, res) => {
       status: "success",
     });
   } catch (err) {
+    await session.abortTransaction();
     res.status(500).json({
       message: "An error occurred while retrieving all credit records",
       error: err.message,
       success: false,
       status: "error",
     });
+  } finally {
+    session.endSession();
   }
 };
 
 export const getCreditsByBrokerId = async (req, res) => {
   const { brokerId } = req.params;
+  const session = await mongoose.startSession();
 
   try {
-    const creditRecords = await credits.find({ brokerId });
+    session.startTransaction();
+
+    const creditRecords = await credits.find({ brokerId }).session(session);
 
     if (!creditRecords || creditRecords.length === 0) {
+      await session.abortTransaction();
       return res.status(404).json({
         message: "No credit records found for the given brokerId",
         success: false,
@@ -42,6 +56,7 @@ export const getCreditsByBrokerId = async (req, res) => {
       });
     }
 
+    await session.commitTransaction();
     res.status(200).json({
       message: "Credit records retrieved successfully",
       data: creditRecords,
@@ -49,12 +64,15 @@ export const getCreditsByBrokerId = async (req, res) => {
       status: "success",
     });
   } catch (err) {
+    await session.abortTransaction();
     res.status(500).json({
       message: "An error occurred while retrieving credit records",
       error: err.message,
       success: false,
       status: "error",
     });
+  } finally {
+    session.endSession();
   }
 };
 
@@ -72,14 +90,18 @@ export const getCreditsByBrokerIdAndDateRange = async (req, res) => {
 
   const start = new Date(startDate);
   const end = new Date(endDate);
+  const session = await mongoose.startSession();
 
   try {
+    session.startTransaction();
+
     const creditRecords = await credits.find({
       brokerId,
       policyDate: { $gte: start, $lte: end },
-    });
+    }).session(session);
 
     if (!creditRecords || creditRecords.length === 0) {
+      await session.abortTransaction();
       return res.status(404).json({
         message: "No credit records found for the given brokerId and date range",
         success: false,
@@ -87,6 +109,7 @@ export const getCreditsByBrokerIdAndDateRange = async (req, res) => {
       });
     }
 
+    await session.commitTransaction();
     res.status(200).json({
       message: "Credit records retrieved successfully",
       data: creditRecords,
@@ -94,12 +117,15 @@ export const getCreditsByBrokerIdAndDateRange = async (req, res) => {
       status: "success",
     });
   } catch (err) {
+    await session.abortTransaction();
     res.status(500).json({
       message: "An error occurred while retrieving credit records",
       error: err.message,
       success: false,
       status: "error",
     });
+  } finally {
+    session.endSession();
   }
 };
 
@@ -111,24 +137,30 @@ export const getDCreditDetailsByTransactionCodeAndBrokerId = async (req, res) =>
     return res.status(400).json({
       status: "error",
       success: false,
-      message: "Transaction code and partner ID are required.",
+      message: "Transaction code and broker ID are required.",
     });
   }
 
+  const session = await mongoose.startSession();
+
   try {
+    session.startTransaction();
+
     const creditDetails = await credits.findOne({
       transactionCode,
       brokerId,
-    });
+    }).session(session);
 
     if (!creditDetails) {
+      await session.abortTransaction();
       return res.status(404).json({
         status: "error",
         success: false,
-        message: "No credit details found for the provided transaction code and partner ID.",
+        message: "No credit details found for the provided transaction code and broker ID.",
       });
     }
 
+    await session.commitTransaction();
     res.status(200).json({
       status: "success",
       success: true,
@@ -136,11 +168,14 @@ export const getDCreditDetailsByTransactionCodeAndBrokerId = async (req, res) =>
       data: creditDetails,
     });
   } catch (error) {
+    await session.abortTransaction();
     res.status(500).json({
       status: "error",
       success: false,
       message: "Error retrieving credit details.",
       error: error.message,
     });
+  } finally {
+    session.endSession();
   }
 };

@@ -1,7 +1,6 @@
 import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
 import MotorPolicyPaymentModel from "../../models/policyModel/motorPolicyPaymentSchema.js";
-import PayInExcelDataModel from "../../models/adminModels/payInExcelDataSchema.js";
-import PayOutExcelDataModel from "../../models/adminModels/payOutExcelDataSchema.js";
+import mongoose from 'mongoose';
 
 // Get Policies by Date Range
 export const getPoliciesByDateRange = async (req, res) => {
@@ -269,6 +268,9 @@ export const updateODTPByDateRange = async (req, res) => {
     });
   }
 
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const startDateObj = new Date(startDate);
     startDateObj.setHours(0, 0, 0, 0);
@@ -277,39 +279,43 @@ export const updateODTPByDateRange = async (req, res) => {
     endDateObj.setHours(23, 59, 59, 999);
 
     const updateFields = {};
+    if (od !== undefined) updateFields.od = parseFloat(od);
+    if (tp !== undefined) updateFields.tp = parseFloat(tp);
 
-    if (od !== undefined) {
-      updateFields.od = parseFloat(od);
-    }
-    if (tp !== undefined) {
-      updateFields.tp = parseFloat(tp);
-    }
-
-    const updatePaymentResult = await MotorPolicyPaymentModel.updateMany(
+    // Update MotorPolicyPaymentModel
+    await MotorPolicyPaymentModel.updateMany(
       { issueDate: { $gte: startDateObj, $lte: endDateObj } },
-      { $set: updateFields }
+      { $set: updateFields },
+      { session }
     );
 
     const paymentPolicies = await MotorPolicyPaymentModel.find(
       { issueDate: { $gte: startDateObj, $lte: endDateObj } },
-      { policyNumber: 1 }
+      { policyNumber: 1 },
+      { session }
     );
 
     const policyNumbers = paymentPolicies.map((policy) => policy.policyNumber);
 
-    const updatePolicyResult = await MotorPolicyModel.updateMany(
+    // Update MotorPolicyModel
+    await MotorPolicyModel.updateMany(
       { policyNumber: { $in: policyNumbers } },
-      { $set: updateFields }
+      { $set: updateFields },
+      { session }
     );
+
+    await session.commitTransaction();
+    session.endSession();
 
     res.status(200).json({
       message: "OD and TP updated successfully in both models.",
       success: true,
       status: "success",
-      updatePaymentResult,
-      updatePolicyResult,
     });
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+
     res.status(500).json({
       message: "Error updating OD and TP.",
       success: false,
@@ -350,6 +356,9 @@ export const updateCommissionByDateRange = async (req, res) => {
     });
   }
 
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const startDateObj = new Date(startDate);
     startDateObj.setHours(0, 0, 0, 0);
@@ -359,9 +368,12 @@ export const updateCommissionByDateRange = async (req, res) => {
 
     const documentsToUpdate = await MotorPolicyPaymentModel.find({
       createdOn: { $gte: startDateObj, $lte: endDateObj },
-    });
+    }).session(session);
 
     if (documentsToUpdate.length === 0) {
+      await session.abortTransaction();
+      session.endSession();
+
       return res.status(404).json({
         status: "error",
         success: false,
@@ -377,10 +389,7 @@ export const updateCommissionByDateRange = async (req, res) => {
         let payInCommission = 0;
         let payOutCommission = 0;
 
-        if (
-          payInODPercentage !== undefined &&
-          payInTPPercentage !== undefined
-        ) {
+        if (payInODPercentage !== undefined && payInTPPercentage !== undefined) {
           const calculatedPayInODAmount = Math.round(
             (od * payInODPercentage) / 100
           );
@@ -401,10 +410,7 @@ export const updateCommissionByDateRange = async (req, res) => {
           };
         }
 
-        if (
-          payOutODPercentage !== undefined &&
-          payOutTPPercentage !== undefined
-        ) {
+        if (payOutODPercentage !== undefined && payOutTPPercentage !== undefined) {
           const calculatedPayOutODAmount = Math.round(
             (od * payOutODPercentage) / 100
           );
@@ -425,15 +431,16 @@ export const updateCommissionByDateRange = async (req, res) => {
           };
         }
 
-        const updatedDoc = await MotorPolicyPaymentModel.findByIdAndUpdate(
+        return MotorPolicyPaymentModel.findByIdAndUpdate(
           doc._id,
           { $set: updatedFields },
-          { new: true }
+          { new: true, session }
         );
-
-        return updatedDoc;
       })
     );
+
+    await session.commitTransaction();
+    session.endSession();
 
     res.status(200).json({
       message: `Commission fields updated successfully.`,
@@ -442,6 +449,9 @@ export const updateCommissionByDateRange = async (req, res) => {
       updatedDocumentsWithCommission,
     });
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+
     res.status(500).json({
       message: `Error updating commission fields.`,
       success: false,
