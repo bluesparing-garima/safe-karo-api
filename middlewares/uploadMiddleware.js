@@ -96,10 +96,16 @@ import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
 // Set storage engine
 const storage = multer.diskStorage({
   destination: path.join(__dirname, "../uploads/"),
+  // filename: (req, file, cb) => {
+  //   const { fullName, partnerId } = req.body;
+  //   const uniqueSuffix = `${fullName}_${partnerId}${path.extname(
+  //     file.originalname
+  //   )}`;
+  //   cb(null, uniqueSuffix);
+  // },
   filename: (req, file, cb) => {
     cb(
       null,
@@ -109,18 +115,28 @@ const storage = multer.diskStorage({
 });
 
 // Check File Type
-const checkFileType = (file, cb) => {
-  const allowedTypes = [
-    "image/jpeg",
-    "image/jpg",
-    "image/png",
-    "image/gif",
-    "application/pdf",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    "application/vnd.ms-excel"
-  ];
+// function checkFileType(file, cb) {
+//   // Allowed ext
+//   const filetypes = /jpeg|jpg|png|gif/;
+//   // Check ext
+//   const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+//   // Check mime
+//   const mimetype = filetypes.test(file.mimetype);
 
-  if (allowedTypes.includes(file.mimetype)) {
+//   if (mimetype && extname) {
+//     return cb(null, true);
+//   } else {
+//     cb('Error: Images Only!');
+//   }
+// }
+const checkFileType = (file, cb) => {
+  if (
+    file.mimetype.startsWith("image/") ||
+    file.mimetype === "application/pdf"
+    // file.mimetype ===
+    //   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+    // file.mimetype === "application/vnd.ms-excel"
+  ) {
     cb(null, true);
   } else {
     cb(

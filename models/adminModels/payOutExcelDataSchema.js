@@ -14,10 +14,6 @@ const PayOutDataSchema = new mongoose.Schema({
     make: {type:String,trim:true},
     model: {type:String,trim:true},
     vehicleAge:  {type:String,trim:true},
-    broker:{type:String,trim:true},
-    seatingCapacity: {type:Number,trim:true},
-    startDate:{type:Date,trim:true},
-    endDate:{type:Date,trim:true},
     od:  {type:Number,trim:true},
     tp:  {type:Number,trim:true},
     createdBy: {
