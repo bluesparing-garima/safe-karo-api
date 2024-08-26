@@ -411,7 +411,7 @@ export const createMotorPolicy = async (req, res) => {
     }, {});
 
     // Format issueDate to ISO 8601 format
-    const formattedIssueDate = new Date(issueDate).toISOString();
+    const formattedIssueDate = new Date(issueDate);
 
     const newMotorPolicy = new MotorPolicyModel({
       policyStatus,
@@ -554,6 +554,88 @@ export const getMotorPolicies = async (req, res) => {
       .json({ status: "error", success: false, message: error.message });
   }
 };
+
+// Get motor policies with date filter.
+export const getMotorPoliciesByDateRange = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        message: "Please provide both startDate and endDate.",
+        success: false,
+        status: "error",
+      });
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    const policies = await MotorPolicyModel.find({
+      isActive: true,
+      issueDate: { $gte: start, $lte: end },
+    }).sort({ issueDate: -1 });
+
+    const policiesWithDetails = [];
+
+    for (const policy of policies) {
+      let bookingTimer = null;
+      let leadTimer = null;
+      let bookingDate = null;
+      let leadDate = null;
+
+      const booking = await BookingRequestModel.findOne({
+        policyNumber: policy.policyNumber,
+      });
+
+      if (booking) {
+        bookingTimer = booking.timer;
+        bookingDate = booking.createdOn;
+
+        if (booking.leadId) {
+          const lead = await leadModel.findById(booking.leadId);
+
+          if (lead) {
+            leadTimer = lead.timer;
+            leadDate = lead.createdOn;
+          }
+        }
+      }
+
+      const payment = await MotorPolicyPaymentModel.findOne({
+        policyNumber: policy.policyNumber,
+      });
+
+      const payInPaymentStatus = payment.payInPaymentStatus;
+      const payOutPaymentStatus = payment.payOutPaymentStatus;
+
+      policiesWithDetails.push({
+        ...policy._doc,
+        bookingTimer,
+        leadTimer,
+        bookingDate,
+        leadDate,
+        payInPaymentStatus,
+        payOutPaymentStatus,
+      });
+    }
+
+    const totalCount = policies.length;
+
+    res.status(200).json({
+      message: `Motor Policies from ${startDate} to ${endDate}.`,
+      data: policiesWithDetails,
+      success: true,
+      status: "success",
+      totalCount,
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ status: "error", success: false, message: error.message });
+  }
+};
+
 
 // Check Vehicle Number exist or not.
 export const validateVehicleNumber = async (req, res) => {
@@ -1008,3 +1090,38 @@ export const deactivateMotorPolicy = async (req, res) => {
   }
 };
 
+// get inactive policies.
+export const getInactiveMotorPolicies = async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        status: "error",
+        message: "Start date and end date are required",
+      });
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    const inactivePolicies = await MotorPolicyModel.find({
+      isActive: false,
+      issueDate: { $gte: start, $lte: end },
+    });
+
+    if (!inactivePolicies || inactivePolicies.length === 0) {
+      return res.status(404).json({
+        status: "error",
+        message: "No inactive motor policies found in the specified date range",
+      });
+    }
+
+    res.status(200).json({
+      status: "success",
+      data: inactivePolicies,
+    });
+  } catch (error) {
+    res.status(500).json({ status: "error", message: error.message });
+  }
+};
