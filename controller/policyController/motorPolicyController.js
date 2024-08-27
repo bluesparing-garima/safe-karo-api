@@ -561,7 +561,7 @@ export const getMotorPolicies = async (req, res) => {
 // Get motor policies with date filter.
 export const getMotorPoliciesByDateRange = async (req, res) => {
   try {
-    const { startDate, endDate, page = 1, limit = 50 } = req.query;
+    const { startDate, endDate, page = 1, limit = Infinity } = req.query;
 
     if (!startDate || !endDate) {
       return res.status(400).json({
