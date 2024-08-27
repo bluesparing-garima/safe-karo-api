@@ -52,6 +52,7 @@ export const createCreditAndDebit = async (req, res) => {
       createdBy,
       createdOn,
       partnerBalance,
+      brokerBalance,
     } = req.body;
 
     // Check for existing motor policy payment, debit, and CutPay transactions
@@ -84,8 +85,8 @@ export const createCreditAndDebit = async (req, res) => {
     // Generate transaction code
     const transactionCode = await generateTransactionCode(startDate, endDate, credit, debit);
 
-    // Create a new CreditAndDebit entry
-    const newCreditAndDebit = new CreditAndDebit({
+    // Create a new CreditAndDebit entry with conditional brokerBalance
+    const newCreditAndDebitData = {
       accountType,
       credit: credit ? parseFloat(credit) : 0,
       debit: debit ? parseFloat(debit) : 0,
@@ -108,8 +109,14 @@ export const createCreditAndDebit = async (req, res) => {
       createdOn,
       partnerBalance,
       transactionCode,
-    });
+    };
 
+    // Only add brokerBalance if it's provided in the request
+    if (brokerBalance) {
+      newCreditAndDebitData.brokerBalance = brokerBalance;
+    }
+
+    const newCreditAndDebit = new CreditAndDebit(newCreditAndDebitData);
     await newCreditAndDebit.save();
 
     res.status(201).json({
@@ -125,6 +132,7 @@ export const createCreditAndDebit = async (req, res) => {
     });
   }
 };
+
 
 // Get all credit and debit transactions
 export const getCreditAndDebit = async (req, res) => {

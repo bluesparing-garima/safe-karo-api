@@ -325,7 +325,7 @@ export const getUnPaidAndPartialPaidPayments = async (req, res) => {
     const partnerStatement = await creditAndDebitSchema
       .findOne({ partnerId })
       .sort({ _id: -1 });
-
+      console.log("partnerBalance:",partnerStatement)
     const totalPartnerBalance = partnerStatement
       ? partnerStatement.partnerBalance
       : 0;
@@ -413,9 +413,7 @@ export const getBrokerUnPaidAndPartialPaidPayments = async (req, res) => {
       .findOne({ brokerId })
       .sort({ _id: -1 });
 
-    const totalBrokerBalance = brokerStatement
-      ? brokerStatement.brokerBalance
-      : 0;
+    const totalBrokerBalance = brokerStatement?.brokerBalance || 0;
 
     const result = results[0] || { totalAmount: 0, payments: [] };
     const adjustedTotalAmount = result.totalAmount - totalBrokerBalance;
@@ -427,7 +425,7 @@ export const getBrokerUnPaidAndPartialPaidPayments = async (req, res) => {
         payments: result.payments,
         totalAmount: result.totalAmount,
         brokerBalance: totalBrokerBalance,
-        adjustedTotalAmount,
+        adjustedTotalAmount: Math.max(0, adjustedTotalAmount),
       },
       success: true,
       status: "success",
