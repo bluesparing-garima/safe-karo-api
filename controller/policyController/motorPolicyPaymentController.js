@@ -325,7 +325,7 @@ export const getUnPaidAndPartialPaidPayments = async (req, res) => {
     const partnerStatement = await creditAndDebitSchema
       .findOne({ partnerId })
       .sort({ _id: -1 });
-
+      console.log("partnerBalance:",partnerStatement)
     const totalPartnerBalance = partnerStatement
       ? partnerStatement.partnerBalance
       : 0;
@@ -370,6 +370,7 @@ export const getBrokerUnPaidAndPartialPaidPayments = async (req, res) => {
 
     const start = new Date(startDate);
     const end = new Date(endDate);
+
     const normalizedStart = new Date(start.setHours(0, 0, 0, 0));
     const normalizedEnd = new Date(end.setHours(23, 59, 59, 999));
 
@@ -408,25 +409,23 @@ export const getBrokerUnPaidAndPartialPaidPayments = async (req, res) => {
       },
     ]);
 
-    let brokerBalance = 0;
     const brokerStatement = await creditAndDebitSchema
       .findOne({ brokerId })
       .sort({ _id: -1 });
 
-    if (brokerStatement && brokerStatement.brokerBalance) {
-      brokerBalance = brokerStatement.brokerBalance;
-    }
+    const totalBrokerBalance = brokerStatement?.brokerBalance || 0;
 
     const result = results[0] || { totalAmount: 0, payments: [] };
-    const adjustedTotalAmount = result.totalAmount - brokerBalance;
+    const adjustedTotalAmount = result.totalAmount - totalBrokerBalance;
 
     res.status(200).json({
-      message: "Motor policy payments for status UnPaid and Partial Paid retrieved successfully",
+      message:
+        "Motor policy payments for status UnPaid and Partial Paid retrieved successfully",
       data: {
         payments: result.payments,
         totalAmount: result.totalAmount,
-        brokerBalance: brokerBalance,
-        adjustedTotalAmount: adjustedTotalAmount < 0 ? 0 : adjustedTotalAmount,
+        brokerBalance: totalBrokerBalance,
+        adjustedTotalAmount: Math.max(0, adjustedTotalAmount),
       },
       success: true,
       status: "success",
