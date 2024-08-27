@@ -413,7 +413,7 @@ export const createMotorPolicy = async (req, res) => {
       return acc;
     }, {});
 
-    const formattedIssueDate = new Date(issueDate).toISOString();
+    const formattedIssueDate = new Date(issueDate);
 
     const newMotorPolicy = new MotorPolicyModel({
       policyStatus,
