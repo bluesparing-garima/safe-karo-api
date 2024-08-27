@@ -1,13 +1,19 @@
+import mongoose from 'mongoose';
 import BrokerModel from "../../models/adminModels/brokerSchema.js";
 import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
 
-// Create a new broker name
-const createBrokerName = async (req, res) => {
+// Create a new broker name with transaction
+export const createBrokerName = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const { brokerName, createdBy, isActive } = req.body;
 
     // Check if all required fields are provided
     if (!brokerName || !createdBy) {
+      await session.abortTransaction();
+      session.endSession();
       return res
         .status(400)
         .json({ status: "failed", message: "Required fields are missing" });
@@ -19,9 +25,11 @@ const createBrokerName = async (req, res) => {
     // Check if brokerName already exists (case-insensitive)
     const existingBroker = await BrokerModel.findOne({
       brokerName: new RegExp(`^${lowerCaseBrokerName}$`, 'i')
-    });
+    }).session(session);
 
     if (existingBroker) {
+      await session.abortTransaction();
+      session.endSession();
       return res
         .status(400)
         .json({ status: "failed", message: "Broker name already exists" });
@@ -35,13 +43,19 @@ const createBrokerName = async (req, res) => {
       isActive: isActive !== undefined ? isActive : true, // Set default value to true if not provided
     });
 
-    await newBrokerName.save();
+    await newBrokerName.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
+
     res.status(200).json({
       message: "New broker name created successfully",
       data: newBrokerName,
       status: "success",
     });
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
     console.error("Error creating broker name:", error);
     res.status(500).json({
       status: "failed",
@@ -52,7 +66,7 @@ const createBrokerName = async (req, res) => {
 };
 
 // Get all broker names
-const getAllBrokerNames = async (req, res) => {
+export const getAllBrokerNames = async (req, res) => {
   try {
     const brokerNames = await BrokerModel.find({ isActive: true }).sort({ brokerName: 1 });
     res.status(200).json({
@@ -69,7 +83,7 @@ const getAllBrokerNames = async (req, res) => {
 };
 
 // Get broker name by ID
-const getBrokerNameById = async (req, res) => {
+export const getBrokerNameById = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -93,15 +107,20 @@ const getBrokerNameById = async (req, res) => {
   }
 };
 
-// Update broker name
-const updateBrokerName = async (req, res) => {
+// Update broker name with transaction
+export const updateBrokerName = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const { id } = req.params;
     const { brokerName, updatedBy, isActive } = req.body;
 
     // Check if broker name exists
-    const existingBrokerName = await BrokerModel.findById(id);
+    const existingBrokerName = await BrokerModel.findById(id).session(session);
     if (!existingBrokerName) {
+      await session.abortTransaction();
+      session.endSession();
       return res
         .status(404)
         .json({ status: "failed", message: "Broker name not found" });
@@ -116,9 +135,11 @@ const updateBrokerName = async (req, res) => {
     // Check if brokerName already exists (case-insensitive)
     const duplicateBroker = await BrokerModel.findOne({
       brokerName: new RegExp(`^${lowerCaseBrokerName}$`, 'i')
-    });
+    }).session(session);
 
     if (duplicateBroker && duplicateBroker._id.toString() !== id) {
+      await session.abortTransaction();
+      session.endSession();
       return res
         .status(400)
         .json({ status: "failed", message: "Broker name already exists" });
@@ -132,20 +153,23 @@ const updateBrokerName = async (req, res) => {
       existingBrokerName.isActive = isActive;
     }
 
-    const updatedBrokerName = await existingBrokerName.save();
+    const updatedBrokerName = await existingBrokerName.save({ session });
 
     // Find all motor policies that reference the previous broker name
     const motorPoliciesWithBroker = await MotorPolicyModel.find({
       broker: previousBrokerName,
-    });
+    }).session(session);
 
     // Update the broker reference in each motor policy if it's not already updated
     for (let motorPolicy of motorPoliciesWithBroker) {
       if (motorPolicy.broker !== brokerName) {
         motorPolicy.broker = brokerName;
-        await motorPolicy.save();
+        await motorPolicy.save({ session });
       }
     }
+
+    await session.commitTransaction();
+    session.endSession();
 
     res.status(200).json({
       message: `Broker name ${id} updated successfully and referenced motor policies updated`,
@@ -153,6 +177,8 @@ const updateBrokerName = async (req, res) => {
       status: "success",
     });
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
     console.error("Error updating broker name:", error);
     res.status(500).json({
       status: "failed",
@@ -162,7 +188,7 @@ const updateBrokerName = async (req, res) => {
 };
 
 // Delete broker name
-const deleteBrokerName = async (req, res) => {
+export const deleteBrokerName = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -186,12 +212,4 @@ const deleteBrokerName = async (req, res) => {
       .status(500)
       .json({ status: "failed", message: "Unable to delete broker name" });
   }
-};
-
-export {
-  createBrokerName,
-  getAllBrokerNames,
-  getBrokerNameById,
-  updateBrokerName,
-  deleteBrokerName,
 };

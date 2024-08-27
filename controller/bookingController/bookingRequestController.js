@@ -1,8 +1,7 @@
+import mongoose from 'mongoose';
 import upload from "../../middlewares/uploadMiddleware.js";
 import BookingRequestModel from "../../models/bookingModel/bookingRequestSchema.js";
 import leadGenerateModel from "../../models/partnerModels/leadGenerateSchema.js";
-import fs from "fs";
-import path from "path";
 
 // Function to check if the policy number already exists
 const checkPolicyNumberExist = async (policyNumber) => {
@@ -12,40 +11,47 @@ const checkPolicyNumberExist = async (policyNumber) => {
 
 // Create Booking Request.
 export const createBookingRequest = async (req, res) => {
-  upload(req, res, async (err) => {
-    if (err) {
-      return res.status(400).json({ message: err.message });
-    }
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-    const {
-      partnerId,
-      leadId,
-      partnerName,
-      relationshipManagerId,
-      relationshipManagerName,
-      policyNumber,
-      category,
-      caseType,
-      policyType,
-      productType,
-      subCategory,
-      companyName,
-      createdBy,
-      isActive,
-      bookingCreatedBy,
-      bookingAcceptedBy,
-    } = req.body;
+  try {
+    upload(req, res, async (err) => {
+      if (err) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({ message: err.message });
+      }
 
-    // Check if policy number already exists
-    const policyExists = await checkPolicyNumberExist(policyNumber);
-    if (policyExists) {
-      return res.status(200).json({
-        message: `Policy number ${policyNumber} already exists`,
-        status: "success",
-      });
-    }
+      const {
+        partnerId,
+        leadId,
+        partnerName,
+        relationshipManagerId,
+        relationshipManagerName,
+        policyNumber,
+        category,
+        caseType,
+        policyType,
+        productType,
+        subCategory,
+        companyName,
+        createdBy,
+        isActive,
+        bookingCreatedBy,
+        bookingAcceptedBy,
+      } = req.body;
 
-    try {
+      // Check if policy number already exists
+      const policyExists = await checkPolicyNumberExist(policyNumber);
+      if (policyExists) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(200).json({
+          message: `Policy number ${policyNumber} already exists`,
+          status: "success",
+        });
+      }
+
       const fileDetails = Object.keys(req.files).reduce((acc, key) => {
         acc[key] = req.files[key][0].filename;
         return acc;
@@ -72,28 +78,43 @@ export const createBookingRequest = async (req, res) => {
         createdBy,
         isActive: isActive !== undefined ? isActive : true,
       });
-      // Update lead status if leadId is provided
 
+      await newBooking.save({ session });
+
+      // Update lead status if leadId is provided
       if (leadId) {
         const lead = await leadGenerateModel.findByIdAndUpdate(
           leadId,
           { status: "Booking Pending" },
-          { new: true } // This option returns the updated document
+          { new: true, session }
         );
+        if (!lead) {
+          await session.abortTransaction();
+          session.endSession();
+          return res.status(404).json({
+            message: "Lead not found",
+            status: "failed",
+          });
+        }
       }
-      await newBooking.save();
+
+      await session.commitTransaction();
+      session.endSession();
+
       res.status(200).json({
         message: "Booking Request generated successfully",
         data: newBooking,
         status: "success",
       });
-    } catch (error) {
-      res.status(500).json({
-        message: "Error creating booking",
-        error: error.message,
-      });
-    }
-  });
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    res.status(500).json({
+      message: "Error creating booking",
+      error: error.message,
+    });
+  }
 };
 
 // Check PolicyNumber exist.
@@ -272,14 +293,21 @@ export const acceptBookingRequest = async (req, res) => {
 
 // Update a booking by ID
 export const updateBookingRequest = async (req, res) => {
-  upload(req, res, async (err) => {
-    if (err) {
-      return res.status(400).json({ message: err.message });
-    }
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-    try {
-      const existingBooking = await BookingRequestModel.findById(req.params.id);
+  try {
+    upload(req, res, async (err) => {
+      if (err) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({ message: err.message });
+      }
+
+      const existingBooking = await BookingRequestModel.findById(req.params.id).session(session);
       if (!existingBooking) {
+        await session.abortTransaction();
+        session.endSession();
         return res.status(404).json({ message: "Booking not found" });
       }
 
@@ -288,6 +316,7 @@ export const updateBookingRequest = async (req, res) => {
         return acc;
       }, {});
 
+      // Delete old files
       Object.keys(fileDetails).forEach((field) => {
         if (existingBooking[field]) {
           const oldFilePath = path.join("uploads", existingBooking[field]);
@@ -307,21 +336,35 @@ export const updateBookingRequest = async (req, res) => {
       const updatedBooking = await BookingRequestModel.findByIdAndUpdate(
         req.params.id,
         updateData,
-        { new: true }
+        { new: true, session }
       );
+
+      if (!updatedBooking) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(404).json({
+          message: "Error updating booking",
+          status: "failed",
+        });
+      }
+
+      await session.commitTransaction();
+      session.endSession();
 
       res.status(200).json({
         message: "Booking updated successfully",
         data: updatedBooking,
         status: "success",
       });
-    } catch (error) {
-      res.status(500).json({
-        message: "Error updating booking",
-        error: error.message,
-      });
-    }
-  });
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    res.status(500).json({
+      message: "Error updating booking",
+      error: error.message,
+    });
+  }
 };
 
 export const uploadFilesAndData = (req, res) => {

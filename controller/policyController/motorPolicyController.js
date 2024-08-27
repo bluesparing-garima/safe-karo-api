@@ -3,10 +3,11 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import moment from "moment";
-import BookingRequestModel from "../../models/bookingModel/bookingRequestSchema.js";
+import upload from "../../middlewares/uploadMiddleware.js";
 import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
 import MotorPolicyPaymentModel from "../../models/policyModel/motorPolicyPaymentSchema.js";
-import upload from "../../middlewares/uploadMiddleware.js";
+import BookingRequestModel from "../../models/bookingModel/bookingRequestSchema.js";
+import leadModel from "../../models/partnerModels/leadGenerateSchema.js";
 
 const dataFilePath = path.join(process.cwd(), "data", "motorpolicy_data.json");
 const hashFilePath = path.join(
@@ -15,32 +16,32 @@ const hashFilePath = path.join(
   "motorpolicy_hashes.json"
 );
 
-// Ensure the data directory exists
 if (!fs.existsSync(path.join(process.cwd(), "data"))) {
   fs.mkdirSync(path.join(process.cwd(), "data"));
 }
 
-// Function to compute hash of file data
 const computeHash = (data) => {
   return crypto.createHash("md5").update(data).digest("hex");
 };
 
-// Custom function to convert Excel serial date to formatted date string
 function excelDateToFormattedDate(serial) {
-  const epoch = new Date(Date.UTC(1899, 11, 30)); // Excel epoch
-  const jsDate = new Date(epoch.getTime() + serial * 86400000); // 86400000 = ms per day
+  const epoch = new Date(Date.UTC(1899, 11, 30));
+  const jsDate = new Date(epoch.getTime() + serial * 86400000);
   return moment(jsDate).format("YYYY-MM-DD");
 }
 
-// upload excel
+// Upload motor policy data
 export const uploadMotorPolicy = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
-    if (!req.files || !req.files.excel) {
+    if (!req.file) {
       return res.status(400).send("No files were uploaded.");
     }
 
-    const file = req.files.excel;
-    const fileHash = computeHash(file.data);
+    const file = req.file;
+    const fileHash = computeHash(file.buffer);
 
     let storedHashes = [];
     if (fs.existsSync(hashFilePath)) {
@@ -48,14 +49,13 @@ export const uploadMotorPolicy = async (req, res) => {
       storedHashes = JSON.parse(rawHashData);
     }
 
-    // Check if the file has already been uploaded
     if (storedHashes.includes(fileHash)) {
       return res
         .status(400)
         .json({ message: "File has already been uploaded." });
     }
 
-    const workbook = XLSX.read(file.data, { type: "buffer" });
+    const workbook = XLSX.read(file.buffer, { type: "buffer" });
     const sheetName = workbook.SheetNames[0];
     const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
       raw: true,
@@ -83,6 +83,7 @@ export const uploadMotorPolicy = async (req, res) => {
           row.subCategory || row["SubCategory"] || row["Sub Category"] || "",
         companyName: row.companyName || row["Company Name"] || "",
         broker: row.broker || row["Broker"] || "",
+        brokerId: row.brokerId || row["Broker ID"] || "",
         vehicleAge: row.vehicleAge || row["Vehicle Age"] || "",
         make: row.make || row["Make"] || "",
         model: row.model || row["Model"] || "",
@@ -108,7 +109,7 @@ export const uploadMotorPolicy = async (req, res) => {
         netPremium: row.netPremium || row["Net Premium"] || "",
         finalPremium: row.finalPremium || row["Final Premium"] || "",
         paymentMode: row.paymentMode || row["Payment Mode"] || "",
-        policyCreatedBy: "admin",
+        policyCreatedBy: "partner",
         partnerId: row.partnerId || row["Partner ID"] || "",
         partnerName: row.partnerName || row["Partner Name"] || "",
         relationshipManagerId:
@@ -140,7 +141,7 @@ export const uploadMotorPolicy = async (req, res) => {
     for (const data of extractedData) {
       const query = { policyNumber: data.policyNumber };
 
-      const existingRecord = await MotorPolicyModel.findOne(query);
+      const existingRecord = await MotorPolicyModel.findOne(query).session(session);
       if (existingRecord) {
         existingRecord.policyStatus = data.policyStatus;
         existingRecord.partnerId = data.partnerId;
@@ -157,6 +158,7 @@ export const uploadMotorPolicy = async (req, res) => {
         existingRecord.subCategory = data.subCategory;
         existingRecord.companyName = data.companyName;
         existingRecord.broker = data.broker;
+        existingRecord.brokerId = data.brokerId;
         existingRecord.vehicleAge = data.vehicleAge;
         existingRecord.make = data.make;
         existingRecord.model = data.model;
@@ -195,13 +197,14 @@ export const uploadMotorPolicy = async (req, res) => {
         existingRecord.updatedBy = "";
         existingRecord.updatedOn = new Date();
 
-        await existingRecord.save();
+        await existingRecord.save({ session });
 
         const paymentRecord = await MotorPolicyPaymentModel.findOne({
           policyId: existingRecord._id,
-        });
+        }).session(session);
 
         if (paymentRecord) {
+          paymentRecord.brokerId = existingRecord.brokerId;
           paymentRecord.partnerId = existingRecord.partnerId;
           paymentRecord.policyNumber = existingRecord.policyNumber;
           paymentRecord.bookingId = existingRecord.bookingId;
@@ -219,9 +222,10 @@ export const uploadMotorPolicy = async (req, res) => {
           paymentRecord.payOutTPAmount = 0;
           paymentRecord.payInCommission = 0;
           paymentRecord.payOutCommission = 0;
+          paymentRecord.policyDate = existingRecord.issueDate;
           paymentRecord.createdBy = existingRecord.createdBy;
 
-          await paymentRecord.save();
+          await paymentRecord.save({ session });
         }
       } else {
         const newPolicy = await MotorPolicyModel.create(data);
@@ -229,6 +233,7 @@ export const uploadMotorPolicy = async (req, res) => {
         const newMotorPolicyPayment = new MotorPolicyPaymentModel({
           partnerId: newPolicy.partnerId,
           policyId: newPolicy._id,
+          brokerId: newPolicy.brokerId,
           policyNumber: newPolicy.policyNumber,
           bookingId: newPolicy.bookingId,
           od: newPolicy.od,
@@ -245,14 +250,10 @@ export const uploadMotorPolicy = async (req, res) => {
           payOutTPAmount: 0,
           payInCommission: 0,
           payOutCommission: 0,
-          payInBalance:0,
-          payOutBalance:0,
-          payInAmount:0,
-          payOutAmount:0,
+          payOutPaymentStatus: "UnPaid",
           payInPaymentStatus: "UnPaid",
-          payOutPaymentStatus:"UnPaid",
-          createdBy: newPolicy.createdBy,
           policyDate: newPolicy.issueDate,
+          createdBy: newPolicy.createdBy,
         });
 
         await newMotorPolicyPayment.save();
@@ -260,23 +261,34 @@ export const uploadMotorPolicy = async (req, res) => {
     }
 
     storedHashes.push(fileHash);
-    fs.writeFileSync(hashFilePath, JSON.stringify(storedHashes, null, 2));
-    res.status(200).json({ message: "Data uploaded successfully!" });
+    fs.writeFileSync(hashFilePath, JSON.stringify(storedHashes));
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return res
+      .status(200)
+      .json({ message: "File processed and records updated successfully." });
   } catch (error) {
-    console.error("Error while uploading motor policy data:", error);
-    res.status(500).json({ message: "An error occurred during upload." });
+    await session.abortTransaction();
+    session.endSession();
+    console.error("Error during file upload and processing:", error);
+    return res.status(500).json({ message: "Failed to process file." });
   }
 };
 
-// API to update registration, issue, and end dates
+// Update motor policy dates
 export const updateMotorPolicyDates = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
-    if (!req.files || !req.files.excel) {
+    if (!req.file) {
       return res.status(400).send("No files were uploaded.");
     }
 
-    const file = req.files.excel;
-    const fileHash = computeHash(file.data);
+    const file = req.file;
+    const fileHash = computeHash(file.buffer);
 
     let storedHashes = [];
     if (fs.existsSync(hashFilePath)) {
@@ -284,133 +296,147 @@ export const updateMotorPolicyDates = async (req, res) => {
       storedHashes = JSON.parse(rawHashData);
     }
 
-    // Check if the file has already been uploaded
     if (storedHashes.includes(fileHash)) {
       return res
         .status(400)
         .json({ message: "File has already been uploaded." });
     }
 
-    const workbook = XLSX.read(file.data, { type: "buffer" });
+    const workbook = XLSX.read(file.buffer, { type: "buffer" });
     const sheetName = workbook.SheetNames[0];
     const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
       raw: true,
     });
 
-    for (const row of worksheet) {
-      const policyNumber = row.policyNumber || row["Policy Number"];
-      if (!policyNumber) {
-        continue;
+    const extractedData = worksheet.map((row) => {
+      const policyDate =
+        typeof row.policyDate === "number"
+          ? excelDateToFormattedDate(row.policyDate)
+          : row.policyDate;
+      const bookingDate =
+        typeof row.bookingDate === "number"
+          ? excelDateToFormattedDate(row.bookingDate)
+          : row.bookingDate;
+
+      return {
+        policyNumber: row.policyNumber || row["Policy Number"] || "",
+        policyDate: policyDate || "",
+        bookingDate: bookingDate || "",
+      };
+    });
+
+    for (const data of extractedData) {
+      const query = { policyNumber: data.policyNumber };
+
+      const existingRecord = await MotorPolicyPaymentModel.findOne(query).session(session);
+      if (existingRecord) {
+        existingRecord.policyDate = data.policyDate;
+        existingRecord.bookingDate = data.bookingDate;
+        await existingRecord.save({ session });
+      } else {
+        await MotorPolicyPaymentModel.create([data], { session });
       }
-
-      const registrationDate =
-        typeof row.registrationDate === "number"
-          ? excelDateToFormattedDate(row.registrationDate)
-          : row.registrationDate;
-      const issueDate =
-        typeof row.issueDate === "number"
-          ? excelDateToFormattedDate(row.issueDate)
-          : row.issueDate;
-      const endDate =
-        typeof row.endDate === "number"
-          ? excelDateToFormattedDate(row.endDate)
-          : row.endDate;
-
-      const updateFields = {};
-      if (registrationDate) updateFields.registrationDate = registrationDate;
-      if (issueDate) updateFields.issueDate = issueDate;
-      if (endDate) updateFields.endDate = endDate;
-
-      await MotorPolicyModel.findOneAndUpdate(
-        { policyNumber },
-        { $set: updateFields },
-        { new: true }
-      );
     }
 
     storedHashes.push(fileHash);
     fs.writeFileSync(hashFilePath, JSON.stringify(storedHashes, null, 2));
-    res.status(200).json({ message: "Dates updated successfully!" });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    res
+      .status(200)
+      .json({ message: "Motor policy dates updated successfully." });
   } catch (error) {
-    console.error("Error while updating motor policy dates:", error);
-    res.status(500).json({ message: "An error occurred during the update." });
+    await session.abortTransaction();
+    session.endSession();
+    console.error("Error during transaction:", error);
+    res.status(500).send("Internal Server Error");
   }
 };
 
 // Create Motor Policy
 export const createMotorPolicy = async (req, res) => {
-  // upload.array('rcback', 10)(req, res, (err) => {
-  upload(req, res, async (err) => {
-    if (err) {
-      return res.status(400).json({ message: err });
-    }
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ message: "No files selected!" });
-    }
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-    const {
-      policyStatus,
-      partnerId,
-      partnerName,
-      relationshipManagerId,
-      relationshipManagerName,
-      bookingId,
-      policyCompletedBy,
-      paymentDetails,
-      policyType,
-      caseType,
-      category,
-      subCategory,
-      companyName,
-      broker,
-      vehicleAge,
-      make,
-      model,
-      fuelType,
-      rto,
-      vehicleNumber,
-      weight,
-      seatingCapacity,
-      cc,
-      ncb,
-      policyNumber,
-      fullName,
-      emailId,
-      phoneNumber,
-      mfgYear,
-      tenure,
-      registrationDate,
-      endDate,
-      issueDate,
-      idv,
-      od,
-      tp,
-      netPremium,
-      finalPremium,
-      paymentMode,
-      policyCreatedBy,
-      rcFront,
-      rcBack,
-      survey,
-      previosPolicy,
-      puc,
-      fitness,
-      proposal,
-      currentPolicy,
-      other,
-      productType,
-      createdBy,
-      isActive,
-    } = req.body;
+  try {
+    // Upload files
+    upload(req, res, async (err) => {
+      if (err) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({ message: err });
+      }
+      if (!req.files || req.files.length === 0) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({ message: "No files selected!" });
+      }
 
-    const fileDetails = Object.keys(req.files).reduce((acc, key) => {
-      req.files[key].forEach((file) => {
-        acc[file.fieldname] = file.filename;
-      });
+      const {
+        policyStatus,
+        partnerId,
+        partnerName,
+        relationshipManagerId,
+        relationshipManagerName,
+        bookingId,
+        policyCompletedBy,
+        paymentDetails,
+        policyType,
+        caseType,
+        category,
+        subCategory,
+        companyName,
+        broker,
+        brokerId,
+        vehicleAge,
+        make,
+        model,
+        fuelType,
+        rto,
+        vehicleNumber,
+        weight,
+        seatingCapacity,
+        cc,
+        ncb,
+        policyNumber,
+        fullName,
+        emailId,
+        phoneNumber,
+        mfgYear,
+        tenure,
+        registrationDate,
+        endDate,
+        issueDate,
+        idv,
+        od,
+        tp,
+        netPremium,
+        finalPremium,
+        paymentMode,
+        policyCreatedBy,
+        rcFront,
+        rcBack,
+        survey,
+        previosPolicy,
+        puc,
+        fitness,
+        proposal,
+        currentPolicy,
+        other,
+        productType,
+        createdBy,
+        isActive,
+      } = req.body;
+
+      const fileDetails = Object.keys(req.files).reduce((acc, key) => {
+        req.files[key].forEach((file) => {
+          acc[file.fieldname] = file.filename;
+        });
       return acc;
     }, {});
 
-    // Format issueDate to ISO 8601 format
     const formattedIssueDate = new Date(issueDate);
 
     const newMotorPolicy = new MotorPolicyModel({
@@ -462,11 +488,14 @@ export const createMotorPolicy = async (req, res) => {
       updatedOn: null,
     });
 
-    try {
+      // Check if Motor Policy already exists
       const existingMotorPolicy = await MotorPolicyModel.findOne({
         policyNumber,
-      });
+      }).session(session);
+
       if (existingMotorPolicy) {
+        await session.abortTransaction();
+        session.endSession();
         return res.status(400).json({
           status: "error",
           success: false,
@@ -474,11 +503,14 @@ export const createMotorPolicy = async (req, res) => {
         });
       }
 
-      const savedMotorPolicy = await newMotorPolicy.save();
+      // Save Motor Policy
+      const savedMotorPolicy = await newMotorPolicy.save({ session });
 
+      // Create Motor Policy Payment
       const newMotorPolicyPayment = new MotorPolicyPaymentModel({
         partnerId: savedMotorPolicy.partnerId,
         policyId: savedMotorPolicy._id,
+        brokerId: savedMotorPolicy.brokerId,
         policyNumber: savedMotorPolicy.policyNumber,
         bookingId: savedMotorPolicy.bookingId,
         od: savedMotorPolicy.od,
@@ -497,22 +529,28 @@ export const createMotorPolicy = async (req, res) => {
         payOutCommission: savedMotorPolicy.payOutCommission || 0,
         payInAmount: savedMotorPolicy.payInAmount || 0,
         payOutAmount: savedMotorPolicy.payOutAmount || 0,
-        payInPaymentStatus: savedMotorPolicy.payInPaymentStatus,
-        payOutPaymentStatus: savedMotorPolicy.payOutPaymentStatus,
-        policyDate: formattedIssueDate, // Use formatted date
+        payInPaymentStatus: savedMotorPolicy.payInPaymentStatus || "UnPaid",
+        payOutPaymentStatus: savedMotorPolicy.payOutPaymentStatus || "UnPaid",
+        policyDate: formattedIssueDate,
         createdBy: savedMotorPolicy.createdBy,
       });
 
-      const savedMotorPolicyPayment = await newMotorPolicyPayment.save();
+      // Save Motor Policy Payment
+      await newMotorPolicyPayment.save({ session });
 
-      // Update booking status
+      // Update Booking Request if it exists
       const existingBookingRequest = await BookingRequestModel.findOne({
         policyNumber,
-      });
+      }).session(session);
+
       if (existingBookingRequest) {
         existingBookingRequest.bookingStatus = "booked";
-        await existingBookingRequest.save();
+        await existingBookingRequest.save({ session });
       }
+
+      // Commit transaction
+      await session.commitTransaction();
+      session.endSession();
 
       return res.status(200).json({
         status: "success",
@@ -520,14 +558,16 @@ export const createMotorPolicy = async (req, res) => {
         message: `Policy Number ${policyNumber} created successfully`,
         data: savedMotorPolicy,
       });
-    } catch (err) {
-      return res.status(400).json({
-        status: "error",
-        success: false,
-        message: err.message,
-      });
-    }
-  });
+    });
+  } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+    return res.status(400).json({
+      status: "error",
+      success: false,
+      message: err.message,
+    });
+  }
 };
 
 // Get Motor Policies
@@ -636,7 +676,6 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
   }
 };
 
-
 // Check Vehicle Number exist or not.
 export const validateVehicleNumber = async (req, res) => {
   try {
@@ -665,34 +704,60 @@ export const validateVehicleNumber = async (req, res) => {
   }
 };
 
-// Get motorpolicy by policyId
+// Get motor policy by policyId
 export const getMotorPolicyByPolicyId = async (req, res) => {
   try {
     const { policyId } = req.params;
-    const policies = await MotorPolicyModel.findById({ _id: policyId });
 
-    if (policies.length === 0) {
+    // Find the motor policy by policyId
+    const policy = await MotorPolicyModel.findById(policyId);
+
+    if (!policy) {
       return res.status(404).json({
-        message: `No Motor Policy for policyId ${policyId}`,
+        message: `No Motor Policy found for policyId ${policyId}`,
         success: false,
-        status: "success",
+        status: "error",
       });
     }
 
+    // Find the corresponding payout details by policyNumber
+    const payoutDetails = await MotorPolicyPaymentModel.findOne(
+      { policyNumber: policy.policyNumber },
+      {
+        payOutAmount: 1,
+        payOutCommission: 1,
+        payOutODPercentage: 1,
+        payOutTPPercentage: 1,
+        payOutODAmount: 1,
+        payOutTPAmount: 1,
+        payOutPaymentStatus: 1,
+        payOutBalance: 1,
+      }
+    );
+
+    // Merge policy data with payout details
+    const policyWithPayoutDetails = {
+      ...policy._doc, // Spread the motor policy data
+      ...(payoutDetails?._doc || {}), // Spread the payout details if they exist
+      _id: policy._id, // Ensure the _id is from MotorPolicyModel (policyId)
+    };
+
+    // Send the response with the correct _id
     res.status(200).json({
-      message: "Motor Policies retrieved successfully.",
-      data: policies,
+      message: "Motor Policy with payout details retrieved successfully.",
+      data: policyWithPayoutDetails,
       success: true,
       status: "success",
     });
   } catch (error) {
     res.status(500).json({
-      message: "Error retrieving motor policies",
+      message: "Error retrieving motor policy",
       success: false,
       error: error.message,
     });
   }
 };
+
 
 // Get MotorPolicy by partnerId
 export const getMotorPolicyByPartnerId = async (req, res) => {
@@ -723,23 +788,38 @@ export const getMotorPolicyByPartnerId = async (req, res) => {
   }
 };
 
+/*export const getMotorPolicyByPartnerId = async (req, res) => {
+  try {
+    const { partnerId } = req.params;
+    const policies = await MotorPolicyModel.find({ partnerId });
+
+    if (policies.length === 0) {
+      return res.status(404).json({
+        message: `No Motor Policy for partnerId ${partnerId}`,
+        success: false,
+        status: "success",
+      });
+    }
+
+    res.status(200).json({
+      message: "Motor Policies retrieved successfully.",
+      data: policies,
+      success: true,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving motor policies",
+      success: false,
+      error: error.message,
+    });
+  }
+};
+ */
 // Get Motor Policy with Payment Details
 export const getMotorPolicyWithPaymentDetails = async (req, res) => {
   try {
     const { policyId } = req.params;
-    // const policyWithPaymentDetails = await MotorPolicyModel.aggregate([
-    //   {
-    //     $match: { _id: mongoose.Types.ObjectId.policyId },
-    //   },
-    //   {
-    //     $lookup: {
-    //       from: 'motorPolicyPayments', // Collection name for MotorPolicyPaymentModel
-    //     localField: '_id',
-    //   foreignField: 'policyId',
-    //   as: 'payments',
-    //     },
-    //   },
-    // ]);
     const motorPolicy = await MotorPolicyModel.findById(policyId);
     if (!motorPolicy) {
       return res
@@ -747,12 +827,10 @@ export const getMotorPolicyWithPaymentDetails = async (req, res) => {
         .json({ message: `Motor Policy with ID ${policyId} not found` });
     }
 
-    // Find motor policy payments by policyId
     const motorPolicyPayments = await MotorPolicyPaymentModel.findOne({
       policyId,
     });
 
-    // Combine motor policy and payments into a single response
     const combinedData = {
       // motorPolicy,
       // motorPolicyPayments,
@@ -762,6 +840,7 @@ export const getMotorPolicyWithPaymentDetails = async (req, res) => {
       subCategory: motorPolicy.subCategory,
       companyName: motorPolicy.companyName,
       broker: motorPolicy.broker,
+      brokerId: motorPolicy.brokerId,
       vehicleAge: motorPolicy.vehicleAge,
       make: motorPolicy.make,
       model: motorPolicy.model,
@@ -831,8 +910,8 @@ export const getMotorPolicyWithPaymentDetails = async (req, res) => {
       payOutAmount: motorPolicyPayments.payOutAmount,
       payInPaymentStatus: motorPolicyPayments.payInPaymentStatus || " ",
       payOutPaymentStatus: motorPolicyPayments.payOutPaymentStatus || " ",
-      payInBalance:motorPolicyPayments.payInBalance,
-      payOutBalance:motorPolicyPayments.payOutBalance,
+      payInBalance: motorPolicyPayments.payInBalance,
+      payOutBalance: motorPolicyPayments.payOutBalance,
       paymentCreatedBy: motorPolicyPayments.createdBy,
       paymentCreatedOn: motorPolicyPayments.createdOn,
       paymentUpdatedBy: motorPolicyPayments.updatedBy,
@@ -919,144 +998,237 @@ export const validatePolicyNumber = async (req, res) => {
 
 // Update Motor Policy by ID
 export const updateMotorPolicy = async (req, res) => {
-  // Middleware to handle file uploads
-  upload(req, res, async (err) => {
-    if (err) {
-      return res.status(400).json({ message: err.message });
-    }
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-    try {
-      const {
-        policyStatus,
-        partnerId,
-        partnerName,
-        relationshipManagerId,
-        relationshipManagerName,
-        paymentDetails,
-        policyType,
-        caseType,
-        category,
-        subCategory,
-        companyName,
-        broker,
-        vehicleAge,
-        make,
-        model,
-        fuelType,
-        rto,
-        vehicleNumber,
-        seatingCapacity,
-        weight,
-        cc,
-        ncb,
-        policyNumber,
-        fullName,
-        emailId,
-        phoneNumber,
-        mfgYear,
-        tenure,
-        registrationDate,
-        endDate,
-        issueDate,
-        idv,
-        od,
-        tp,
-        netPremium,
-        finalPremium,
-        paymentMode,
-        policyCreatedBy,
-        productType,
-        isActive,
-        updatedBy,
-      } = req.body;
-
-      const formData = {
-        policyStatus,
-        policyType,
-        caseType,
-        category,
-        subCategory,
-        companyName,
-        broker,
-        vehicleAge,
-        make,
-        model,
-        fuelType,
-        rto,
-        vehicleNumber,
-        seatingCapacity,
-        weight,
-        cc,
-        ncb,
-        policyNumber,
-        fullName,
-        emailId,
-        phoneNumber,
-        mfgYear,
-        tenure,
-        registrationDate,
-        endDate,
-        issueDate,
-        idv,
-        od,
-        tp,
-        netPremium,
-        finalPremium,
-        paymentMode,
-        policyCreatedBy,
-        relationshipManagerId,
-        relationshipManagerName,
-        paymentDetails,
-        productType,
-        isActive: isActive !== undefined ? isActive : true,
-        updatedBy: updatedBy || "system",
-        updatedOn: new Date(),
-      };
-
-      // Check if partnerId and partnerName are provided in the request body
-      if (partnerId !== undefined) {
-        formData.partnerId = partnerId;
-      }
-      if (partnerName !== undefined) {
-        formData.partnerName = partnerName;
+  try {
+    upload(req, res, async (err) => {
+      if (err) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({ message: err.message });
       }
 
-      const fileDetails = {};
+      try {
+        const {
+          policyStatus,
+          partnerId,
+          partnerName,
+          relationshipManagerId,
+          relationshipManagerName,
+          paymentDetails,
+          policyType,
+          caseType,
+          category,
+          subCategory,
+          companyName,
+          broker,
+          brokerId,
+          vehicleAge,
+          make,
+          model,
+          fuelType,
+          rto,
+          vehicleNumber,
+          seatingCapacity,
+          weight,
+          cc,
+          ncb,
+          policyNumber,
+          fullName,
+          emailId,
+          phoneNumber,
+          mfgYear,
+          tenure,
+          registrationDate,
+          endDate,
+          issueDate,
+          idv,
+          od,
+          tp,
+          netPremium,
+          finalPremium,
+          paymentMode,
+          policyCreatedBy,
+          productType,
+          isActive,
+          updatedBy,
+        } = req.body;
 
-      // Process uploaded files if available
-      if (req.files && Object.keys(req.files).length > 0) {
-        Object.keys(req.files).forEach((key) => {
-          fileDetails[key] = req.files[key][0].filename;
+        const formData = {
+          policyStatus,
+          policyType,
+          caseType,
+          category,
+          subCategory,
+          companyName,
+          broker,
+          brokerId,
+          vehicleAge,
+          make,
+          model,
+          fuelType,
+          rto,
+          vehicleNumber,
+          seatingCapacity,
+          weight,
+          cc,
+          ncb,
+          policyNumber,
+          fullName,
+          emailId,
+          phoneNumber,
+          mfgYear,
+          tenure,
+          registrationDate,
+          endDate,
+          issueDate,
+          idv,
+          od,
+          tp,
+          netPremium,
+          finalPremium,
+          paymentMode,
+          policyCreatedBy,
+          relationshipManagerId,
+          relationshipManagerName,
+          paymentDetails,
+          productType,
+          isActive: isActive !== undefined ? isActive : true,
+          updatedBy: updatedBy || "system",
+          updatedOn: new Date(),
+        };
+
+        if (partnerId !== undefined) {
+          formData.partnerId = partnerId;
+        }
+        if (partnerName !== undefined) {
+          formData.partnerName = partnerName;
+        }
+
+        const fileDetails = {};
+
+        if (req.files && Object.keys(req.files).length > 0) {
+          Object.keys(req.files).forEach((key) => {
+            fileDetails[key] = req.files[key][0].filename;
+          });
+          Object.assign(formData, fileDetails);
+        }
+
+        // Update the MotorPolicyModel with new form data
+        const updatedForm = await MotorPolicyModel.findByIdAndUpdate(
+          req.params.id,
+          formData,
+          { new: true, runValidators: true, session }
+        );
+
+        if (!updatedForm) {
+          await session.abortTransaction();
+          session.endSession();
+          return res
+            .status(404)
+            .json({ status: "error", message: "Motor Policy not found" });
+        }
+
+        const {
+          policyNumber: updatedPolicyNumber,
+          od: updatedOD,
+          tp: updatedTP,
+          issueDate: updatedIssueDate,
+        } = updatedForm;
+
+        const existingPayment = await MotorPolicyPaymentModel.findOne({
+          policyNumber: updatedPolicyNumber,
+        }).session(session);
+
+        if (!existingPayment) {
+          await session.abortTransaction();
+          session.endSession();
+          return res.status(404).json({
+            status: "error",
+            message: "Motor Policy Payment record not found",
+          });
+        }
+
+        const {
+          payInODPercentage,
+          payInTPPercentage,
+          payOutODPercentage,
+          payOutTPPercentage,
+        } = existingPayment;
+
+        // Calculate the dynamic amounts and commissions based on the fetched percentages
+        const calculatedPayInODAmount = Math.round(
+          (updatedOD * payInODPercentage) / 100
+        );
+        const calculatedPayInTPAmount = Math.round(
+          (updatedTP * payInTPPercentage) / 100
+        );
+        const payInCommission = Math.round(
+          calculatedPayInODAmount + calculatedPayInTPAmount
+        );
+
+        const calculatedPayOutODAmount = Math.round(
+          (updatedOD * payOutODPercentage) / 100
+        );
+        const calculatedPayOutTPAmount = Math.round(
+          (updatedTP * payOutTPPercentage) / 100
+        );
+        const payOutCommission = Math.round(
+          calculatedPayOutODAmount + calculatedPayOutTPAmount
+        );
+
+        // Prepare the updated fields for MotorPolicyPaymentModel
+        const updatedPaymentFields = {
+          od: updatedOD,
+          tp: updatedTP,
+          payInODAmount: calculatedPayInODAmount,
+          payInTPAmount: calculatedPayInTPAmount,
+          payInCommission,
+          payOutODAmount: calculatedPayOutODAmount,
+          payOutTPAmount: calculatedPayOutTPAmount,
+          payOutCommission,
+          policyDate: updatedIssueDate,
+        };
+
+        const updatedPayment = await MotorPolicyPaymentModel.findOneAndUpdate(
+          { policyNumber: updatedPolicyNumber },
+          { $set: updatedPaymentFields },
+          { new: true, session }
+        );
+
+        if (!updatedPayment) {
+          await session.abortTransaction();
+          session.endSession();
+          return res.status(404).json({
+            status: "error",
+            message: "Motor Policy Payment not found for the given policy number",
+          });
+        }
+
+        await session.commitTransaction();
+        session.endSession();
+
+        res.status(200).json({
+          message: `Motor Policy and Payment updated successfully.`,
+          updatedForm,
+          updatedPayment,
+          status: "success",
         });
-        // Merge file details into formData
-        Object.assign(formData, fileDetails);
+      } catch (error) {
+        await session.abortTransaction();
+        session.endSession();
+        console.error("Error during transaction:", error);
+        res.status(500).json({ status: "error", message: error.message });
       }
-
-      const updatedForm = await MotorPolicyModel.findByIdAndUpdate(
-        req.params.id,
-        formData,
-        { new: true, runValidators: true }
-      );
-
-      if (!updatedForm) {
-        return res
-          .status(404)
-          .json({ status: "error", message: "Motor Policy not found" });
-      }
-
-      res.status(200).json({
-        message: `Motor Policy with ID ${req.params.id} updated successfully`,
-        data: updatedForm,
-        status: "success",
-      });
-    } catch (error) {
-      console.error("Error updating motor policy:", error);
-      res.status(500).json({ status: "error", message: error.message });
-    }
-  });
+    });
+  } catch (error) {
+    console.error("Error starting session:", error);
+    res.status(500).json({ status: "error", message: "Internal Server Error" });
+  }
 };
 
-// DeActivate Motor Policy by ID
+// deactivate Motor Policy by ID
 export const deactivateMotorPolicy = async (req, res) => {
   try {
     const policy = await MotorPolicyModel.findById(req.params.id);
@@ -1077,13 +1249,17 @@ export const deactivateMotorPolicy = async (req, res) => {
       });
     }
 
-    // Deactivate the motor policy only
     policy.isActive = false;
     await policy.save();
 
+    await MotorPolicyPaymentModel.updateMany(
+      { policyId: policy._id },
+      { $set: { isActive: false } }
+    );
+
     res.status(200).json({
       status: "success",
-      message: "Motor Policy deactivated successfully",
+      message: "Motor Policy and related payments deactivated successfully",
     });
   } catch (error) {
     res.status(500).json({ status: "error", message: error.message });

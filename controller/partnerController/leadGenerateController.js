@@ -1,12 +1,20 @@
+import mongoose from 'mongoose';
 import leadGenerateModel from "../../models/partnerModels/leadGenerateSchema.js";
 import upload from "../../middlewares/uploadMiddleware.js";
 
-const createNewLead = async (req, res) => {
+export const createNewLead = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   upload(req, res, async (err) => {
     if (err) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(400).json({ message: err.message });
     }
     if (!req.files || req.files.length === 0) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(400).json({ message: "No files selected!" });
     }
 
@@ -32,6 +40,7 @@ const createNewLead = async (req, res) => {
         });
         return acc;
       }, {});
+
       const newLead = new leadGenerateModel({
         policyType,
         category,
@@ -50,7 +59,10 @@ const createNewLead = async (req, res) => {
         isActive: true,
       });
 
-      const savedLead = await newLead.save();
+      const savedLead = await newLead.save({ session });
+
+      await session.commitTransaction();
+      session.endSession();
 
       res.status(200).json({
         message: "New Lead created successfully",
@@ -58,6 +70,9 @@ const createNewLead = async (req, res) => {
         status: "success",
       });
     } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+
       res.status(500).json({
         status: "failed",
         message: "Unable to create new lead",
@@ -68,7 +83,7 @@ const createNewLead = async (req, res) => {
 };
 
 // Get all leads
-const getAllLeads = async (req, res) => {
+export const getAllLeads = async (req, res) => {
   try {
     const leads = await leadGenerateModel.find();
     res.status(200).json({
@@ -136,7 +151,7 @@ export const getLeadsByPartnerId = async (req, res) => {
 };
 
 // Get lead by ID
-const getLeadById = async (req, res) => {
+export const getLeadById = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -190,9 +205,14 @@ export const acceptLeadRequest = async (req, res) => {
 };
 
 // Update Lead
-const updateLead = async (req, res) => {
+export const updateLead = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   upload(req, res, async (err) => {
     if (err) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(400).json({ message: err.message });
     }
 
@@ -216,15 +236,20 @@ const updateLead = async (req, res) => {
       const updatedLead = await leadGenerateModel.findByIdAndUpdate(
         req.params.id,
         updatedLeadData,
-        { new: true }
+        { new: true, session } // Pass the session here
       );
 
       if (!updatedLead) {
+        await session.abortTransaction();
+        session.endSession();
         return res.status(404).json({
           status: "failed",
           message: "Lead not found",
         });
       }
+
+      await session.commitTransaction();
+      session.endSession();
 
       res.status(200).json({
         message: "Lead updated successfully",
@@ -232,6 +257,9 @@ const updateLead = async (req, res) => {
         status: "success",
       });
     } catch (error) {
+      await session.abortTransaction();
+      session.endSession();
+
       res.status(500).json({
         status: "failed",
         message: "Unable to update Lead",
@@ -242,7 +270,7 @@ const updateLead = async (req, res) => {
 };
 
 // Delete Lead
-const deleteLead = async (req, res) => {
+export const deleteLead = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -270,4 +298,3 @@ const deleteLead = async (req, res) => {
   }
 };
 
-export { createNewLead, getAllLeads, getLeadById, updateLead, deleteLead };

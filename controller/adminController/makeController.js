@@ -1,14 +1,20 @@
-import Make from "../../models/adminModels/makeSchema.js";
 import mongoose from "mongoose";
+import Make from "../../models/adminModels/makeSchema.js";
 import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
 import Model from "../../models/adminModels/modelSchema.js";
-// Create a new make
-const createMake = async (req, res) => {
+
+// Create a new make with transaction
+export const createMake = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const { makeName, createdBy, isActive } = req.body;
 
     // Check if all required fields are provided
     if (!makeName || !createdBy) {
+      await session.abortTransaction();
+      session.endSession();
       return res
         .status(400)
         .json({ status: "failed", message: "Required fields are missing" });
@@ -16,8 +22,11 @@ const createMake = async (req, res) => {
 
     const existingMake = await Make.findOne({
       makeName,
-    });
+    }).session(session);
+
     if (existingMake) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(409).json({
         status: "failed",
         message: "Make with the same makeName already exists",
@@ -32,13 +41,19 @@ const createMake = async (req, res) => {
       isActive: isActive !== undefined ? isActive : true,
     });
 
-    await newMake.save();
+    await newMake.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
+
     res.status(200).json({
       message: "New make created successfully",
       data: newMake,
       status: "success",
     });
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
     console.error("Error creating make:", error);
     res.status(500).json({
       status: "failed",
@@ -49,7 +64,7 @@ const createMake = async (req, res) => {
 };
 
 // Get all makes
-const getAllMakes = async (req, res) => {
+export const getAllMakes = async (req, res) => {
   try {
     //const makes = await Make.find();
     // Fetch and sort makes alphabetically by makeName
@@ -68,7 +83,7 @@ const getAllMakes = async (req, res) => {
 };
 
 // Check if make exists or not
-const validateMake = async (req, res) => {
+export const validateMake = async (req, res) => {
   try {
     const { make } = req.params;
     const normalizedMake = make.toLowerCase();
@@ -99,7 +114,7 @@ const validateMake = async (req, res) => {
 };
 
 // Get make by ID
-const getMakeById = async (req, res) => {
+export const getMakeById = async (req, res) => {
   try {
     const { id } = req.params;
     // Check if the id is a valid ObjectId
@@ -129,15 +144,20 @@ const getMakeById = async (req, res) => {
   }
 };
 
-// Update make
-const updateMake = async (req, res) => {
+// Update make with transaction
+export const updateMake = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const { id } = req.params;
     const { makeName, updatedBy, isActive } = req.body;
 
     // Check if make exists
-    const existingMake = await Make.findById(id);
+    const existingMake = await Make.findById(id).session(session);
     if (!existingMake) {
+      await session.abortTransaction();
+      session.endSession();
       return res
         .status(404)
         .json({ status: "failed", message: "Make name not found" });
@@ -154,29 +174,32 @@ const updateMake = async (req, res) => {
       existingMake.isActive = isActive;
     }
 
-    const updatedMake = await existingMake.save();
+    const updatedMake = await existingMake.save({ session });
 
     // Find all motor policies that reference the previous make
     const motorPoliciesWithMake = await MotorPolicyModel.find({
       make: previousMakeName,
-    });
+    }).session(session);
 
     // Update the make reference in each motor policy
     for (let motorPolicy of motorPoliciesWithMake) {
       motorPolicy.make = makeName;
-      await motorPolicy.save();
+      await motorPolicy.save({ session });
     }
 
     // Find all models that reference the previous make
     const modelsWithMake = await Model.find({
       makeName: previousMakeName,
-    });
+    }).session(session);
 
     // Update the make reference in each model
     for (let model of modelsWithMake) {
       model.makeName = makeName;
-      await model.save();
+      await model.save({ session });
     }
+
+    await session.commitTransaction();
+    session.endSession();
 
     res.status(200).json({
       message: `Make name ${id} updated successfully and referenced motor policies and models updated`,
@@ -184,6 +207,8 @@ const updateMake = async (req, res) => {
       status: "success",
     });
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
     console.error("Error updating make:", error);
     res.status(500).json({
       status: "failed",
@@ -193,7 +218,7 @@ const updateMake = async (req, res) => {
 };
 
 // Delete make
-const deleteMake = async (req, res) => {
+export const deleteMake = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -219,11 +244,3 @@ const deleteMake = async (req, res) => {
   }
 };
 
-export {
-  createMake,
-  getAllMakes,
-  getMakeById,
-  updateMake,
-  deleteMake,
-  validateMake,
-};

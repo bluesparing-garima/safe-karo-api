@@ -1,5 +1,6 @@
 import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
 import MotorPolicyPaymentModel from "../../models/policyModel/motorPolicyPaymentSchema.js";
+import mongoose from 'mongoose';
 
 // Get Policies by Date Range
 export const getPoliciesByDateRange = async (req, res) => {
@@ -99,11 +100,11 @@ export const getPoliciesByDateRange = async (req, res) => {
         payInCommission: payment ? payment.payInCommission : 0,
         payOutCommission: payment ? payment.payOutCommission : 0,
         payInAmount: payment ? payment.payInAmount : 0,
-        payOutAmount:payment? payment.payOutAmount:0,
-        payInPaymentStatus: payment ? payment.payInPaymentStatus: "UnPaid",
-        payOutPaymentStatus: payment ? payment.payOutPaymentStatus: "UnPaid",
-        payInBalance: payment? payment.payInBalance:0,
-        payOutBalance: payment? payment.payOutBalance:0,
+        payOutAmount: payment ? payment.payOutAmount : 0,
+        payInPaymentStatus: payment ? payment.payInPaymentStatus : "UnPaid",
+        payOutPaymentStatus: payment ? payment.payOutPaymentStatus : "UnPaid",
+        payInBalance: payment ? payment.payInBalance : 0,
+        payOutBalance: payment ? payment.payOutBalance : 0,
         paymentCreatedBy: payment ? payment.createdBy : 0,
         paymentCreatedOn: payment ? payment.createdOn : 0,
         paymentUpdatedBy: payment ? payment.updatedBy : 0,
@@ -229,11 +230,11 @@ export const getAllMatchingRecords = async (req, res) => {
         payInCommission: payment ? payment.payInCommission : null,
         payOutCommission: payment ? payment.payOutCommission : null,
         payInAmount: payment ? payment.payInAmount : 0,
-        payOutAmount:payment? payment.payOutAmount:0,
-        payInPaymentStatus: payment ? payment.payInPaymentStatus: "UnPaid",
-        payOutPaymentStatus: payment ? payment.payOutPaymentStatus: "UnPaid",
-        payInBalance: payment? payment.payInBalance:0,
-        payOutBalance: payment? payment.payOutBalance:0,
+        payOutAmount: payment ? payment.payOutAmount : 0,
+        payInPaymentStatus: payment ? payment.payInPaymentStatus : "UnPaid",
+        payOutPaymentStatus: payment ? payment.payOutPaymentStatus : "UnPaid",
+        payInBalance: payment ? payment.payInBalance : 0,
+        payOutBalance: payment ? payment.payOutBalance : 0,
         paymentCreatedBy: payment ? payment.createdBy : null,
         paymentCreatedOn: payment ? payment.createdOn : null,
         paymentUpdatedBy: payment ? payment.updatedBy : null,
@@ -267,6 +268,9 @@ export const updateODTPByDateRange = async (req, res) => {
     });
   }
 
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const startDateObj = new Date(startDate);
     startDateObj.setHours(0, 0, 0, 0);
@@ -275,39 +279,43 @@ export const updateODTPByDateRange = async (req, res) => {
     endDateObj.setHours(23, 59, 59, 999);
 
     const updateFields = {};
+    if (od !== undefined) updateFields.od = parseFloat(od);
+    if (tp !== undefined) updateFields.tp = parseFloat(tp);
 
-    if (od !== undefined) {
-      updateFields.od = parseFloat(od);
-    }
-    if (tp !== undefined) {
-      updateFields.tp = parseFloat(tp);
-    }
-
-    const updatePaymentResult = await MotorPolicyPaymentModel.updateMany(
+    // Update MotorPolicyPaymentModel
+    await MotorPolicyPaymentModel.updateMany(
       { issueDate: { $gte: startDateObj, $lte: endDateObj } },
-      { $set: updateFields }
+      { $set: updateFields },
+      { session }
     );
 
     const paymentPolicies = await MotorPolicyPaymentModel.find(
       { issueDate: { $gte: startDateObj, $lte: endDateObj } },
-      { policyNumber: 1 }
+      { policyNumber: 1 },
+      { session }
     );
 
     const policyNumbers = paymentPolicies.map((policy) => policy.policyNumber);
 
-    const updatePolicyResult = await MotorPolicyModel.updateMany(
+    // Update MotorPolicyModel
+    await MotorPolicyModel.updateMany(
       { policyNumber: { $in: policyNumbers } },
-      { $set: updateFields }
+      { $set: updateFields },
+      { session }
     );
+
+    await session.commitTransaction();
+    session.endSession();
 
     res.status(200).json({
       message: "OD and TP updated successfully in both models.",
       success: true,
       status: "success",
-      updatePaymentResult,
-      updatePolicyResult,
     });
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+
     res.status(500).json({
       message: "Error updating OD and TP.",
       success: false,
@@ -348,6 +356,9 @@ export const updateCommissionByDateRange = async (req, res) => {
     });
   }
 
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const startDateObj = new Date(startDate);
     startDateObj.setHours(0, 0, 0, 0);
@@ -357,9 +368,12 @@ export const updateCommissionByDateRange = async (req, res) => {
 
     const documentsToUpdate = await MotorPolicyPaymentModel.find({
       createdOn: { $gte: startDateObj, $lte: endDateObj },
-    });
+    }).session(session);
 
     if (documentsToUpdate.length === 0) {
+      await session.abortTransaction();
+      session.endSession();
+
       return res.status(404).json({
         status: "error",
         success: false,
@@ -375,13 +389,16 @@ export const updateCommissionByDateRange = async (req, res) => {
         let payInCommission = 0;
         let payOutCommission = 0;
 
-        if (
-          payInODPercentage !== undefined &&
-          payInTPPercentage !== undefined
-        ) {
-          const calculatedPayInODAmount = Math.round((od * payInODPercentage) / 100);
-          const calculatedPayInTPAmount = Math.round((tp * payInTPPercentage) / 100);
-          payInCommission = Math.round(calculatedPayInODAmount + calculatedPayInTPAmount);
+        if (payInODPercentage !== undefined && payInTPPercentage !== undefined) {
+          const calculatedPayInODAmount = Math.round(
+            (od * payInODPercentage) / 100
+          );
+          const calculatedPayInTPAmount = Math.round(
+            (tp * payInTPPercentage) / 100
+          );
+          payInCommission = Math.round(
+            calculatedPayInODAmount + calculatedPayInTPAmount
+          );
 
           updatedFields = {
             ...updatedFields,
@@ -393,13 +410,16 @@ export const updateCommissionByDateRange = async (req, res) => {
           };
         }
 
-        if (
-          payOutODPercentage !== undefined &&
-          payOutTPPercentage !== undefined
-        ) {
-          const calculatedPayOutODAmount = Math.round((od * payOutODPercentage) / 100);
-          const calculatedPayOutTPAmount = Math.round((tp * payOutTPPercentage) / 100);
-          payOutCommission = Math.round(calculatedPayOutODAmount + calculatedPayOutTPAmount);
+        if (payOutODPercentage !== undefined && payOutTPPercentage !== undefined) {
+          const calculatedPayOutODAmount = Math.round(
+            (od * payOutODPercentage) / 100
+          );
+          const calculatedPayOutTPAmount = Math.round(
+            (tp * payOutTPPercentage) / 100
+          );
+          payOutCommission = Math.round(
+            calculatedPayOutODAmount + calculatedPayOutTPAmount
+          );
 
           updatedFields = {
             ...updatedFields,
@@ -411,15 +431,16 @@ export const updateCommissionByDateRange = async (req, res) => {
           };
         }
 
-        const updatedDoc = await MotorPolicyPaymentModel.findByIdAndUpdate(
+        return MotorPolicyPaymentModel.findByIdAndUpdate(
           doc._id,
           { $set: updatedFields },
-          { new: true }
+          { new: true, session }
         );
-
-        return updatedDoc;
       })
     );
+
+    await session.commitTransaction();
+    session.endSession();
 
     res.status(200).json({
       message: `Commission fields updated successfully.`,
@@ -428,6 +449,9 @@ export const updateCommissionByDateRange = async (req, res) => {
       updatedDocumentsWithCommission,
     });
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+
     res.status(500).json({
       message: `Error updating commission fields.`,
       success: false,
@@ -435,7 +459,6 @@ export const updateCommissionByDateRange = async (req, res) => {
     });
   }
 };
-
 
 // Get Policies by Date Range and Broker Name
 export const getPoliciesByDateRangeAndBrokerName = async (req, res) => {
@@ -541,10 +564,10 @@ export const getPoliciesByDateRangeAndBrokerName = async (req, res) => {
           payOutCommission: payment ? payment.payOutCommission : 0,
           payInAmount: payment ? payment.payInAmount : 0,
           payOutAmount: payment ? payment.payOutAmount : 0,
-          payInPaymentStatus: payment ? payment.payInPaymentStatus: "Unpaid",
-          payOutPaymentStatus: payment ? payment.payOutPaymentStatus : "Unpaid",
-          payInBalance:payment ? payment.payInBalance:0,
-          payOutBalance:payment ? payment.payOutBalance:0,
+          payInPaymentStatus: payment ? payment.payInPaymentStatus : "UnPaid",
+          payOutPaymentStatus: payment ? payment.payOutPaymentStatus : "UnPaid",
+          payInBalance: payment ? payment.payInBalance : 0,
+          payOutBalance: payment ? payment.payOutBalance : 0,
           paymentCreatedBy: payment ? payment.createdBy : 0,
           paymentCreatedOn: payment ? payment.createdOn : 0,
           paymentUpdatedBy: payment ? payment.updatedBy : 0,
@@ -567,15 +590,15 @@ export const getPoliciesByDateRangeAndBrokerName = async (req, res) => {
   }
 };
 
-// Get Policies by Date Range and Partner Name
-export const getPoliciesByDateRangeAndPartnerName = async (req, res) => {
-  const { startDate, endDate, partnerName } = req.query;
+// Get Policies by Date Range and PartnerId
+export const getPoliciesByDateRangeAndPartnerId = async (req, res) => {
+  const { startDate, endDate, partnerId } = req.query;
 
-  if (!startDate || !endDate || !partnerName) {
+  if (!startDate || !endDate || !partnerId) {
     return res.status(400).json({
       status: "error",
       success: false,
-      message: "Start date, end date, and broker name are required.",
+      message: "Start date, end date, and partnerId are required.",
     });
   }
 
@@ -591,13 +614,13 @@ export const getPoliciesByDateRangeAndPartnerName = async (req, res) => {
         $gte: startDateObj,
         $lte: endDateObj,
       },
-      partnerName: partnerName,
+      partnerId: partnerId,
     });
 
     if (policies.length === 0) {
       return res.status(404).json({
         message:
-          "No policies found within the specified date range and partner name.",
+          "No policies found within the specified date range and partnerId.",
         success: false,
         status: "error",
       });
@@ -657,7 +680,7 @@ export const getPoliciesByDateRangeAndPartnerName = async (req, res) => {
           updatedOn: policy.updatedOn,
           isActive: policy.isActive,
           createdOn: policy.createdOn,
-          issueDate: policy.issueDate,
+          policyDate: policy.issueDate,
           paymentId: payment ? payment._id : null,
           payInODPercentage: payment ? payment.payInODPercentage : null,
           payInTPPercentage: payment ? payment.payInTPPercentage : null,
@@ -671,10 +694,10 @@ export const getPoliciesByDateRangeAndPartnerName = async (req, res) => {
           payOutCommission: payment ? payment.payOutCommission : null,
           payInAmount: payment ? payment.payInAmount : 0,
           payOutAmount: payment ? payment.payOutAmount : 0,
-          payInPaymentStatus: payment ? payment.payInPaymentStatus : "Unpaid",
-          payOutPaymentStatus: payment ? payment.payOutPaymentStatus : "Unpaid",
-          payInBalance:payment ? payment.payInBalance:0,
-          payOutBalance:payment ? payment.payOutBalance:0,
+          payInPaymentStatus: payment ? payment.payInPaymentStatus : "UnPaid",
+          payOutPaymentStatus: payment ? payment.payOutPaymentStatus : "UnPaid",
+          payInBalance: payment ? payment.payInBalance : 0,
+          payOutBalance: payment ? payment.payOutBalance : 0,
           paymentCreatedBy: payment ? payment.createdBy : null,
           paymentCreatedOn: payment ? payment.createdOn : null,
           paymentUpdatedBy: payment ? payment.updatedBy : null,
