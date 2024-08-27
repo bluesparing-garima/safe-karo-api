@@ -410,7 +410,6 @@ export const createMotorPolicy = async (req, res) => {
       return acc;
     }, {});
 
-    // Format issueDate to ISO 8601 format
     const formattedIssueDate = new Date(issueDate);
 
     const newMotorPolicy = new MotorPolicyModel({
