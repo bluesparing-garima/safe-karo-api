@@ -579,51 +579,55 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
       issueDate: { $gte: start, $lte: end },
     }).sort({ issueDate: -1 });
 
-    const policiesWithDetails = [];
-
-    for (const policy of policies) {
-      let bookingTimer = null;
-      let leadTimer = null;
-      let bookingDate = null;
-      let leadDate = null;
-
-      const booking = await BookingRequestModel.findOne({
-        policyNumber: policy.policyNumber,
+    if (policies.length === 0) {
+      return res.status(200).json({
+        message: `No motor policies found between ${startDate} and ${endDate}.`,
+        data: [],
+        success: true,
+        status: "success",
+        totalCount: 0,
       });
+    }
 
-      if (booking) {
-        bookingTimer = booking.timer;
-        bookingDate = booking.createdOn;
+    const policyNumbers = policies.map((policy) => policy.policyNumber);
 
-        if (booking.leadId) {
-          const lead = await leadModel.findById(booking.leadId);
+    const [bookings, payments] = await Promise.all([
+      BookingRequestModel.find({ policyNumber: { $in: policyNumbers } }).lean(),
+      MotorPolicyPaymentModel.find({ policyNumber: { $in: policyNumbers } }).lean(),
+    ]);
 
-          if (lead) {
-            leadTimer = lead.timer;
-            leadDate = lead.createdOn;
-          }
-        }
-      }
+    const bookingMap = {};
+    const paymentMap = {};
 
-      const payment = await MotorPolicyPaymentModel.findOne({
-        policyNumber: policy.policyNumber,
-      });
+    bookings.forEach((booking) => {
+      bookingMap[booking.policyNumber] = booking;
+    });
 
-      const payInPaymentStatus = payment.payInPaymentStatus;
-      const payOutPaymentStatus = payment.payOutPaymentStatus;
+    payments.forEach((payment) => {
+      paymentMap[payment.policyNumber] = payment;
+    });
 
-      policiesWithDetails.push({
+    const policiesWithDetails = policies.map((policy) => {
+      const booking = bookingMap[policy.policyNumber] || {};
+      const payment = paymentMap[policy.policyNumber] || {};
+
+      const bookingTimer = booking.timer || null;
+      const bookingDate = booking.createdOn || null;
+      const leadTimer = booking.leadId ? (leadModel.findById(booking.leadId) || {}).timer : null;
+      const leadDate = booking.leadId ? (leadModel.findById(booking.leadId) || {}).createdOn : null;
+
+      return {
         ...policy._doc,
         bookingTimer,
         leadTimer,
         bookingDate,
         leadDate,
-        payInPaymentStatus,
-        payOutPaymentStatus,
-      });
-    }
+        payInPaymentStatus: payment.payInPaymentStatus || null,
+        payOutPaymentStatus: payment.payOutPaymentStatus || null,
+      };
+    });
 
-    const totalCount = policies.length;
+    const totalCount = policiesWithDetails.length;
 
     res.status(200).json({
       message: `Motor Policies from ${startDate} to ${endDate}.`,
@@ -633,9 +637,11 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
       totalCount,
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ status: "error", success: false, message: error.message });
+    res.status(500).json({
+      status: "error",
+      success: false,
+      message: error.message,
+    });
   }
 };
 
@@ -720,7 +726,6 @@ export const getMotorPolicyByPolicyId = async (req, res) => {
     });
   }
 };
-
 
 // Get MotorPolicy by partnerId
 export const getMotorPolicyByPartnerId = async (req, res) => {
