@@ -1,6 +1,7 @@
 import express from 'express';
 import {
   createAccount,
+  getAccountDetailsByAccountId,
   getAllAccountDetails,
   getAccountById,
   updateAccount,
@@ -12,6 +13,9 @@ const router = express.Router();
 
 // Create Account
 router.post('/', logActivity, createAccount);
+
+// Get Credit and debits by Account ID
+router.get('/account-details/:accountId',logActivity,getAccountDetailsByAccountId);
 
 // Get All Account details
 router.get('/', logActivity, getAllAccountDetails);

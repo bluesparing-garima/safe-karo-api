@@ -1,5 +1,6 @@
 import BookingRequest from "../../models/bookingModel/bookingRequestSchema.js";
 import leadGenerateModel from "../../models/partnerModels/leadGenerateSchema.js";
+
 // Controller function to fetch booking dashboard counts
 export const getOperationDashboardCount = async (req, res) => {
   const { leadCreatedBy } = req.params;
@@ -10,6 +11,7 @@ export const getOperationDashboardCount = async (req, res) => {
       status: "error",
     });
   }
+
   const startDate = new Date(req.query.startDate);
   const endDate = new Date(req.query.endDate);
   endDate.setHours(23, 59, 59, 999);
@@ -20,17 +22,24 @@ export const getOperationDashboardCount = async (req, res) => {
   };
 
   try {
-    // Aggregate lead counts for the specified partnerId
+    // Aggregate lead counts for the specified partnerId and date range
     const leadCounts = await leadGenerateModel.aggregate([
-      { $match: { leadCreatedBy: leadCreatedBy } },
+      {
+        $match: {
+          leadCreatedBy: leadCreatedBy,
+          createdAt: dateFilter, // Apply date filter on 'createdAt' field (adjust based on your schema field name)
+        },
+      },
       { $group: { _id: "$status", count: { $sum: 1 } } },
     ]);
+
     const formattedLeadCounts = {};
     let totalLead = 0;
     leadCounts.forEach((lead) => {
       formattedLeadCounts[lead._id] = lead.count;
       totalLead += lead.count;
     });
+
     // Prepare leadCounts dynamically
     const leadRequests = {
       "Total Lead": totalLead,
@@ -39,9 +48,15 @@ export const getOperationDashboardCount = async (req, res) => {
       leadRequests[`${key.charAt(0).toUpperCase()}${key.slice(1)} Lead`] =
         formattedLeadCounts[key];
     });
-    // Aggregate booking requests by status for the specified policyCompletedBy
+
+    // Aggregate booking requests by status for the specified policyCompletedBy and date range
     const bookingRequestsAggregate = await BookingRequest.aggregate([
-      { $match: { bookingCreatedBy: leadCreatedBy } },
+      {
+        $match: {
+          bookingCreatedBy: leadCreatedBy,
+          createdAt: dateFilter, // Apply date filter on 'createdAt' field (adjust based on your schema field name)
+        },
+      },
       { $group: { _id: "$bookingStatus", count: { $sum: 1 } } },
     ]);
 
@@ -57,6 +72,7 @@ export const getOperationDashboardCount = async (req, res) => {
       },
       {}
     );
+
     const data = {
       message: "Operation dashboard counts retrieved successfully",
       data: [

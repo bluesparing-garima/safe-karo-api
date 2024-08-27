@@ -1,4 +1,5 @@
 import accountSchema from "../../models/accountsModels/accountSchema.js";
+import creditAndDebit from "../../models/accountsModels/creditAndDebitSchema.js";
 
 // Create Account
 export const createAccount = async (req, res) => {
@@ -69,6 +70,41 @@ export const getAllAccountDetails = async (req, res) => {
       status: "error",
       success: false,
       message: error.message,
+    });
+  }
+};
+
+// Get credit and debit transactions by accountId
+export const getAccountDetailsByAccountId = async (req, res) => {
+  try {
+    const { accountId } = req.params;
+
+    if (!accountId) {
+      return res.status(400).json({
+        message: "AccountId is required",
+        status: "error",
+      });
+    }
+
+    const transactions = await creditAndDebit.find({ accountId });
+
+    if (transactions.length === 0) {
+      return res.status(404).json({
+        message: "No transactions found for the given accountId",
+        status: "error",
+      });
+    }
+
+    res.status(200).json({
+      message: "Transactions retrieved successfully",
+      data: transactions,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving transactions",
+      error: error.message,
+      status: "error",
     });
   }
 };

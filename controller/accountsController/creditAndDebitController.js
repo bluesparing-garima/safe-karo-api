@@ -1,18 +1,43 @@
-import creditAndDebit from "../../models/accountsModels/creditAndDebitSchema.js";
+import CreditAndDebit from "../../models/accountsModels/creditAndDebitSchema.js";
 import Account from "../../models/accountsModels/accountSchema.js";
-import motorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
+import MotorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
+import Debit from "../../models/accountsModels/debitsSchema.js";
+import moment from "moment"; 
+
+const generateTransactionCode = async (startDate, endDate, credit, debit) => {
+  try {
+    if (!moment(startDate).isValid()) {
+      throw new Error("Invalid startDate");
+    }
+    if (!moment(endDate).isValid()) {
+      throw new Error("Invalid endDate");
+    }
+
+    const formattedStartDate = moment(startDate).format("DDMMYY");
+    const formattedEndDate = moment(endDate).format("DDMMYY");
+    const formattedAmount = credit ? String(credit) : debit ? String(debit) : '0000';
+    const currentDate = moment().format("DDMMYYYY");
+    const currentTime = moment().format("[T]HH:mm:ss");
+
+    const newTransactionCode = `PC${formattedStartDate}${formattedEndDate}AM${formattedAmount}${currentDate}${currentTime}`;
+    return newTransactionCode;
+  } catch (error) {
+    console.error("Error generating transaction code:", error.message);
+    throw new Error("Invalid startDate or endDate");
+  }
+};
 
 // Create a new credit and debit transaction
 export const createCreditAndDebit = async (req, res) => {
   try {
     const {
       accountType,
-      type,
+      credit,
+      debit,
       employeeId,
       employeeName,
       accountId,
       accountCode,
-      amount,
       userName,
       userId,
       partnerId,
@@ -22,52 +47,70 @@ export const createCreditAndDebit = async (req, res) => {
       policyNumber,
       startDate,
       endDate,
+      distributedDate,
       remarks,
       createdBy,
       createdOn,
+      partnerBalance,
     } = req.body;
 
-    const lowerCaseType = type.toLowerCase();
-
-    const newCreditAndDebit = new creditAndDebit({
-      accountType,
-      type: lowerCaseType,
-      employeeId,
-      employeeName,
-      accountId,
-      accountCode,
-      amount,
-      userName,
-      userId,
+    // Check for existing motor policy payment, debit, and CutPay transactions
+    const existingMotorPolicyPayment = await MotorPolicyPayment.findOne({
       partnerId,
-      partnerName,
-      brokerId,
-      brokerName,
-      remarks,
       policyNumber,
-      startDate,
-      endDate,
-      createdBy,
-      createdOn,
+      payOutPaymentStatus: "Paid",
     });
-    await newCreditAndDebit.save();
 
-    // Update the account balance
-    let account = await Account.findById(accountId);
-    if (!account) {
-      return res.status(404).json({
-        message: "Account not found",
+    const existingDebitEntry = await Debit.findOne({
+      partnerId,
+      policyNumber,
+      payOutPaymentStatus: "Paid",
+    });
+
+    const existingCreditAndDebit = await CreditAndDebit.findOne({
+      partnerId,
+      policyNumber,
+      debit: { $ne: null },
+      accountType: "CutPay",
+    });
+
+    if (existingMotorPolicyPayment && existingDebitEntry && existingCreditAndDebit) {
+      return res.status(400).json({
         status: "error",
+        message: "The CutPay amount has already been paid for this partner for this policy number.",
       });
     }
 
-    if (lowerCaseType === "credit") {
-      account.amount += amount;
-    } else if (lowerCaseType === "debit") {
-      account.amount -= amount;
-    }
+    // Generate transaction code
+    const transactionCode = await generateTransactionCode(startDate, endDate, credit, debit);
 
-    await account.save();
+    // Create a new CreditAndDebit entry
+    const newCreditAndDebit = new CreditAndDebit({
+      accountType,
+      credit: credit ? parseFloat(credit) : 0,
+      debit: debit ? parseFloat(debit) : 0,
+      employeeId,
+      employeeName,
+      accountId,
+      accountCode,
+      userName,
+      userId,
+      partnerId,
+      partnerName,
+      brokerId,
+      brokerName,
+      policyNumber,
+      startDate,
+      endDate,
+      distributedDate,
+      remarks,
+      createdBy,
+      createdOn,
+      partnerBalance,
+      transactionCode,
+    });
+
+    await newCreditAndDebit.save();
 
     res.status(201).json({
       message: "Transaction created successfully",
@@ -86,10 +129,10 @@ export const createCreditAndDebit = async (req, res) => {
 // Get all credit and debit transactions
 export const getCreditAndDebit = async (req, res) => {
   try {
-    const credits = await creditAndDebit.find();
+    const transactions = await CreditAndDebit.find();
     res.status(200).json({
       message: "Transactions retrieved successfully",
-      data: credits,
+      data: transactions,
       status: "success",
     });
   } catch (error) {
@@ -101,13 +144,103 @@ export const getCreditAndDebit = async (req, res) => {
   }
 };
 
+// Get credit details by date range and broker ID
+export const getCreditDetailsByBrokerId = async (req, res) => {
+  const { startDate, endDate, brokerId } = req.query;
+
+  if (!startDate || !endDate || !brokerId) {
+    return res.status(400).json({
+      status: "error",
+      message: "Start date, end date, and broker ID are required.",
+    });
+  }
+
+  try {    
+    const startDateObj = new Date(startDate);
+    startDateObj.setHours(0, 0, 0, 0);
+
+    const endDateObj = new Date(endDate);
+    endDateObj.setHours(23, 59, 59, 999);
+
+    const transactions = await CreditAndDebit.find({
+      startDate: { $gte: startDateObj },
+      endDate: { $lte: endDateObj },
+      brokerId,
+    });
+
+    if (transactions.length === 0) {
+      return res.status(404).json({
+        status: "error",
+        message: "No credit data found for the specified date range and broker ID.",
+      });
+    }
+
+    res.status(200).json({
+      status: "success",
+      message: "Credit data retrieved successfully.",
+      data: transactions,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Error retrieving credit data.",
+      error: error.message,
+    });
+  }
+};
+
+// Get debit details by date range and partner ID
+export const getDebitDetailsByPartnerId = async (req, res) => {
+  const { startDate, endDate, partnerId } = req.query;
+
+  if (!startDate || !endDate || !partnerId) {
+    return res.status(400).json({
+      status: "error",
+      message: "Start date, end date, and partner ID are required.",
+    });
+  }
+
+  try { 
+    const startDateObj = new Date(startDate);
+    startDateObj.setHours(0, 0, 0, 0);
+
+    const endDateObj = new Date(endDate);
+    endDateObj.setHours(23, 59, 59, 999);
+    
+    const transactions = await CreditAndDebit.find({
+      startDate: { $gte: startDateObj },
+      endDate: { $lte: endDateObj },
+      partnerId,
+    });
+
+    if (transactions.length === 0) {
+      return res.status(404).json({
+        status: "error",
+        message: "No debit data found for the specified date range and partner ID.",
+      });
+    }
+
+    res.status(200).json({
+      status: "success",
+      message: "Debit data retrieved successfully.",
+      data: transactions,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Error retrieving debit data.",
+      error: error.message,
+    });
+  }
+};
+
 // Get a credit and debit transaction by ID
 export const getCreditAndDebitById = async (req, res) => {
   try {
     const { id } = req.params;
-    const credit = await creditAndDebit.findById(id);
+    const transaction = await CreditAndDebit.findById(id);
 
-    if (!credit) {
+    if (!transaction) {
       return res.status(404).json({
         message: "Transaction not found",
         status: "error",
@@ -116,7 +249,7 @@ export const getCreditAndDebitById = async (req, res) => {
 
     res.status(200).json({
       message: "Transaction retrieved successfully",
-      data: credit,
+      data: transaction,
       status: "success",
     });
   } catch (error) {
@@ -132,50 +265,24 @@ export const getCreditAndDebitById = async (req, res) => {
 export const updateCreditAndDebitById = async (req, res) => {
   try {
     const { id } = req.params;
-    const { amount, type, accountId } = req.body;
+    const { credit, debit } = req.body;
 
-    const existingTransaction = await creditAndDebit.findById(id);
-    if (!existingTransaction) {
+    const updatedTransaction = await CreditAndDebit.findByIdAndUpdate(
+      id,
+      { credit: credit ? parseFloat(credit) : 0, debit: debit ? parseFloat(debit) : 0, ...req.body },
+      { new: true }
+    );
+
+    if (!updatedTransaction) {
       return res.status(404).json({
         message: "Transaction not found",
         status: "error",
       });
     }
 
-    const account = await Account.findById(accountId);
-    if (!account) {
-      return res.status(404).json({
-        message: "Account not found",
-        status: "error",
-      });
-    }
-
-    // Revert the balance change of the existing transaction
-    if (existingTransaction.type === "credit") {
-      account.amount -= existingTransaction.amount;
-    } else if (existingTransaction.type === "debit") {
-      account.amount += existingTransaction.amount;
-    }
-
-    // Apply the new balance change
-    const lowerCaseType = type.toLowerCase();
-    if (lowerCaseType === "credit") {
-      account.amount += amount;
-    } else if (lowerCaseType === "debit") {
-      account.amount -= amount;
-    }
-
-    await account.save();
-
-    const updatedCreditAndDebit = await creditAndDebit.findByIdAndUpdate(
-      id,
-      { ...req.body, type: lowerCaseType },
-      { new: true }
-    );
-
     res.status(200).json({
       message: "Transaction updated successfully",
-      data: updatedCreditAndDebit,
+      data: updatedTransaction,
       status: "success",
     });
   } catch (error) {
@@ -192,9 +299,9 @@ export const deleteCreditAndDebitById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const deletedCredit = await creditAndDebit.findByIdAndDelete(id);
+    const deletedTransaction = await CreditAndDebit.findByIdAndDelete(id);
 
-    if (!deletedCredit) {
+    if (!deletedTransaction) {
       return res.status(404).json({
         message: "Transaction not found",
         status: "error",
@@ -214,14 +321,14 @@ export const deleteCreditAndDebitById = async (req, res) => {
   }
 };
 
-// Get Credit And Debit by Date Range and Broker Name
+
+// Get credit and debit by date range and broker name
 export const getCreditAndDebitByDateRangeAndBrokerName = async (req, res) => {
   const { startDate, endDate, brokerName } = req.query;
 
   if (!startDate || !endDate || !brokerName) {
     return res.status(400).json({
       status: "error",
-      success: false,
       message: "Start date, end date, and broker name are required.",
     });
   }
@@ -233,16 +340,15 @@ export const getCreditAndDebitByDateRangeAndBrokerName = async (req, res) => {
     const endDateObj = new Date(endDate);
     endDateObj.setHours(23, 59, 59, 999);
 
-    const creditAndDebits = await creditAndDebit.find({
+    const transactions = await CreditAndDebit.find({
       startDate: { $gte: startDateObj },
       endDate: { $lte: endDateObj },
       brokerName,
     });
 
-    if (creditAndDebits.length === 0) {
+    if (transactions.length === 0) {
       return res.status(404).json({
         status: "error",
-        success: false,
         message:
           "No credit and debit data found within the specified date range and broker name.",
       });
@@ -250,14 +356,12 @@ export const getCreditAndDebitByDateRangeAndBrokerName = async (req, res) => {
 
     res.status(200).json({
       status: "success",
-      success: true,
-      message: "Credit and Debit data retrieved successfully.",
-      data: creditAndDebits,
+      message: "Credit and debit data retrieved successfully.",
+      data: transactions,
     });
   } catch (error) {
     res.status(500).json({
       status: "error",
-      success: false,
       message: "Error retrieving credit and debit data.",
       error: error.message,
     });
@@ -283,7 +387,7 @@ export const getTotalAmountByDateRangeAndBrokerName = async (req, res) => {
     const endDateObj = new Date(endDate);
     endDateObj.setHours(23, 59, 59, 999);
 
-    const creditAndDebits = await creditAndDebit.find({
+    const creditAndDebits = await CreditAndDebit.find({
       startDate: { $gte: startDateObj },
       endDate: { $lte: endDateObj },
       brokerName,
@@ -319,7 +423,7 @@ export const getTotalAmountByDateRangeAndBrokerName = async (req, res) => {
   }
 };
 
-// Get Total Payout Commission by Date Range and Partner Name
+// Get Total Payout Commission by Date Range and Partner ID
 export const getCreditAndDebitByDateRangeAndPartnerId = async (req, res) => {
   const { startDate, endDate, partnerId } = req.query;
 
@@ -383,11 +487,11 @@ export const getCreditAndDebitByDateRangeAndPartnerId = async (req, res) => {
   }
 };
 
-// Get Total Amount by Date Range and Partner Name
-export const getTotalAmountByDateRangeAndPartnerName = async (req, res) => {
-  const { startDate, endDate, partnerName } = req.query;
+// Get Debit data by Date Range and PartnerId
+export const getTotalAmountByDateRangeAndPartnerId = async (req, res) => {
+  const { startDate, endDate, partnerId } = req.query;
 
-  if (!startDate || !endDate || !partnerName) {
+  if (!startDate || !endDate || !partnerId) {
     return res.status(400).json({
       status: "error",
       success: false,
@@ -402,10 +506,10 @@ export const getTotalAmountByDateRangeAndPartnerName = async (req, res) => {
     const endDateObj = new Date(endDate);
     endDateObj.setHours(23, 59, 59, 999);
 
-    const creditAndDebits = await creditAndDebit.find({
+    const creditAndDebits = await CreditAndDebit.find({
       startDate: { $gte: startDateObj },
       endDate: { $lte: endDateObj },
-      partnerName,
+      partnerId,
     });
 
     if (creditAndDebits.length === 0) {
@@ -413,7 +517,7 @@ export const getTotalAmountByDateRangeAndPartnerName = async (req, res) => {
         status: "error",
         success: false,
         message:
-          "No credit and debit data found within the specified date range and partner name.",
+          "No credit and debit data found within the specified date range and partnerId.",
       });
     }
 
@@ -433,6 +537,48 @@ export const getTotalAmountByDateRangeAndPartnerName = async (req, res) => {
       status: "error",
       success: false,
       message: "Error retrieving credit and debit data.",
+      error: error.message,
+    });
+  }
+};
+
+// get credit and debit data by TransactionCode and partnerId
+export const getCreditAndDebitDetailsByTransactionCodeAndPartnerId = async (req, res) => {
+  const { transactionCode, partnerId } = req.query;
+
+  if (!transactionCode || !partnerId) {
+    return res.status(400).json({
+      status: "error",
+      success: false,
+      message: "Transaction code and partner ID are required.",
+    });
+  }
+
+  try {
+    const debitDetails = await creditAndDebitSchema.findOne({
+      transactionCode,
+      partnerId,
+    });
+
+    if (!debitDetails) {
+      return res.status(404).json({
+        status: "error",
+        success: false,
+        message: "No debit details found for the provided transaction code and partner ID.",
+      });
+    }
+
+    res.status(200).json({
+      status: "success",
+      success: true,
+      message: "Debit details retrieved successfully.",
+      data: debitDetails,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      success: false,
+      message: "Error retrieving debit details.",
       error: error.message,
     });
   }

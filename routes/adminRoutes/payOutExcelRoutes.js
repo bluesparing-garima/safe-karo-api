@@ -4,10 +4,12 @@ import {
   getAllData,
 } from "../../controller/adminController/payOutExcelController.js";
 import logActivity from "../../middlewares/logActivity.js";
+import uploadSingleExcel from "../../middlewares/uploadSingleExcel.js";
+
 const router = express.Router();
 
 // Endpoint for uploading the Excel file
-router.post("/", logActivity, uploadExcel);
+router.post("/", logActivity, uploadSingleExcel, uploadExcel);
 
 // Endpoint for fetching all data
 router.get("/data", logActivity, getAllData);
