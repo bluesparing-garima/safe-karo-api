@@ -1,6 +1,5 @@
 import express from "express";
 import logActivity from "../../middlewares/logActivity.js";
-import uploadSingleExcel from '../../middlewares/uploadSingleExcel.js';
 import {
   createMotorPolicy,
   getMotorPolicies,
@@ -24,11 +23,10 @@ router.get("/", logActivity, getMotorPolicies);
 router.get("/date-range",logActivity,getMotorPoliciesByDateRange);
 router.get("/in-active",logActivity,getInactiveMotorPolicies);
 router.get("/validatePolicyNumber", logActivity, validatePolicyNumber);
-router.post("/upload", logActivity, uploadSingleExcel, uploadMotorPolicy);
+router.post("/upload", logActivity, uploadMotorPolicy);
 router.put(
   "/update-motor-policy-dates-by-excel",
   logActivity,
-  uploadSingleExcel,
   updateMotorPolicyDates
 );
 router.get("/policyId/:policyId", logActivity, getMotorPolicyByPolicyId);
