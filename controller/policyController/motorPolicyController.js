@@ -561,7 +561,7 @@ export const getMotorPolicies = async (req, res) => {
 // Get motor policies with date filter.
 export const getMotorPoliciesByDateRange = async (req, res) => {
   try {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, page = 1, limit = 50 } = req.query;
 
     if (!startDate || !endDate) {
       return res.status(400).json({
@@ -574,10 +574,15 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
     const start = new Date(startDate);
     const end = new Date(endDate);
 
+    // Using indexed query fields for better performance
     const policies = await MotorPolicyModel.find({
-      isActive: true,
-      issueDate: { $gte: start, $lte: end },
-    }).sort({ issueDate: -1 });
+      isActive: true, // Querying indexed field
+      issueDate: { $gte: start, $lte: end }, // Querying indexed field
+    })
+      .sort({ issueDate: -1 }) // Sorting on indexed field
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit))
+      .lean(); // Using lean to get plain JS objects for faster performance
 
     if (policies.length === 0) {
       return res.status(200).json({
@@ -591,6 +596,7 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
 
     const policyNumbers = policies.map((policy) => policy.policyNumber);
 
+    // Using Promise.all to concurrently fetch related data for bookings and payments
     const [bookings, payments] = await Promise.all([
       BookingRequestModel.find({ policyNumber: { $in: policyNumbers } }).lean(),
       MotorPolicyPaymentModel.find({ policyNumber: { $in: policyNumbers } }).lean(),
@@ -611,17 +617,10 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
       const booking = bookingMap[policy.policyNumber] || {};
       const payment = paymentMap[policy.policyNumber] || {};
 
-      const bookingTimer = booking.timer || null;
-      const bookingDate = booking.createdOn || null;
-      const leadTimer = booking.leadId ? (leadModel.findById(booking.leadId) || {}).timer : null;
-      const leadDate = booking.leadId ? (leadModel.findById(booking.leadId) || {}).createdOn : null;
-
       return {
-        ...policy._doc,
-        bookingTimer,
-        leadTimer,
-        bookingDate,
-        leadDate,
+        ...policy,
+        bookingTimer: booking.timer || null,
+        bookingDate: booking.createdOn || null,
         payInPaymentStatus: payment.payInPaymentStatus || null,
         payOutPaymentStatus: payment.payOutPaymentStatus || null,
       };

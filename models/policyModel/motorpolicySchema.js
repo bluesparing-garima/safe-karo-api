@@ -1,21 +1,22 @@
 import mongoose from "mongoose";
 
-// const DocumentSchema = new mongoose.Schema({
-//   docName: { type: String, required: true },
-//   file: { type: String, required: true },
-// });
+// Document Schema (if needed)
+const DocumentSchema = new mongoose.Schema({
+  docName: { type: String, required: true },
+  file: { type: String, required: true },
+});
 
 const MotorPolicySchema = new mongoose.Schema({
   policyType: { type: String, trim: true }, // package
   caseType: { type: String, trim: true }, // new, renewal
-  category: { type: String, trim: true }, // motor,health
-  subCategory: { type: String, trim: true, default: "" }, //
+  category: { type: String, trim: true }, // motor, health
+  subCategory: { type: String, trim: true, default: "" },
   companyName: { type: String, trim: true },
   broker: { type: String, trim: true },
-  brokerId:{type:String,trim:true},
+  brokerId: { type: String, trim: true },
   vehicleAge: { type: String, trim: true },
-  make: { type: String, trim: true }, //company of vehicle
-  model: { type: String, trim: true }, // company
+  make: { type: String, trim: true },
+  model: { type: String, trim: true },
   fuelType: { type: String, trim: true },
   rto: { type: String, trim: true },
   vehicleNumber: { type: String, trim: true },
@@ -48,40 +49,18 @@ const MotorPolicySchema = new mongoose.Schema({
   policyCompletedBy: { type: String, default: " ", trim: true },
   paymentDetails: { type: String, default: "", trim: true },
   productType: { type: String, default: "", trim: true },
-  // documents: [DocumentSchema],
-  rcFront: { type: String, trim: true },
-  rcBack: { type: String, trim: true },
-  previousPolicy: { type: String, trim: true },
-  survey: { type: String, trim: true },
-  puc: { type: String, trim: true },
-  fitness: { type: String, trim: true },
-  proposal: { type: String, trim: true },
-  currentPolicy: { type: String, trim: true },
-  other: { type: String, trim: true },
-  bookingTimer:{type:String,trim:true},
-  leadTimer:{type:String,trim:true},
-  bookingDate:{type:Date,trim:true},
-  leadDate:{type:Date,trim:true},
-  createdBy: {
-    type: String,
-    required: true,
-  },
-  updatedBy: {
-    type: String,
-    default: null,
-  },
-  createdOn: {
-    type: Date,
-    default: Date.now,
-  },
-  updatedOn: {
-    type: Date,
-    default: Date.now,
-  },
-  isActive: {
-    type: Boolean,
-    default: true,
-  },
+  documents: [DocumentSchema], // Example usage of documents
+  createdBy: { type: String, required: true },
+  updatedBy: { type: String, default: null },
+  createdOn: { type: Date, default: Date.now },
+  updatedOn: { type: Date, default: Date.now },
+  isActive: { type: Boolean, default: true },
 });
+
+// Adding indexes
+MotorPolicySchema.index({ policyNumber: 1 }); 
+MotorPolicySchema.index({ issueDate: 1, isActive: 1 }); 
+MotorPolicySchema.index({ brokerId: 1 }); 
+MotorPolicySchema.index({ createdBy: 1 }); 
 
 export default mongoose.model("MotorPolicy", MotorPolicySchema);
