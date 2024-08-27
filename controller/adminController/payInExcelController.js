@@ -20,12 +20,12 @@ const computeHash = (data) => {
 
 const uploadExcel = async (req, res) => {
     try {
-        if (!req.files || !req.files.excel) {
+        if (!req.file) {
             return res.status(400).send('No files were uploaded.');
         }
 
-        const file = req.files.excel;
-        const fileHash = computeHash(file.data);
+        const file = req.file;
+        const fileHash = computeHash(file.buffer);
 
         let storedHashes = [];
         if (fs.existsSync(hashFilePath)) {
@@ -38,7 +38,7 @@ const uploadExcel = async (req, res) => {
             return res.status(400).json({ message: 'File has already been uploaded.' });
         }
 
-        const workbook = XLSX.read(file.data, { type: 'buffer' });
+        const workbook = XLSX.read(file.buffer, { type: 'buffer' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
 

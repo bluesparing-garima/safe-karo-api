@@ -1,7 +1,9 @@
-import motorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
 import mongoose from "mongoose";
+import motorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
 import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
-import moment from "moment";
+import debitModel from "../../models/accountsModels/debitsSchema.js";
+import creditAndDebitSchema from "../../models/accountsModels/creditAndDebitSchema.js";
+import creditModel from "../../models/accountsModels/creditSchema.js";
 
 // Create a new motor policy payment
 export const createMotorPolicyPayment = async (req, res) => {
@@ -10,6 +12,7 @@ export const createMotorPolicyPayment = async (req, res) => {
     policyId,
     policyNumber,
     bookingId,
+    brokerId,
     od,
     tp,
     netPremium,
@@ -31,10 +34,11 @@ export const createMotorPolicyPayment = async (req, res) => {
     payInBalance,
     payOutBalance,
     createdBy,
+    transactionCode,
+    isActive,
   } = req.body;
 
   try {
-    // Check if policyId is a valid ObjectId
     if (!mongoose.Types.ObjectId.isValid(policyId)) {
       return res.status(400).json({
         message: "Invalid policyId",
@@ -43,7 +47,6 @@ export const createMotorPolicyPayment = async (req, res) => {
       });
     }
 
-    // Fetch MotorPolicy using policyId
     const motorPolicy = await MotorPolicyModel.findById(policyId);
 
     if (!motorPolicy) {
@@ -59,6 +62,7 @@ export const createMotorPolicyPayment = async (req, res) => {
       policyId,
       policyNumber,
       bookingId,
+      brokerId,
       od,
       tp,
       netPremium,
@@ -79,11 +83,33 @@ export const createMotorPolicyPayment = async (req, res) => {
       payOutPaymentStatus,
       payInBalance,
       payOutBalance,
-      policyDate: motorPolicy.createdOn,
+      policyDate: motorPolicy.issueDate,
       createdBy,
+      transactionCode,
+      isActive: isActive !== undefined ? isActive : true,
     });
 
     const savedMotorPolicyPayment = await newMotorPolicyPayment.save();
+
+    if (payOutPaymentStatus === "UnPaid" || payOutPaymentStatus === "Partial") {
+      const newDebit = new debitModel({
+        policyNumber,
+        partnerId,
+        transactionCode: transactionCode,
+        paidAmount: payOutAmount,
+        payOutAmount: payOutCommission,
+        payOutPaymentStatus,
+        payOutBalance,
+        policyDate: motorPolicy.issueDate,
+        createdBy,
+        updatedBy: createdBy,
+        createdOn: new Date(),
+        updatedOn: new Date(),
+      });
+
+      await newDebit.save();
+    }
+
     res.status(201).json({
       message: "Motor Policy Payment created successfully",
       data: savedMotorPolicyPayment,
@@ -99,7 +125,7 @@ export const createMotorPolicyPayment = async (req, res) => {
   }
 };
 
-// policy Status Manage
+// Policy Status Manage
 export const policyStatusManage = async (req, res) => {
   const policyUpdates = req.body;
 
@@ -109,25 +135,34 @@ export const policyStatusManage = async (req, res) => {
         policyNumber,
         payInAmount,
         payOutAmount,
+        payOutCommission,
         payInPaymentStatus,
         payOutPaymentStatus,
         payInBalance,
         payOutBalance,
+        partnerBalance,
+        updatedBy,
+        updatedOn,
+        transactionCode,
       }) => {
         let existingPayment = await motorPolicyPayment.findOne({
           policyNumber,
         });
 
         if (!existingPayment) {
-          // Create a new payment record
           existingPayment = new motorPolicyPayment({
             policyNumber,
             payInAmount,
             payOutAmount,
+            payOutCommission,
             payInPaymentStatus,
             payOutPaymentStatus,
             payInBalance,
             payOutBalance,
+            partnerBalance,
+            createdOn: new Date(),
+            transactionCode,
+            updatedOn,
           });
         } else {
           existingPayment.payInAmount = payInAmount;
@@ -136,10 +171,81 @@ export const policyStatusManage = async (req, res) => {
           existingPayment.payOutPaymentStatus = payOutPaymentStatus;
           existingPayment.payInBalance = payInBalance;
           existingPayment.payOutBalance = payOutBalance;
-          existingPayment.updatedOn = Date.now();
+          existingPayment.partnerBalance = partnerBalance;
+          existingPayment.updatedOn = updatedOn;
+          existingPayment.transactionCode = transactionCode;
         }
 
-        return existingPayment.save();
+        const savedPayment = await existingPayment.save();
+
+        const policyDate = new Date(existingPayment.policyDate);
+
+        if (["UnPaid", "Partial", "Paid"].includes(payOutPaymentStatus)) {
+          let existingDebit = await debitModel.findOne({ policyNumber });
+
+          if (existingDebit) {
+            existingDebit.transactionCode = transactionCode;
+            existingDebit.payOutAmount = payOutAmount;
+            existingDebit.payOutCommission = payOutCommission;
+            existingDebit.payOutPaymentStatus = payOutPaymentStatus;
+            existingDebit.payOutBalance = payOutBalance;
+            existingDebit.partnerBalance = partnerBalance;
+            existingDebit.updatedBy = updatedBy;
+            existingDebit.updatedOn = updatedOn;
+            existingDebit.policyDate = policyDate;
+            await existingDebit.save();
+          } else {
+            const newDebit = new debitModel({
+              transactionCode,
+              policyNumber,
+              partnerId: existingPayment.partnerId,
+              payOutAmount,
+              payOutCommission,
+              payOutPaymentStatus,
+              payOutBalance,
+              partnerBalance,
+              policyDate: policyDate,
+              createdBy: existingPayment.createdBy,
+              updatedBy,
+              createdOn: existingPayment.createdOn,
+              updatedOn: updatedOn,
+            });
+
+            await newDebit.save();
+          }
+        }
+
+        if (["UnPaid", "Partial", "Paid"].includes(payInPaymentStatus)) {
+          let existingCredit = await creditModel.findOne({ policyNumber });
+
+          if (existingCredit) {
+            existingCredit.payInAmount = payInAmount;
+            existingCredit.payInPaymentStatus = payInPaymentStatus;
+            existingCredit.payInBalance = payInBalance;
+            existingCredit.updatedBy = updatedBy;
+            existingCredit.updatedOn = updatedOn;
+            existingCredit.policyDate = policyDate;
+            await existingCredit.save();
+          } else {
+            const newCredit = new creditModel({
+              transactionCode,
+              policyNumber,
+              partnerId: existingPayment.partnerId,
+              payInAmount,
+              payInPaymentStatus,
+              payInBalance,
+              policyDate: policyDate,
+              createdBy: existingPayment.createdBy,
+              updatedBy,
+              createdOn: existingPayment.createdOn,
+              updatedOn: updatedOn,
+            });
+
+            await newCredit.save();
+          }
+        }
+
+        return savedPayment;
       }
     );
 
@@ -148,6 +254,7 @@ export const policyStatusManage = async (req, res) => {
     res.status(200).json({
       message: "Motor Policy Payments updated successfully",
       data: savedPayments,
+      partnerBalance: req.body.partnerBalance,
       success: true,
       status: "success",
     });
@@ -161,10 +268,306 @@ export const policyStatusManage = async (req, res) => {
   }
 };
 
+// Get UnPaid and Partial Paid by date range and partnerId
+export const getUnPaidAndPartialPaidPayments = async (req, res) => {
+  try {
+    const { partnerId, startDate, endDate } = req.query;
+
+    if (!partnerId || !startDate || !endDate) {
+      return res.status(400).json({
+        message: "Missing required query parameters",
+        success: false,
+        status: "error",
+      });
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    const normalizedStart = new Date(start.setHours(0, 0, 0, 0));
+    const normalizedEnd = new Date(end.setHours(23, 59, 59, 999));
+
+    const results = await motorPolicyPayment.aggregate([
+      {
+        $match: {
+          partnerId,
+          policyDate: { $gte: normalizedStart, $lte: normalizedEnd },
+          payOutPaymentStatus: { $in: ["UnPaid", "Partial"] },
+          isActive: true,
+        },
+      },
+      {
+        $addFields: {
+          relevantAmount: {
+            $cond: [
+              { $eq: ["$payOutPaymentStatus", "UnPaid"] },
+              "$payOutCommission",
+              {
+                $cond: [
+                  { $eq: ["$payOutPaymentStatus", "Partial"] },
+                  "$payOutBalance",
+                  0,
+                ],
+              },
+            ],
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalAmount: { $sum: "$relevantAmount" },
+          payments: { $push: "$$ROOT" },
+        },
+      },
+    ]);
+
+    const partnerStatement = await creditAndDebitSchema
+      .findOne({ partnerId })
+      .sort({ _id: -1 });
+
+    const totalPartnerBalance = partnerStatement
+      ? partnerStatement.partnerBalance
+      : 0;
+
+    const result = results[0] || { totalAmount: 0, payments: [] };
+    const adjustedTotalAmount = result.totalAmount - totalPartnerBalance;
+
+    res.status(200).json({
+      message:
+        "Motor policy payments for status UnPaid and Partial Paid retrieved successfully",
+      data: {
+        payments: result.payments,
+        totalAmount: result.totalAmount,
+        partnerBalance: totalPartnerBalance,
+        adjustedTotalAmount,
+      },
+      success: true,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving motor policy payments",
+      error: error.message,
+      success: false,
+      status: "error",
+    });
+  }
+};
+
+// Get UnPaid and Partial Paid by date range and brokerId
+export const getBrokerUnPaidAndPartialPaidPayments = async (req, res) => {
+  try {
+    const { brokerId, startDate, endDate } = req.query;
+
+    if (!brokerId || !startDate || !endDate) {
+      return res.status(400).json({
+        message: "Missing required query parameters",
+        success: false,
+        status: "error",
+      });
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    const normalizedStart = new Date(start.setHours(0, 0, 0, 0));
+    const normalizedEnd = new Date(end.setHours(23, 59, 59, 999));
+
+    const results = await motorPolicyPayment.aggregate([
+      {
+        $match: {
+          brokerId,
+          policyDate: { $gte: normalizedStart, $lte: normalizedEnd },
+          payInPaymentStatus: { $in: ["UnPaid", "Partial"] },
+          isActive: true,
+        },
+      },
+      {
+        $addFields: {
+          relevantAmount: {
+            $cond: [
+              { $eq: ["$payInPaymentStatus", "UnPaid"] },
+              "$payInCommission",
+              {
+                $cond: [
+                  { $eq: ["$payInPaymentStatus", "Partial"] },
+                  "$payInBalance",
+                  0,
+                ],
+              },
+            ],
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalAmount: { $sum: "$relevantAmount" },
+          payments: { $push: "$$ROOT" },
+        },
+      },
+    ]);
+
+    const brokerStatement = await creditAndDebitSchema
+      .findOne({ brokerId })
+      .sort({ _id: -1 });
+
+    const totalBrokerBalance = brokerStatement
+      ? brokerStatement.brokerBalance
+      : 0;
+
+    const result = results[0] || { totalAmount: 0, payments: [] };
+    const adjustedTotalAmount = result.totalAmount - totalBrokerBalance;
+
+    res.status(200).json({
+      message:
+        "Motor policy payments for status UnPaid and Partial Paid retrieved successfully",
+      data: {
+        payments: result.payments,
+        totalAmount: result.totalAmount,
+        brokerBalance: totalBrokerBalance,
+        adjustedTotalAmount,
+      },
+      success: true,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving motor policy payments",
+      error: error.message,
+      success: false,
+      status: "error",
+    });
+  }
+};
+
+// Get Paid by date range and partnerId
+export const getPaidPayments = async (req, res) => {
+  try {
+    const { partnerId, startDate, endDate } = req.query;
+
+    if (!partnerId || !startDate || !endDate) {
+      return res.status(400).json({
+        message: "Missing required query parameters",
+        success: false,
+        status: "error",
+      });
+    }
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    const results = await motorPolicyPayment.aggregate([
+      {
+        $match: {
+          partnerId,
+          policyDate: { $gte: start, $lte: end },
+          payOutPaymentStatus: "Paid",
+          isActive: true,
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalAmount: { $sum: "$payOutCommission" },
+          payments: { $push: "$$ROOT" },
+        },
+      },
+    ]);
+
+    const creditAndDebitData = await creditAndDebitSchema
+      .findOne({ partnerId })
+      .sort({ _id: -1 });
+    
+    const partnerBalance = creditAndDebitData?.partnerBalance || 0;
+
+    res.status(200).json({
+      message: "Motor policy payments for status Paid retrieved successfully",
+      data: {
+        partnerBalance: partnerBalance,
+        totalAmount: results[0]?.totalAmount || 0,
+        payments: results[0]?.payments || [],
+      },
+      success: true,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving motor policy payments",
+      error: error.message,
+      success: false,
+      status: "error",
+    });
+  }
+};
+
+// Get Paid by date range and partnerId
+export const getPaidPaymentsOfBroker = async (req, res) => {
+  try {
+    const { brokerId, startDate, endDate } = req.query;
+
+    if (!brokerId || !startDate || !endDate) {
+      return res.status(400).json({
+        message: "Missing required query parameters",
+        success: false,
+        status: "error",
+      });
+    }
+    
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    const results = await motorPolicyPayment.aggregate([
+      {
+        $match: {
+          brokerId,
+          policyDate: { $gte: start, $lte: end },
+          payInPaymentStatus: "Paid",
+          isActive: true,
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalAmount: { $sum: "$payInCommission" },
+          payments: { $push: "$$ROOT" },
+        },
+      },
+    ]);
+
+    const creditAndDebitData = await creditAndDebitSchema
+      .findOne({ brokerId })
+      .sort({ _id: -1 });
+    
+    const brokerBalance = creditAndDebitData?.brokerBalance || 0;
+
+    res.status(200).json({
+      message: "Motor policy payments for status Paid retrieved successfully",
+      data: {
+        brokerBalance: brokerBalance,
+        totalAmount: results[0]?.totalAmount || 0,
+        payments: results[0]?.payments || [],
+      },
+      success: true,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving motor policy payments",
+      error: error.message,
+      success: false,
+      status: "error",
+    });
+  }
+};
+
 // Get all motor policy payments
 export const getAllMotorPolicyPayments = async (req, res) => {
   try {
-    const motorPolicyPayments = await motorPolicyPayment.find();
+    const motorPolicyPayments = await motorPolicyPayment.find({
+      isActive: true,
+    });
     res.status(200).json({
       message: "All Motor Policy Payments retrieved successfully",
       data: motorPolicyPayments,
@@ -185,6 +588,7 @@ export const getMotorPolicyPaymentByPolicyId = async (req, res) => {
   try {
     const motorPolicyPaymentData = await motorPolicyPayment.findOne({
       policyId: req.params.policyId,
+      isActive: true, // Ensure only active records are retrieved
     });
     if (!motorPolicyPaymentData) {
       return res.status(404).json({
@@ -208,13 +612,14 @@ export const getMotorPolicyPaymentByPolicyId = async (req, res) => {
   }
 };
 
-// Update a motor policy payment by ObjectId
+// Update motor policy payment by policyId
 export const updateMotorPolicyPayment = async (req, res) => {
   const {
     partnerId,
     policyId,
     policyNumber,
     bookingId,
+    brokerId,
     od,
     tp,
     netPremium,
@@ -241,10 +646,11 @@ export const updateMotorPolicyPayment = async (req, res) => {
       return res.status(404).json({
         message: "Motor Policy Payment not found",
         success: false,
-        status: "error",
+        status: "success",
       });
     }
 
+    // Update the motor policy payment
     const updatedMotorPolicyPayment =
       await motorPolicyPayment.findByIdAndUpdate(
         existingProfile._id,
@@ -260,9 +666,13 @@ export const updateMotorPolicyPayment = async (req, res) => {
       });
     }
 
+    // Explicitly include policyId in the response
     res.status(200).json({
       message: "Motor Policy Payment updated successfully",
-      data: updatedMotorPolicyPayment,
+      data: {
+        ...updatedMotorPolicyPayment.toObject(),
+        policyId: updatedMotorPolicyPayment.policyId,
+      },
       success: true,
       status: "success",
     });
@@ -271,17 +681,15 @@ export const updateMotorPolicyPayment = async (req, res) => {
   }
 };
 
-// Delete a motor policy payment by ObjectId
+
+// Delete motor policy payment by policyId
 export const deleteMotorPolicyPayment = async (req, res) => {
   try {
-    const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res
-        .status(400)
-        .json({ message: "Invalid ID", success: false, status: "error" });
-    }
-    const deletedMotorPolicyPayment =
-      await motorPolicyPayment.findByIdAndDelete(id);
+    const deletedMotorPolicyPayment = await motorPolicyPayment.findOneAndDelete(
+      {
+        policyId: req.params.policyId,
+      }
+    );
     if (!deletedMotorPolicyPayment) {
       return res.status(404).json({
         message: "Motor Policy Payment not found",
@@ -295,8 +703,10 @@ export const deleteMotorPolicyPayment = async (req, res) => {
       status: "success",
     });
   } catch (err) {
-    res
-      .status(500)
-      .json({ message: err.message, success: false, status: "error" });
+    res.status(500).json({
+      message: err.message,
+      success: false,
+      status: "error",
+    });
   }
 };

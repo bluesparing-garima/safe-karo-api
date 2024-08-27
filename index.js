@@ -4,6 +4,7 @@ import express from "express";
 import cors from "cors";
 import connectDB from "./config/connectdb.js";
 import userRoutes from "./routes/userRoutes.js";
+import path from "path";
 // middleware
 import {
   requestLogger,
@@ -16,8 +17,8 @@ import caseTypeRoutes from "./routes/adminRoutes/caseTypeRoutes.js";
 import addRolesRoutes from "./routes/adminRoutes/rolesRoutes.js";
 import payInexcelRoutes from "./routes/adminRoutes/payInExcelRoutes.js";
 import payOutExcelRoutes from "./routes/adminRoutes/payOutExcelRoutes.js";
-import fileUpload from "express-fileupload";
 import payInRoutes from "./routes/adminRoutes/payInRoutes.js";
+import percentageUpdate from "./routes/adminRoutes/percentageUpdateRoute.js";
 import vehicleType from "./routes/adminRoutes/productSubTypeRoutes.js";
 import partnerRoutes from "./routes/adminRoutes/partnerRoutes.js";
 import productName from "./routes/adminRoutes/productRoutes.js";
@@ -35,9 +36,9 @@ import bookingRequestRoute from "./routes/bookingRequestRoutes/bookingRequestRou
 import adminDashboard from "./routes/dashboardRoutes/adminDashboardRoute.js";
 import partnerDashboardRoutes from "./routes/dashboardRoutes/partnerDashboardRoutes.js";
 import bookingDashboardRoutes from "./routes/dashboardRoutes/bookingDashboardRoute.js";
-import accountDashboardRoutes from './routes/dashboardRoutes/accountDashboardRoute.js';
+import operationDashboardRoutes from "./routes/dashboardRoutes/operationDashboardRoute.js";
+import accountDashboardRoutes from "./routes/dashboardRoutes/accountDashboardRoute.js";
 
-// import policyTimerManageRoutes from './routes/policyTimerManageRoute.js';
 import activityLogRoutes from "./routes/adminRoutes/activityLogRoutes.js";
 
 // Motor policy routes
@@ -49,18 +50,24 @@ import leadGenerate from "./routes/partnerRoutes/leadGenerateRoutes.js";
 import leadQuotation from "./routes/partnerRoutes/leadQuotationRoutes.js";
 import leadPayment from "./routes/partnerRoutes/leadPaymentRoutes.js";
 
-// Accounts 
+// Accounts
 import accountRoute from "./routes/accountRoutes/accountRoute.js";
-import creditAndDebit from './routes/accountRoutes/creditAndDebitRoute.js';
+import creditAndDebit from "./routes/accountRoutes/creditAndDebitRoute.js";
+import debitRoute from "./routes/accountRoutes/debitRoute.js";
+import accountManage from "./routes/accountRoutes/accountManageRoute.js";
+import creditRoute from "./routes/accountRoutes/creditRoute.js";
+
+// Excel Compare
+import excelCompare from "./routes/excelCompareRoutes.js";
 
 // Bar and Line chart routes
-import partnerChart from './routes/barAndLineChartRoutes/partnerChartRoutes.js';
-import adminChart from './routes/barAndLineChartRoutes/adminChartRoutes.js';
-import bookingChart from './routes/barAndLineChartRoutes/bookingChartRoutes.js';
-import brokerChart from './routes/barAndLineChartRoutes/brokerChartRoutes.js';
+import partnerChart from "./routes/barAndLineChartRoutes/partnerChartRoutes.js";
+import adminChart from "./routes/barAndLineChartRoutes/adminChartRoutes.js";
+import bookingChart from "./routes/barAndLineChartRoutes/bookingChartRoutes.js";
+import brokerChart from "./routes/barAndLineChartRoutes/brokerChartRoutes.js";
 
 import testRoutes from "./routes/testRoutes.js";
-import path from "path"; // Import path to resolve the directory path
+
 const app = express();
 const port = process.env.PORT;
 const DATABASE_URL = process.env.DATEBASE_URL;
@@ -75,21 +82,20 @@ app.get("/", (req, res) => {
   res.send("backend api deployed successfully!!!!!");
 });
 
-
 // JSON
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Use multer upload middleware where needed, for example:
+// app.post("/upload", uploadMiddleware, (req, res) => {
+//   res.send("Files uploaded successfully.");
+// });
 
 // userProfile
 app.use("/api/user-profile", userProfile);
 
 // Booking request
 app.use("/api/booking-request", bookingRequestRoute);
-
-// app.use(fileUpload({
-//   createParentPath: true
-// }));
 
 // motor policy Routes
 app.use("/api/policy/motor", motorPolicyRoutes);
@@ -98,7 +104,7 @@ app.use("/api/policy/motor", motorPolicyRoutes);
 app.use("/api/policy/motor/payment", motorPolicyPayment);
 
 // filter policy Routes
-app.use('/api/policy/motor/filter',filterPolicy);
+app.use("/api/policy/motor/filter", filterPolicy);
 
 //Partner lead generate.
 app.use("/api/lead-Generate", leadGenerate);
@@ -109,17 +115,11 @@ app.use("/api/lead-quotation", leadQuotation);
 // lead payment.
 app.use("/api/lead-payment", leadPayment);
 
-// testing
-// app.use("/api", testRoutes);
-
-
-
 // Load Routes
 app.use("/api/user", userRoutes);
 
 //assignee roles Routes
 app.use("/api/user-roles", assigneeRolesRouters);
-
 
 //create new Policy Routes
 app.use("/api/policy-type", policyTypeRoutes);
@@ -135,6 +135,9 @@ app.use("/api/pay-in/excel", payInexcelRoutes);
 
 //upload payout excel
 app.use("/api/pay-out/excel", payOutExcelRoutes);
+
+// percentage Update manually
+app.use("/api/policy/motor/commission", percentageUpdate);
 
 // PayIn Routes
 app.use("/api/calculate", payInRoutes);
@@ -172,22 +175,18 @@ app.use("/api/model", model);
 // Branch
 app.use("/api/branches", branch);
 
-// lead generate
-
 // admin dashboard
 app.use("/api/dashboard", adminDashboard);
 
 // partner dashboard
-app.use("/api/dashboard", partnerDashboardRoutes);
+app.use("/api/partner-dashboard", partnerDashboardRoutes);
 
-// partner dashboard
+// booking dashboard
 app.use("/api/booking-dashboard", bookingDashboardRoutes);
-
+// operation dashboard
+app.use("/api/operation-dashboard", operationDashboardRoutes);
 // account dashboard
-app.use('/api/account-dashboard', accountDashboardRoutes);
-
-// timeManager
-// app.use('/api/policyTimerManage',policyTimerManageRoutes);
+app.use("/api/account-dashboard", accountDashboardRoutes);
 
 // activity logs
 app.use("/api/activityLog", activityLogRoutes);
@@ -195,26 +194,37 @@ app.use("/api/activityLog", activityLogRoutes);
 // --------------------------------------- Account Route --------------------------------
 
 // Account routes
-app.use('/api/account',accountRoute);
+app.use("/api/account", accountRoute);
 
 // Credit and Debit
-app.use('/api/credit-debit',creditAndDebit);
+app.use("/api/credit-debit", creditAndDebit);
+
+// Debit details
+app.use("/api", debitRoute);
+
+// Credit details
+app.use("/api/credits",creditRoute);
+// excel compare
+app.use("/api", excelCompare);
+
+// account Manage
+app.use("/api/account-manage",accountManage);
 
 // ---------------------------------------- Bar and Line charts ------------------------------
-app.use('/api/partner-dashboard',partnerChart);
-app.use('/api/admin-dashboard',adminChart);
-app.use('/api/bookingperson-dashboard',bookingChart);
-app.use('/api/broker-dashboard',brokerChart);
+app.use("/api/partner-dashboard", partnerChart);
+app.use("/api/admin-dashboard", adminChart);
+app.use("/api/booking-dashboard", bookingChart);
+app.use("/api/broker-dashboard", brokerChart);
 
-// Handle invalid routes
-//app.use(handleInvalidRoutes);
+// Test Routes
+app.use("/api", testRoutes);
 
-//Add for acess the folder
+app.use(handleInvalidRoutes);
 
-// Serve static files from the uploads directory
-const __dirname = path.resolve();
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// Request logger
+app.use(requestLogger);
 
+// Listen on port
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);
 });
