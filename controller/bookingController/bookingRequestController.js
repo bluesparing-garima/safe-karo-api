@@ -34,6 +34,8 @@ export const createBookingRequest = async (req, res) => {
       isActive,
       bookingCreatedBy,
       bookingAcceptedBy,
+      isRejected,
+      rejectionReason,
     } = req.body;
 
     // Check if policy number already exists
@@ -71,16 +73,19 @@ export const createBookingRequest = async (req, res) => {
         bookingStatus: "requested",
         createdBy,
         isActive: isActive !== undefined ? isActive : true,
+        isRejected: isRejected !== undefined ? isRejected : false,
+        rejectionReason,
       });
-      // Update lead status if leadId is provided
 
+      // Update lead status if leadId is provided
       if (leadId) {
         const lead = await leadGenerateModel.findByIdAndUpdate(
           leadId,
           { status: "Booking Pending" },
-          { new: true } // This option returns the updated document
+          { new: true }
         );
       }
+
       await newBooking.save();
       res.status(200).json({
         message: "Booking Request generated successfully",
@@ -125,7 +130,7 @@ export const validatePolicyNumber = async (req, res) => {
 // Get all bookings
 export const getAllBookingRequests = async (req, res) => {
   try {
-    const bookings = await BookingRequestModel.find();
+    const bookings = await BookingRequestModel.find({isRejected:false});
     res.status(200).json({
       message: "Bookings retrieved successfully.",
       data: bookings,
@@ -134,6 +139,23 @@ export const getAllBookingRequests = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Error retrieving bookings",
+      error: error.message,
+    });
+  }
+};
+
+// Get all rejected booking requests
+export const getRejectedBookingRequests = async (req, res) => {
+  try {
+    const rejectedBookings = await BookingRequestModel.find({ isRejected: true });
+    res.status(200).json({
+      message: "Rejected bookings retrieved successfully.",
+      data: rejectedBookings,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving rejected bookings",
       error: error.message,
     });
   }
