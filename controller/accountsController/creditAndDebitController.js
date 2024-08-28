@@ -15,11 +15,11 @@ const generateTransactionCode = async (startDate, endDate, credit, debit) => {
 
     const formattedStartDate = moment(startDate).format("DDMMYY");
     const formattedEndDate = moment(endDate).format("DDMMYY");
-    const formattedAmount = credit ? String(credit) : debit ? String(debit) : '0000';
+    // const formattedAmount = credit ? String(credit) : debit ? String(debit) : '0000';
     const currentDate = moment().format("DDMMYYYY");
-    const currentTime = moment().format("[T]HH:mm:ss");
+    const currentTime = moment().format("[T]HHmmss");
 
-    const newTransactionCode = `PC${formattedStartDate}${formattedEndDate}AM${formattedAmount}${currentDate}${currentTime}`;
+    const newTransactionCode = `PC${formattedStartDate}${formattedEndDate}AM${currentDate}${currentTime}`;
     return newTransactionCode;
   } catch (error) {
     console.error("Error generating transaction code:", error.message);
