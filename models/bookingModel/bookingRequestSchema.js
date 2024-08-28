@@ -1,12 +1,5 @@
 import mongoose from 'mongoose';
 
-// const DocumentSchema = new mongoose.Schema({
-//     docName: { 
-//         type: String, 
-//     },
-//     file: { type: String},
-// });
-
 const bookingRequestSchema = new mongoose.Schema({
     partnerId:{type:String,trim:true},
     partnerName:{type:String,trim:true},
@@ -37,7 +30,9 @@ const bookingRequestSchema = new mongoose.Schema({
     createdOn: { type: Date, default: Date.now },
     updatedBy: { type: String, default: null },
     updatedOn: { type: Date, default: null },
-    isActive:{type:Boolean,default:true}
+    isActive:{type:Boolean,default:true},
+    isRejected:{type:Boolean,default:false},
+    rejectionReason:{type:String,trim:true}
 });
 
 // Middleware to update timestamps on save

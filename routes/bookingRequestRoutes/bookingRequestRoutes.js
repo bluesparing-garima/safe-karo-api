@@ -4,6 +4,7 @@ import {
   getAllBookingRequests,
   updateBookingRequest,
   validatePolicyNumber,
+  getRejectedBookingRequests,
   getBookingRequestsByPartnerId,
   getBookingRequestsByCreatedBy,
   getBookingRequestsByAcceptedBy,
@@ -15,6 +16,7 @@ const router = express.Router();
 
 router.post("/",logActivity, createBookingRequest);
 router.get("/", logActivity, getAllBookingRequests);
+router.get("/rejected-bookings",logActivity,getRejectedBookingRequests);
 router.get("/validatePolicyNumber", logActivity, validatePolicyNumber);
 router.get("/booking-id/:bookingId", logActivity, getBookingRequestsByBookingId);
 router.put("/accepted-booking/:id",logActivity, acceptBookingRequest);
