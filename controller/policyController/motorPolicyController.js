@@ -99,9 +99,9 @@ export const uploadMotorPolicy = async (req, res) => {
         registrationDate: registrationDate || "",
         endDate: endDate || "",
         issueDate: issueDate || "",
-        idv: row.idv || row["IDV"] || "",
-        od: row.od || row["OD"] || "",
-        tp: row.tp || row["TP"] || "",
+        idv: row.idv || row["IDV"] || 0,
+        od: row.od || row["OD"] || 0,
+        tp: row.tp || row["TP"] || 0,
         policyStatus: row.policyStatus || row["Policy Status"] || "",
         netPremium: row.netPremium || row["Net Premium"] || "",
         finalPremium: row.finalPremium || row["Final Premium"] || "",
@@ -127,11 +127,11 @@ export const uploadMotorPolicy = async (req, res) => {
         proposal: row.proposal || row["Proposal"] || "",
         currentPolicy: row.currentPolicy || row["Current Policy"] || "",
         other: row.other || row["Other"] || "",
-        createdBy: "excel",
+        createdBy: "partner",
         updatedBy: null,
         updatedOn: null,
         createdOn: Date.now(),
-        weight: row.weight || row["Weight"] || "",
+        weight: row.weight || row["Weight"] || 0,
       };
     });
 
@@ -190,7 +190,7 @@ export const uploadMotorPolicy = async (req, res) => {
         existingRecord.proposal = data.proposal;
         existingRecord.currentPolicy = data.currentPolicy;
         existingRecord.other = data.other;
-        existingRecord.createdBy = "excel";
+        existingRecord.createdBy = "partner";
         existingRecord.createdOn = data.createdOn;
         existingRecord.updatedBy = "";
         existingRecord.updatedOn = new Date();
