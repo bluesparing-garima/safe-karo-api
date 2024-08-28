@@ -141,13 +141,12 @@ export const policyStatusManage = async (req, res) => {
         payInBalance,
         payOutBalance,
         partnerBalance,
+        remarks,
         updatedBy,
         updatedOn,
         transactionCode,
       }) => {
-        let existingPayment = await motorPolicyPayment.findOne({
-          policyNumber,
-        });
+        let existingPayment = await motorPolicyPayment.findOne({ policyNumber });
 
         if (!existingPayment) {
           existingPayment = new motorPolicyPayment({
@@ -163,6 +162,7 @@ export const policyStatusManage = async (req, res) => {
             createdOn: new Date(),
             transactionCode,
             updatedOn,
+            remarks,
           });
         } else {
           existingPayment.payInAmount = payInAmount;
@@ -174,6 +174,7 @@ export const policyStatusManage = async (req, res) => {
           existingPayment.partnerBalance = partnerBalance;
           existingPayment.updatedOn = updatedOn;
           existingPayment.transactionCode = transactionCode;
+          existingPayment.remarks = remarks;
         }
 
         const savedPayment = await existingPayment.save();
@@ -193,6 +194,7 @@ export const policyStatusManage = async (req, res) => {
             existingDebit.updatedBy = updatedBy;
             existingDebit.updatedOn = updatedOn;
             existingDebit.policyDate = policyDate;
+            existingDebit.remarks = remarks; 
             await existingDebit.save();
           } else {
             const newDebit = new debitModel({
@@ -209,6 +211,7 @@ export const policyStatusManage = async (req, res) => {
               updatedBy,
               createdOn: existingPayment.createdOn,
               updatedOn: updatedOn,
+              remarks,
             });
 
             await newDebit.save();
@@ -225,6 +228,7 @@ export const policyStatusManage = async (req, res) => {
             existingCredit.updatedBy = updatedBy;
             existingCredit.updatedOn = updatedOn;
             existingCredit.policyDate = policyDate;
+            existingCredit.remarks = remarks;
             await existingCredit.save();
           } else {
             const newCredit = new creditModel({
@@ -239,6 +243,7 @@ export const policyStatusManage = async (req, res) => {
               updatedBy,
               createdOn: existingPayment.createdOn,
               updatedOn: updatedOn,
+              remarks,
             });
 
             await newCredit.save();
@@ -267,6 +272,7 @@ export const policyStatusManage = async (req, res) => {
     });
   }
 };
+
 
 // Get UnPaid and Partial Paid by date range and partnerId
 export const getUnPaidAndPartialPaidPayments = async (req, res) => {

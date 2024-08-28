@@ -13,6 +13,7 @@ const debitSchema = new mongoose.Schema({
   paymentUpdatedBy: { type: String, default: null },
   paymentCreatedOn: { type: Date, default: Date.now },
   paymentUpdatedOn: { type: Date, default: Date.now },
+  remarks:{type:String,trim:true},
 });
 
 const debits = mongoose.model("debit", debitSchema);
