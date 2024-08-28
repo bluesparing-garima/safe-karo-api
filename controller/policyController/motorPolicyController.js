@@ -579,7 +579,7 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
       isActive: true, // Querying indexed field
       issueDate: { $gte: start, $lte: end }, // Querying indexed field
     })
-      .sort({ issueDate: -1 }) // Sorting on indexed field
+      .sort({ createdOn: -1 }) // Sorting on indexed field
       .skip((page - 1) * limit)
       .limit(parseInt(limit))
       .lean(); // Using lean to get plain JS objects for faster performance
