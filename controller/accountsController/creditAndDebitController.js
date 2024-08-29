@@ -133,7 +133,6 @@ export const createCreditAndDebit = async (req, res) => {
   }
 };
 
-
 // Get all credit and debit transactions
 export const getCreditAndDebit = async (req, res) => {
   try {
@@ -329,7 +328,6 @@ export const deleteCreditAndDebitById = async (req, res) => {
   }
 };
 
-
 // Get credit and debit by date range and broker name
 export const getCreditAndDebitByDateRangeAndBrokerName = async (req, res) => {
   const { startDate, endDate, brokerName } = req.query;
@@ -450,7 +448,7 @@ export const getCreditAndDebitByDateRangeAndPartnerId = async (req, res) => {
     const endDateObj = new Date(endDate);
     endDateObj.setHours(23, 59, 59, 999);
 
-    const result = await motorPolicyPayment.aggregate([
+    const result = await MotorPolicyPayment.aggregate([
       {
         $match: {
           policyDate: {
@@ -563,7 +561,7 @@ export const getCreditAndDebitDetailsByTransactionCodeAndPartnerId = async (req,
   }
 
   try {
-    const debitDetails = await creditAndDebitSchema.findOne({
+    const debitDetails = await CreditAndDebit.findOne({
       transactionCode,
       partnerId,
     });

@@ -14,7 +14,7 @@ export const getPartnerDashboardCount = async (req, res) => {
       status: 'error',
     });
   }
-
+  
   const startDate = new Date(req.query.startDate);
   const endDate = new Date(req.query.endDate);
   endDate.setHours(23, 59, 59, 999);
@@ -99,12 +99,13 @@ export const getPartnerDashboardCount = async (req, res) => {
       bookingRequests[`${key.charAt(0).toUpperCase()}${key.slice(1)} Booking`] = formattedBookingCounts[key];
     });
 
-    // Aggregate total balance for the specified partnerId
-    const balanceAggregate = await creditAndDebitSchema.aggregate([
-      { $match: { partnerId } },
-      { $group: { _id: null, totalBalance: { $sum: '$partnerBalance' } } },
-    ]);
-    const balance = balanceAggregate.length > 0 ? balanceAggregate[0].totalBalance : 0;
+    // Get the last entry of partnerBalance for the specified partnerId
+    const lastBalanceEntry = await creditAndDebitSchema.findOne(
+      { partnerId },
+      { partnerBalance: 1 },
+      { sort: { createdOn: -1 } }
+    );
+    const balance = lastBalanceEntry ? lastBalanceEntry.partnerBalance : 0;
 
     // Aggregate total payOutAmount for the specified partnerId
     const payOutAmountAggregate = await MotorPolicyPaymentModel.aggregate([

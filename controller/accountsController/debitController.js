@@ -105,7 +105,6 @@ export const getDebitsByPartnerIdAndDateRange = async (req, res) => {
 
 // get Debit data by TransactionCode and partnerId
 export const getDebitDetailsByTransactionCodeAndPartnerId = async (req, res) => {
-  console.log("first")
   const { transactionCode, partnerId } = req.query;
 
   if (!transactionCode || !partnerId) {
