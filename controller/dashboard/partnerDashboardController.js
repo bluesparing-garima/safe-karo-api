@@ -121,7 +121,7 @@ export const getPartnerDashboardCount = async (req, res) => {
             'Net Premium': netPremium,
           },
           commissions: {
-            'Commission': reward,
+            'Monthly Commission': reward,
             'Total Commission': totalReward,
             'Balance': balance,
             'Paid Amount': payOutAmount,
