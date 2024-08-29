@@ -3,24 +3,30 @@ import fs from "fs";
 import path from "path";
 import MotorPolicy from "../models/policyModel/motorpolicySchema.js";
 import MotorPolicyPayment from "../models/policyModel/motorPolicyPaymentSchema.js";
+
+// Define the path for storing data
 const dataFilePath = path.join(process.cwd(), "data", "data.json");
 
+// Ensure the 'data' directory exists
 if (!fs.existsSync(path.join(process.cwd(), "data"))) {
   fs.mkdirSync(path.join(process.cwd(), "data"));
 }
 
 export const compareBrokerExcel = async (req, res) => {
   try {
+    // Check if a file was uploaded
     if (!req.file) {
-      return res.status(400).send("No files were uploaded.");
+      return res.status(400).json({ message: "No file was uploaded." });
     }
 
     const file = req.file;
 
+    // Read and parse the Excel file
     const workbook = XLSX.read(file.buffer, { type: "buffer" });
     const sheetName = workbook.SheetNames[0];
     const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
+    // Extract data from the worksheet
     const extractedData = worksheet.map((row) => ({
       policyNumber: row.policyNumber,
       payInCommission: row.payInCommission,
@@ -30,51 +36,40 @@ export const compareBrokerExcel = async (req, res) => {
     const policyNumbers = extractedData.map((data) => data.policyNumber);
     const brokers = [...new Set(extractedData.map((data) => data.broker))];
 
-    const dbData = await MotorPolicy.find({
-      broker: { $in: brokers },
-    });
-
+    // Fetch relevant policy and payment data from the database
+    const dbData = await MotorPolicy.find({ broker: { $in: brokers } });
     const paymentData = await MotorPolicyPayment.find({
       policyNumber: { $in: dbData.map((data) => data.policyNumber) },
     });
 
-    const dbPolicyMap = new Map(
-      dbData.map((dbRow) => [dbRow.policyNumber, dbRow])
-    );
+    // Map database policy data for quick lookup
+    const dbPolicyMap = new Map(dbData.map((dbRow) => [dbRow.policyNumber, dbRow]));
 
-    const allPolicyNumbers = [
-      ...new Set([
-        ...policyNumbers,
-        ...dbData.map((dbRow) => dbRow.policyNumber),
-      ]),
-    ];
+    // Combine policy numbers from both the Excel file and the database
+    const allPolicyNumbers = [...new Set([...policyNumbers, ...dbData.map((dbRow) => dbRow.policyNumber)])];
 
+    // Compare data between the Excel file and the database
     const allData = allPolicyNumbers.map((policyNumber) => {
       const dbRow = dbPolicyMap.get(policyNumber);
-      const excelRow = extractedData.find(
-        (excelItem) => excelItem.policyNumber === policyNumber
-      );
+      const excelRow = extractedData.find((excelItem) => excelItem.policyNumber === policyNumber);
 
       const brokerName = dbRow?.broker || excelRow?.broker || "Unknown Broker";
 
       const dbDetails = {
-        policyNumber: policyNumber,
+        policyNumber,
         broker: brokerName,
         payInCommission: dbRow
-          ? paymentData.find(
-              (paymentItem) => paymentItem.policyNumber === dbRow.policyNumber
-            )?.payInCommission || 0
+          ? paymentData.find((paymentItem) => paymentItem.policyNumber === dbRow.policyNumber)?.payInCommission || 0
           : 0,
       };
 
       const excelDetails = excelRow || {
-        policyNumber: policyNumber,
+        policyNumber,
         payInCommission: 0,
         broker: brokerName,
       };
 
-      const commissionDifference =
-        dbDetails.payInCommission - excelDetails.payInCommission;
+      const commissionDifference = dbDetails.payInCommission - excelDetails.payInCommission;
 
       return {
         broker: brokerName,
@@ -85,14 +80,11 @@ export const compareBrokerExcel = async (req, res) => {
       };
     });
 
-    const additionalDbData = await MotorPolicy.find({
-      broker: { $nin: brokers },
-    });
+    // Find additional database data that is not in the Excel file
+    const additionalDbData = await MotorPolicy.find({ broker: { $nin: brokers } });
 
     const additionalData = additionalDbData.map((dbRow) => {
-      const paymentRow = paymentData.find(
-        (paymentItem) => paymentItem.policyNumber === dbRow.policyNumber
-      );
+      const paymentRow = paymentData.find((paymentItem) => paymentItem.policyNumber === dbRow.policyNumber);
 
       return {
         broker: dbRow.broker,
@@ -111,8 +103,9 @@ export const compareBrokerExcel = async (req, res) => {
       };
     });
 
+    // Construct response
     const response = {
-      broker: extractedData[0].broker,
+      broker: extractedData[0]?.broker || "Unknown Broker",
       message: "File uploaded and data processed successfully.",
       status: "Success",
       data: [...allData, ...additionalData].map((diff) => ({
@@ -125,14 +118,14 @@ export const compareBrokerExcel = async (req, res) => {
       })),
     };
 
+    // Write response data to file
     fs.writeFileSync(dataFilePath, JSON.stringify(response, null, 2));
 
+    // Send response
     res.status(200).json(response);
   } catch (error) {
     console.error("Error processing file:", error);
-    res
-      .status(500)
-      .json({ message: "Error processing file", error: error.message });
+    res.status(500).json({ message: "Error processing file", error: error.message });
   }
 };
 
