@@ -8,7 +8,6 @@ import upload from '../../middlewares/uploadMiddleware.js'
 const generatePartnerId = async (role) => {
   let prefix;
 
-  // Determine the prefix based on the role
   switch (role) {
     case "Relationship Manager":
     case "RM":
@@ -27,7 +26,6 @@ const generatePartnerId = async (role) => {
       throw new Error("Invalid role");
   }
 
-  // Find the last user with a similar prefix
   const lastUser = await UserProfileModel.findOne({
     partnerId: { $regex: `^${prefix}` },
   })
@@ -38,17 +36,18 @@ const generatePartnerId = async (role) => {
 
   if (lastUser && lastUser.partnerId) {
     const lastPartnerId = lastUser.partnerId;
-    const suffix = lastPartnerId.split("-")[1]; // "1", "2", ...
-    let number = parseInt(suffix, 10); // 1, 2, ...
+    const suffix = lastPartnerId.slice(prefix.length);
+    let number = parseInt(suffix, 10);
     
     number++;
-    newPartnerId = `${prefix}-${number}`;
+    newPartnerId = `${prefix}${number}`;
   } else {
-    newPartnerId = `${prefix}-1`;
+    newPartnerId = `${prefix}1`;
   }
 
   return newPartnerId;
 };
+
 
 // Function to hash passwords
 const hashPassword = async (password) => {
