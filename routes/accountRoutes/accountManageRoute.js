@@ -11,6 +11,7 @@ import {
   getTotalAmountByDateRangeAndBrokerName,
   getAccountDetailsByDateRangeAndPartnerId,
   getTotalAmountByDateRangeAndPartnerId,
+  getAccountDetailsByAccountId
 } from "../../controller/accountsController/accountManageController.js";
 import logActivity from "../../middlewares/logActivity.js";
 
@@ -55,6 +56,9 @@ router.get(
 
 // Get All Account details
 router.get("/", logActivity, getAccountManage);
+
+// Get All Account details by accountID
+router.get("/account-id/:accountId",logActivity,getAccountDetailsByAccountId);
 
 // Get Account by ID
 router.get("/:id", logActivity, getAccountManageById);

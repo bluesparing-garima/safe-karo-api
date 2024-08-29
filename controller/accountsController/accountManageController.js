@@ -232,6 +232,37 @@ export const getAccountManage = async (req, res) => {
   }
 };
 
+// Get all account details bu accoutn Id
+export const getAccountDetailsByAccountId = async (req, res) => {
+  try {
+    const { accountId } = req.params;
+
+    // Find all related transactions for the account using accountId in the AccountManage table
+    const transactions = await AccountManage.find({ accountId });
+
+    if (!transactions.length) {
+      return res.status(404).json({
+        status: "error",
+        message: "No transactions found for this account",
+      });
+    }
+
+    // Return the transactions directly in the response
+    res.status(200).json({
+      status: "success",
+      message: "Account details retrieved successfully",
+      data: transactions,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Error retrieving account details",
+      error: error.message,
+    });
+  }
+};
+
+
 // Get credit details by date range and broker ID
 export const getAccountDetailsByBrokerId = async (req, res) => {
   const { startDate, endDate, brokerId } = req.query;
