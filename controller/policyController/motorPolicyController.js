@@ -574,15 +574,14 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
     const start = new Date(startDate);
     const end = new Date(endDate);
 
-    // Using indexed query fields for better performance
     const policies = await MotorPolicyModel.find({
-      isActive: true, // Querying indexed field
-      issueDate: { $gte: start, $lte: end }, // Querying indexed field
+      isActive: true,
+      issueDate: { $gte: start, $lte: end },
     })
-      .sort({ createdOn: -1 }) // Sorting on indexed field
+      .sort({ createdOn: -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit))
-      .lean(); // Using lean to get plain JS objects for faster performance
+      .lean();
 
     if (policies.length === 0) {
       return res.status(200).json({
@@ -596,44 +595,55 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
 
     const policyNumbers = policies.map((policy) => policy.policyNumber);
 
-    // Using Promise.all to concurrently fetch related data for bookings and payments
-    const [bookings, payments] = await Promise.all([
-      BookingRequestModel.find({ policyNumber: { $in: policyNumbers } }).lean(),
-      MotorPolicyPaymentModel.find({ policyNumber: { $in: policyNumbers } }).lean(),
-    ]);
+    // Fetching related payments concurrently
+    const payments = await MotorPolicyPaymentModel.find({
+      policyNumber: { $in: policyNumbers },
+    }).lean();
 
-    const bookingMap = {};
     const paymentMap = {};
-
-    bookings.forEach((booking) => {
-      bookingMap[booking.policyNumber] = booking;
-    });
-
     payments.forEach((payment) => {
       paymentMap[payment.policyNumber] = payment;
     });
 
     const policiesWithDetails = policies.map((policy) => {
-      const booking = bookingMap[policy.policyNumber] || {};
       const payment = paymentMap[policy.policyNumber] || {};
 
       return {
         ...policy,
-        bookingTimer: booking.timer || null,
-        bookingDate: booking.createdOn || null,
-        payInPaymentStatus: payment.payInPaymentStatus || null,
-        payOutPaymentStatus: payment.payOutPaymentStatus || null,
+        paymentId: payment._id || 0,
+        partnerId: payment.partnerId || 0,
+        bookingId: payment.bookingId || 0,
+        od: payment.od || 0,
+        tp: payment.tp || 0,
+        payInODPercentage: payment.payInODPercentage || 0,
+        payInTPPercentage: payment.payInTPPercentage || 0,
+        payInODAmount: payment.payInODAmount || 0,
+        payInTPAmount: payment.payInTPAmount || 0,
+        payOutODPercentage: payment.payOutODPercentage || 0,
+        payOutTPPercentage: payment.payOutTPPercentage || 0,
+        payOutODAmount: payment.payOutODAmount || 0,
+        payOutTPAmount: payment.payOutTPAmount || 0,
+        payInCommission: payment.payInCommission || 0,
+        payOutCommission: payment.payOutCommission || 0,
+        payInAmount: payment.payInAmount || 0,
+        payOutAmount: payment.payOutAmount || 0,
+        payInPaymentStatus: payment.payInPaymentStatus || "UnPaid",
+        payOutPaymentStatus: payment.payOutPaymentStatus || "UnPaid",
+        payInBalance: payment.payInBalance || 0,
+        payOutBalance: payment.payOutBalance || 0,
+        paymentCreatedBy: payment.createdBy || 0,
+        paymentCreatedOn: payment.createdOn || 0,
+        paymentUpdatedBy: payment.updatedBy || 0,
+        paymentUpdatedOn: payment.updatedOn || 0,
       };
     });
 
-    const totalCount = policiesWithDetails.length;
-
     res.status(200).json({
-      message: `Motor Policies from ${startDate} to ${endDate}.`,
+      message: `Motor Policies from ${startDate} to ${endDate} with payment details.`,
       data: policiesWithDetails,
       success: true,
       status: "success",
-      totalCount,
+      totalCount: policiesWithDetails.length,
     });
   } catch (error) {
     res.status(500).json({
@@ -643,6 +653,7 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
     });
   }
 };
+
 
 // Check Vehicle Number exist or not.
 export const validateVehicleNumber = async (req, res) => {
