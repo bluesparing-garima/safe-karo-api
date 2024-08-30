@@ -8,6 +8,7 @@ import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
 import MotorPolicyPaymentModel from "../../models/policyModel/motorPolicyPaymentSchema.js";
 import BookingRequestModel from "../../models/bookingModel/bookingRequestSchema.js";
 import leadModel from "../../models/partnerModels/leadGenerateSchema.js";
+import UserProfile from "../../models/adminModels/userProfileSchema.js";
 
 const dataFilePath = path.join(process.cwd(), "data", "motorpolicy_data.json");
 const hashFilePath = path.join(
@@ -574,6 +575,7 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
     const start = new Date(startDate);
     const end = new Date(endDate);
 
+    // Fetch motor policies in the date range
     const policies = await MotorPolicyModel.find({
       isActive: true,
       issueDate: { $gte: start, $lte: end },
@@ -593,23 +595,43 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
       });
     }
 
-    const policyNumbers = policies.map((policy) => policy.policyNumber);
+    // Extract unique partnerIds and partnerNames from the policies
+    const partnerNames = [...new Set(policies.map(policy => policy.partnerName))];
+    const partnerIds = [...new Set(policies.map(policy => policy.partnerId))];
+
+    // Fetch corresponding user profiles
+    const userProfiles = await UserProfile.find({
+      $or: [
+        { fullName: { $in: partnerNames } },
+        { _id: { $in: partnerIds } }
+      ]
+    }).lean();
+
+    // Map userProfiles by fullName and _id
+    const profileMap = {};
+    userProfiles.forEach(profile => {
+      profileMap[profile.fullName] = profile;
+      profileMap[profile._id] = profile;
+    });
 
     // Fetching related payments concurrently
+    const policyNumbers = policies.map(policy => policy.policyNumber);
     const payments = await MotorPolicyPaymentModel.find({
       policyNumber: { $in: policyNumbers },
     }).lean();
 
     const paymentMap = {};
-    payments.forEach((payment) => {
+    payments.forEach(payment => {
       paymentMap[payment.policyNumber] = payment;
     });
 
-    const policiesWithDetails = policies.map((policy) => {
+    const policiesWithDetails = policies.map(policy => {
       const payment = paymentMap[policy.policyNumber] || {};
+      const userProfile = profileMap[policy.partnerName] || profileMap[policy.partnerId] || {};
 
       return {
         ...policy,
+        partnerCode: userProfile.partnerId,
         paymentId: payment._id || 0,
         partnerId: payment.partnerId || 0,
         bookingId: payment.bookingId || 0,
@@ -653,6 +675,8 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
     });
   }
 };
+
+
 
 
 // Check Vehicle Number exist or not.
