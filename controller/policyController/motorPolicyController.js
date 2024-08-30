@@ -676,9 +676,6 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
   }
 };
 
-
-
-
 // Check Vehicle Number exist or not.
 export const validateVehicleNumber = async (req, res) => {
   try {
@@ -1008,7 +1005,6 @@ export const updateMotorPolicy = async (req, res) => {
     try {
       const {
         policyStatus,
-        partnerId,
         partnerName,
         relationshipManagerId,
         relationshipManagerName,
@@ -1051,8 +1047,25 @@ export const updateMotorPolicy = async (req, res) => {
         updatedBy,
       } = req.body;
 
+      let partnerId = req.body.partnerId;
+
+      // If partnerName is provided and partnerId is not, fetch the partnerId based on partnerName
+      if (partnerName && !partnerId) {
+        const partner = await PartnerModel.findOne({ name: partnerName });
+        if (partner) {
+          partnerId = partner._id;
+        } else {
+          return res.status(404).json({
+            status: "error",
+            message: "Partner not found for the given partnerName",
+          });
+        }
+      }
+
       const formData = {
         policyStatus,
+        partnerId,
+        partnerName,
         policyType,
         caseType,
         category,
@@ -1094,13 +1107,6 @@ export const updateMotorPolicy = async (req, res) => {
         updatedBy: updatedBy || "system",
         updatedOn: new Date(),
       };
-
-      if (partnerId !== undefined) {
-        formData.partnerId = partnerId;
-      }
-      if (partnerName !== undefined) {
-        formData.partnerName = partnerName;
-      }
 
       const fileDetails = {};
 
@@ -1180,7 +1186,9 @@ export const updateMotorPolicy = async (req, res) => {
         payOutODAmount: calculatedPayOutODAmount,
         payOutTPAmount: calculatedPayOutTPAmount,
         payOutCommission,
-        policyDate: issueDate,
+        policyDate: updatedIssueDate,
+        partnerId,
+        partnerName,
       };
 
       const updatedPayment = await MotorPolicyPaymentModel.findOneAndUpdate(
