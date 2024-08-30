@@ -597,7 +597,9 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
 
     // Extract unique partnerIds and partnerNames from the policies
     const partnerNames = [...new Set(policies.map(policy => policy.partnerName))];
-    const partnerIds = [...new Set(policies.map(policy => policy.partnerId))];
+    const partnerIds = [...new Set(policies.map(policy => policy.partnerId))].filter(
+      id => id && id.match(/^[0-9a-fA-F]{24}$/) // Ensure valid ObjectId format
+    );
 
     // Fetch corresponding user profiles
     const userProfiles = await UserProfile.find({
