@@ -1,280 +1,149 @@
-import * as XLSX from "xlsx";
-import fs from "fs";
-import path from "path";
-import MotorPolicy from "../models/policyModel/motorpolicySchema.js";
-import MotorPolicyPayment from "../models/policyModel/motorPolicyPaymentSchema.js";
-const dataFilePath = path.join(process.cwd(), "data", "data.json");
+import XLSX from 'xlsx';
+import MotorPolicy from '../models/policyModel/motorpolicySchema.js';
+import MotorPolicyPayment from '../models/policyModel/motorPolicyPaymentSchema.js';
+import UserProfile from "../models/adminModels/userProfileSchema.js";
+import moment from 'moment';
 
-if (!fs.existsSync(path.join(process.cwd(), "data"))) {
-  fs.mkdirSync(path.join(process.cwd(), "data"));
-}
-
+// excel compare for broker
 export const compareBrokerExcel = async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).send("No files were uploaded.");
+    try {
+        const { startDate, endDate } = req.body;
+
+        // Set up date filtering if provided
+        const dateQuery = {};
+        if (startDate && endDate) {
+            dateQuery.createdOn = {
+                $gte: moment(startDate).startOf('day').toDate(),
+                $lte: moment(endDate).endOf('day').toDate()
+            };
+        }
+
+        // Parse the uploaded Excel file
+        const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+        // Extract broker name from the first row of the Excel sheet
+        const brokerName = worksheet[0]?.broker?.trim() || 'Unknown Broker';
+
+        const comparisonResults = [];
+
+        // Iterate over each row in the Excel file
+        for (const row of worksheet) {
+            const { policyNumber, payInCommission, broker } = row;
+
+            const policyData = await MotorPolicy.findOne({
+                policyNumber: policyNumber.trim(),
+                broker: broker.trim(),
+                ...dateQuery
+            }).lean();
+
+            if (policyData) {
+                const paymentData = await MotorPolicyPayment.findOne({
+                    policyNumber: policyData.policyNumber
+                }).lean();
+
+                if (paymentData) {
+                    const result = {
+                        policyNumber: policyData.policyNumber,
+                        db_payInCommission: paymentData.payInCommission,
+                        excel_payInCommission: payInCommission
+                    };
+
+                    comparisonResults.push(result);
+                }
+            }
+        }
+
+        // Include the broker's name in the response
+        res.status(200).json({
+            message: 'File uploaded and data processed successfully.',
+            brokerName: brokerName,
+            data: comparisonResults,
+            status: 'Success'
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: 'An error occurred while processing the file.',
+            error: error.message,
+            status: 'Error'
+        });
     }
-
-    const file = req.file;
-
-    const workbook = XLSX.read(file.buffer, { type: "buffer" });
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
-
-    const extractedData = worksheet.map((row) => ({
-      policyNumber: row.policyNumber,
-      payInCommission: row.payInCommission,
-      broker: row.broker,
-    }));
-
-    const policyNumbers = extractedData.map((data) => data.policyNumber);
-    const brokers = [...new Set(extractedData.map((data) => data.broker))];
-
-    const dbData = await MotorPolicy.find({
-      broker: { $in: brokers },
-    });
-
-    const paymentData = await MotorPolicyPayment.find({
-      policyNumber: { $in: dbData.map((data) => data.policyNumber) },
-    });
-
-    const dbPolicyMap = new Map(
-      dbData.map((dbRow) => [dbRow.policyNumber, dbRow])
-    );
-
-    const allPolicyNumbers = [
-      ...new Set([
-        ...policyNumbers,
-        ...dbData.map((dbRow) => dbRow.policyNumber),
-      ]),
-    ];
-
-    const allData = allPolicyNumbers.map((policyNumber) => {
-      const dbRow = dbPolicyMap.get(policyNumber);
-      const excelRow = extractedData.find(
-        (excelItem) => excelItem.policyNumber === policyNumber
-      );
-
-      const brokerName = dbRow?.broker || excelRow?.broker || "Unknown Broker";
-
-      const dbDetails = {
-        policyNumber: policyNumber,
-        broker: brokerName,
-        payInCommission: dbRow
-          ? paymentData.find(
-              (paymentItem) => paymentItem.policyNumber === dbRow.policyNumber
-            )?.payInCommission || 0
-          : 0,
-      };
-
-      const excelDetails = excelRow || {
-        policyNumber: policyNumber,
-        payInCommission: 0,
-        broker: brokerName,
-      };
-
-      const commissionDifference =
-        dbDetails.payInCommission - excelDetails.payInCommission;
-
-      return {
-        broker: brokerName,
-        db: dbDetails,
-        excel: excelDetails,
-        commissionDifference,
-        hasDifference: commissionDifference !== 0,
-      };
-    });
-
-    const additionalDbData = await MotorPolicy.find({
-      broker: { $nin: brokers },
-    });
-
-    const additionalData = additionalDbData.map((dbRow) => {
-      const paymentRow = paymentData.find(
-        (paymentItem) => paymentItem.policyNumber === dbRow.policyNumber
-      );
-
-      return {
-        broker: dbRow.broker,
-        db: {
-          policyNumber: dbRow.policyNumber,
-          broker: dbRow.broker,
-          payInCommission: paymentRow ? paymentRow.payInCommission : 0,
-        },
-        excel: {
-          policyNumber: dbRow.policyNumber,
-          payInCommission: 0,
-          broker: dbRow.broker,
-        },
-        commissionDifference: paymentRow ? paymentRow.payInCommission : 0,
-        hasDifference: true,
-      };
-    });
-
-    const response = {
-      broker: extractedData[0].broker,
-      message: "File uploaded and data processed successfully.",
-      status: "Success",
-      data: [...allData, ...additionalData].map((diff) => ({
-        policyNumber: diff.db.policyNumber || diff.excel.policyNumber,
-        broker: diff.broker,
-        safeKaroCommission: diff.db.payInCommission,
-        brokerCommission: diff.excel.payInCommission,
-        commissionDifference: diff.commissionDifference,
-        hasDifference: diff.hasDifference,
-      })),
-    };
-
-    fs.writeFileSync(dataFilePath, JSON.stringify(response, null, 2));
-
-    res.status(200).json(response);
-  } catch (error) {
-    console.error("Error processing file:", error);
-    res
-      .status(500)
-      .json({ message: "Error processing file", error: error.message });
-  }
 };
 
 export const comparePartnerExcel = async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).send("No files were uploaded.");
+    const { startDate, endDate } = req.body;
+
+    const dateQuery = {};
+    if (startDate && endDate) {
+      dateQuery.createdOn = {
+        $gte: moment(startDate).startOf('day').toDate(),
+        $lte: moment(endDate).endOf('day').toDate()
+      };
     }
 
-    const file = req.file;
-
-    const workbook = XLSX.read(file.buffer, { type: "buffer" });
+    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
     const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
-    const extractedData = worksheet.map((row) => ({
-      policyNumber: row.policyNumber,
-      payOutCommission: row.payOutCommission,
-      partnerName: row.partnerName,
-    }));
+    const partnerCode = worksheet[0]?.partnerCode?.trim() || 'Unknown Partner';
+    console.log('Extracted partnerCode:', partnerCode);
 
-    const policyNumbers = extractedData.map((data) => data.policyNumber);
-    const partnerNames = new Set(extractedData.map((data) => data.partnerName));
-
-    const dbData = await MotorPolicy.find({
-      partnerName: { $in: Array.from(partnerNames) },
-    });
-
-    const paymentData = await MotorPolicyPayment.find({
-      policyNumber: { $in: dbData.map((data) => data.policyNumber) },
-    });
-
-    const dbPolicyMap = new Map(
-      dbData.map((dbRow) => [dbRow.policyNumber, dbRow])
-    );
-
-    const policyPartnerMap = new Map();
-    dbData.forEach((row) => {
-      if (!policyPartnerMap.has(row.policyNumber)) {
-        policyPartnerMap.set(row.policyNumber, new Set());
-      }
-      policyPartnerMap.get(row.policyNumber).add(row.partnerName);
-    });
-
-    const invalidPolicyNumbers = Array.from(policyPartnerMap.entries())
-      .filter(([_, partners]) => partners.size > 1)
-      .map(([policyNumber]) => policyNumber);
-
-    const allData = [
-      ...policyNumbers,
-      ...dbData.map((dbRow) => dbRow.policyNumber),
-    ]
-      .filter(
-        (policyNumber, index, self) => self.indexOf(policyNumber) === index
-      )
-      .filter((policyNumber) => !invalidPolicyNumbers.includes(policyNumber))
-      .map((policyNumber) => {
-        const dbRow = dbPolicyMap.get(policyNumber);
-        const excelRow = extractedData.find(
-          (excelItem) => excelItem.policyNumber === policyNumber
-        );
-
-        const partnerName =
-          dbRow?.partnerName || excelRow?.partnerName || "Unknown partnerName";
-
-        const dbDetails = {
-          policyNumber: policyNumber,
-          partnerName: partnerName,
-          payOutCommission: dbRow
-            ? paymentData.find(
-                (paymentItem) => paymentItem.policyNumber === dbRow.policyNumber
-              )?.payOutCommission || 0
-            : 0,
-        };
-
-        const excelDetails = excelRow || {
-          policyNumber: policyNumber,
-          payOutCommission: 0,
-          partnerName: partnerName,
-        };
-
-        const commissionDifference =
-          dbDetails.payOutCommission - excelDetails.payOutCommission;
-
-        return {
-          partnerName: partnerName,
-          db: dbDetails,
-          excel: excelDetails,
-          commissionDifference,
-          hasDifference: commissionDifference !== 0,
-        };
+    const userProfile = await UserProfile.findOne({ partnerId: partnerCode }).lean();
+    if (!userProfile) {
+      return res.status(404).json({
+        message: 'Partner not found.',
+        status: 'Error'
       });
+    }
 
-    const additionalDbData = await MotorPolicy.find({
-      partnerName: { $nin: Array.from(partnerNames) },
+    const partnerId = userProfile._id;
+    console.log('Retrieved partnerId (ObjectId):', partnerId);
+
+    const comparisonResults = [];
+
+    for (const row of worksheet) {
+      const { policyNumber, payOutCommission } = row;
+
+      const policyData = await MotorPolicy.findOne({
+        policyNumber: policyNumber.trim(),
+        partnerId: partnerId,
+        ...dateQuery
+      }).lean();
+
+      if (policyData) {
+        const paymentData = await MotorPolicyPayment.findOne({
+          policyNumber: policyData.policyNumber
+        }).lean();
+
+        if (paymentData) {
+          const result = {
+            policyNumber: policyData.policyNumber,
+            partnerName: policyData.partnerName,
+            db_payOutCommission: paymentData.payOutCommission,
+            excel_payOutCommission: payOutCommission
+          };
+
+          comparisonResults.push(result);
+        }
+      }
+    }
+
+    res.status(200).json({
+      message: 'File uploaded and data processed successfully.',
+      partnerName: comparisonResults[0]?.partnerName || 'Unknown Partner',
+      data: comparisonResults,
+      status: 'Success'
     });
-
-    const additionalData = additionalDbData
-      .map((dbRow) => {
-        const paymentRow = paymentData.find(
-          (paymentItem) => paymentItem.policyNumber === dbRow.policyNumber
-        );
-
-        return {
-          partnerName: dbRow.partnerName,
-          db: {
-            policyNumber: dbRow.policyNumber,
-            partnerName: dbRow.partnerName,
-            payOutCommission: paymentRow ? paymentRow.payOutCommission : 0,
-          },
-          excel: {
-            policyNumber: dbRow.policyNumber,
-            payOutCommission: 0,
-            partnerName: dbRow.partnerName,
-          },
-          commissionDifference: paymentRow ? paymentRow.payOutCommission : 0,
-          hasDifference: true,
-        };
-      })
-      .filter((diff) => partnerNames.has(diff.partnerName));
-
-    const response = {
-      partnerName: extractedData[0].partnerName,
-      message: "File uploaded and data processed successfully.",
-      status: "Success",
-      data: [...allData, ...additionalData].map((diff) => ({
-        policyNumber: diff.db.policyNumber || diff.excel.policyNumber,
-        partnerName: diff.partnerName,
-        safeKaroCommission: diff.db.payOutCommission,
-        brokerCommission: diff.excel.payOutCommission,
-        commissionDifference: diff.commissionDifference,
-        hasDifference: diff.hasDifference,
-      })),
-    };
-
-    fs.writeFileSync(partnerDataFilePath, JSON.stringify(response, null, 2));
-
-    res.status(200).json(response);
   } catch (error) {
-    console.error("Error processing file:", error);
-    res
-      .status(500)
-      .json({ message: "Error processing file", error: error.message });
+    console.error(error);
+    res.status(500).json({
+      message: 'An error occurred while processing the file.',
+      error: error.message,
+      status: 'Error'
+    });
   }
 };
+
