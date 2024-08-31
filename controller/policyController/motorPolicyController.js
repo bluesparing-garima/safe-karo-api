@@ -318,90 +318,59 @@ export const updateMotorPolicyDocument = async (req, res) => {
 // Upload motor policy documents by excel.
 export const updateMotorPolicyFromExcel = async (req, res) => {
   try {
-    if (!req.file) {
+    const file = req.file;
+    if (!file) {
       console.log("No file was uploaded.");
       return res.status(400).json({ message: "No file was uploaded." });
     }
 
-    const file = req.file;
-    const fileHash = computeHash(file.buffer);
-    console.log(`File hash: ${fileHash}`);
-
-    let storedHashes = [];
-    if (fs.existsSync(hashFilePath)) {
-      const rawHashData = fs.readFileSync(hashFilePath);
-      storedHashes = JSON.parse(rawHashData);
-    }
-    console.log(`Stored hashes: ${storedHashes}`);
-
-    if (storedHashes.includes(fileHash)) {
-      console.log("This file has already been uploaded.");
-      return res.status(400).json({ message: "This file has already been uploaded." });
-    }
-
     const workbook = XLSX.read(file.buffer, { type: 'buffer' });
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { raw: true });
-
+    const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { raw: true });
     console.log(`Parsed data from sheet: ${JSON.stringify(worksheet)}`);
 
-    const updates = worksheet.map((row) => {
-      return {
-        policyNumber: typeof (row.policyNumber || row["Policy Number"]) === 'string' ? (row.policyNumber || row["Policy Number"]).trim() : "",
-        currentPolicy: typeof (row.currentPolicy || row["Current Policy"]) === 'string' ? row.currentPolicy || row["Current Policy"] : "",
-        rcFront: typeof row.rcFront === 'string' ? row.rcFront.trim() : "",
-        rcBack: typeof row.rcBack === 'string' ? row.rcBack.trim() : "",
-        previousPolicy: typeof row.previousPolicy === 'string' ? row.previousPolicy.trim() : "",
-        survey: typeof row.survey === 'string' ? row.survey.trim() : "",
-        puc: typeof row.puc === 'string' ? row.puc.trim() : "",
-        fitness: typeof row.fitness === 'string' ? row.fitness.trim() : "",
-        proposal: typeof row.proposal === 'string' ? row.proposal.trim() : "",
-        other: typeof row.other === 'string' ? row.other.trim() : ""
-      };
-    });
+    const updates = worksheet.map(row => ({
+      policyNumber: row.policyNumber|| row["Policy Number"]?.trim() || "",
+      currentPolicy: row.currentPolicy || row["Current Policy"] || "",
+      rcFront: row.rcFront?.trim() || "",
+      rcBack: row.rcBack?.trim() || "",
+      previousPolicy: row.previousPolicy?.trim() || "",
+      survey: row.survey?.trim() || "",
+      puc: row.puc?.trim() || "",
+      fitness: row.fitness?.trim() || "",
+      proposal: row.proposal?.trim() || "",
+      other: row.other?.trim() || ""
+    }));
 
     for (const update of updates) {
-      const query = { policyNumber: update.policyNumber };
-      let existingRecord = await MotorPolicyModel.findOneAndUpdate(query);
+      const existingRecord = await MotorPolicyModel.findOne({ policyNumber: update.policyNumber });
 
       if (existingRecord) {
-        existingRecord.currentPolicy = update.currentPolicy || existingRecord.currentPolicy;
-        existingRecord.rcFront = update.rcFront || existingRecord.rcFront;
-        existingRecord.rcBack = update.rcBack || existingRecord.rcBack;
-        existingRecord.previousPolicy = update.previousPolicy || existingRecord.previousPolicy;
-        existingRecord.survey = update.survey || existingRecord.survey;
-        existingRecord.puc = update.puc || existingRecord.puc;
-        existingRecord.fitness = update.fitness || existingRecord.fitness;
-        existingRecord.proposal = update.proposal || existingRecord.proposal;
-        existingRecord.other = update.other || existingRecord.other;
+        Object.assign(existingRecord, {
+          currentPolicy: update.currentPolicy || existingRecord.currentPolicy,
+          rcFront: update.rcFront || existingRecord.rcFront,
+          rcBack: update.rcBack || existingRecord.rcBack,
+          previousPolicy: update.previousPolicy || existingRecord.previousPolicy,
+          survey: update.survey || existingRecord.survey,
+          puc: update.puc || existingRecord.puc,
+          fitness: update.fitness || existingRecord.fitness,
+          proposal: update.proposal || existingRecord.proposal,
+          other: update.other || existingRecord.other
+        });
         await existingRecord.save();
-        console.log(`Updated existing record: ${JSON.stringify(existingRecord)}`);
+        console.log(`Updated existing record: ${existingRecord.policyNumber}`);
       } else {
         await MotorPolicyModel.create({
-          policyNumber: update.policyNumber,
-          currentPolicy: update.currentPolicy,
-          rcFront: update.rcFront,
-          rcBack: update.rcBack,
-          previousPolicy: update.previousPolicy,
-          survey: update.survey,
-          puc: update.puc,
-          fitness: update.fitness,
-          proposal: update.proposal,
-          other: update.other,
+          ...update,
           createdBy: "partner",
         });
         console.log(`Created new record with policy number: ${update.policyNumber}`);
       }
     }
 
-    storedHashes.push(fileHash);
-    fs.writeFileSync(hashFilePath, JSON.stringify(storedHashes, null, 2));
-    console.log("File hash saved successfully.");
-
-    res.status(200).json({ message: "Motor policies updated successfully." });
+    return res.status(200).json({ message: "Motor policies updated successfully." });
   } catch (error) {
     console.error("Error occurred while updating motor policies:", error);
-    res.status(500).json({ message: "Internal Server Error" });
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
