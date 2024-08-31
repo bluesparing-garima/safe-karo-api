@@ -97,18 +97,20 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Set storage engine
 const storage = multer.diskStorage({
-  destination: path.join(__dirname, "../uploads/"),
+  destination: (req, file, cb) => {
+    // Define the directory for uploads
+    const uploadPath = path.join(__dirname, "../uploads/");
+    cb(null, uploadPath);
+  },
   filename: (req, file, cb) => {
-    cb(
-      null,
-      file.fieldname + "_" + Date.now() + path.extname(file.originalname)
-    );
+    // Create a unique filename using the original name, fieldname, and timestamp
+    const uniqueSuffix = `${file.fieldname}_${Date.now()}${path.extname(file.originalname)}`;
+    cb(null, uniqueSuffix);
   },
 });
 
-// Check File Type
+// Check file type with an allowed mime type list
 const checkFileType = (file, cb) => {
   const allowedTypes = [
     "image/jpeg",
@@ -117,9 +119,10 @@ const checkFileType = (file, cb) => {
     "image/gif",
     "application/pdf",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    "application/vnd.ms-excel"
+    "application/vnd.ms-excel",
   ];
 
+  // Check if the file's MIME type is in the allowed list
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
@@ -132,7 +135,7 @@ const checkFileType = (file, cb) => {
   }
 };
 
-// Initialize upload
+// Initialize upload with storage, file size limit, and file filter
 const upload = multer({
   storage: storage,
   limits: { fileSize: 2000000 }, // Limit file size to 2MB
