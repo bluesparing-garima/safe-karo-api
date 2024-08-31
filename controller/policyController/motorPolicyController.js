@@ -616,9 +616,14 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
       profileMap[profile._id] = profile;
     });
 
-    // Fetching related payments concurrently
+    // Fetch related payments and bookings concurrently
     const policyNumbers = policies.map(policy => policy.policyNumber);
+
     const payments = await MotorPolicyPaymentModel.find({
+      policyNumber: { $in: policyNumbers },
+    }).lean();
+
+    const bookings = await BookingRequestModel.find({
       policyNumber: { $in: policyNumbers },
     }).lean();
 
@@ -627,9 +632,29 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
       paymentMap[payment.policyNumber] = payment;
     });
 
-    const policiesWithDetails = policies.map(policy => {
+    const bookingMap = {};
+    bookings.forEach(booking => {
+      bookingMap[booking.policyNumber] = booking;
+    });
+
+    const policiesWithDetails = await Promise.all(policies.map(async (policy) => {
       const payment = paymentMap[policy.policyNumber] || {};
       const userProfile = profileMap[policy.partnerName] || profileMap[policy.partnerId] || {};
+      const booking = bookingMap[policy.policyNumber] || {};
+
+      // Initialize brokerTimer and leadTimer as empty
+      let brokerTimer = booking.timer || "";
+      let leadTimer = "";
+      let leadDate = "";
+
+      // If there is a leadId, fetch the lead and its timer
+      if (booking.leadId) {
+        const lead = await leadModel.findById(booking.leadId).lean();
+        if (lead) {
+          leadTimer = lead.timer || "";
+          leadDate = lead.createdOn || "";
+        }
+      }
 
       return {
         ...policy,
@@ -659,11 +684,14 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
         paymentCreatedOn: payment.createdOn || 0,
         paymentUpdatedBy: payment.updatedBy || 0,
         paymentUpdatedOn: payment.updatedOn || 0,
+        brokerTimer,
+        leadTimer,
+        leadDate,
       };
-    });
+    }));
 
     res.status(200).json({
-      message: `Motor Policies from ${startDate} to ${endDate} with payment details.`,
+      message: `Motor Policies from ${startDate} to ${endDate} with payment and timer details.`,
       data: policiesWithDetails,
       success: true,
       status: "success",
@@ -677,6 +705,7 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
     });
   }
 };
+
 
 // Check Vehicle Number exist or not.
 export const validateVehicleNumber = async (req, res) => {
