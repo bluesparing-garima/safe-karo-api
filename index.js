@@ -5,6 +5,8 @@ import cors from "cors";
 import connectDB from "./config/connectdb.js";
 import userRoutes from "./routes/userRoutes.js";
 import path from "path";
+import { fileURLToPath } from 'url';
+
 // middleware
 import {
   requestLogger,
@@ -77,10 +79,19 @@ app.use(cors());
 
 // Database Connection
 connectDB(DATABASE_URL);
+
 // if deployed successfully
 app.get("/", (req, res) => {
   res.send("backend api deployed successfully!!!!!");
 });
+
+// Derive __dirname from import.meta.url
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+import serveIndex from 'serve-index';
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')), serveIndex(path.join(__dirname, 'uploads'), { icons: true }));
 
 // JSON
 app.use(express.json());
