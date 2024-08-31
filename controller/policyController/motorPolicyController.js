@@ -445,12 +445,11 @@ export const updateMotorPolicyDates = async (req, res) => {
 
 // Create Motor Policy
 export const createMotorPolicy = async (req, res) => {
-  // upload.array('rcback', 10)(req, res, (err) => {
   upload(req, res, async (err) => {
     if (err) {
-      return res.status(400).json({ message: err.message });
+      return res.status(400).json({ message: err });
     }
-    if (!req.files || req.files.length === 0) {
+    if (!req.files || Object.keys(req.files).length === 0) {
       return res.status(400).json({ message: "No files selected!" });
     }
 
@@ -501,13 +500,13 @@ export const createMotorPolicy = async (req, res) => {
       isActive,
     } = req.body;
 
-    // Handle file uploads
-    const fileDetails = Object.keys(req.files).reduce((acc, key) => {
-      req.files[key].forEach((file) => {
-        acc[file.fieldname] = file.filename;
-      });
-      return acc;
-    }, {});
+    const fileDetails = {};
+    Object.keys(req.files).forEach((key) => {
+      const fileArray = req.files[key];
+      if (Array.isArray(fileArray)) {
+        fileDetails[key] = fileArray.map(file => file.filename).join(',');
+      }
+    });
 
     const formattedIssueDate = new Date(issueDate);
 
@@ -553,26 +552,16 @@ export const createMotorPolicy = async (req, res) => {
       finalPremium,
       paymentMode,
       policyCreatedBy,
+      ...fileDetails, 
       productType,
       createdBy,
       isActive: isActive !== undefined ? isActive : true,
       updatedBy: null,
       updatedOn: null,
-      // Add document fields
-      currentPolicy:fileDetails.currentPolicy || "",
-      rcFront: fileDetails.rcFront || "",
-      rcBack: fileDetails.rcBack || "",
-      survey: fileDetails.survey || "",
-      previosPolicy: fileDetails.previosPolicy || "",
-      puc: fileDetails.puc || "",
-      fitness: fileDetails.fitness || "",
-      proposal: fileDetails.proposal || "",
     });
 
     try {
-      const existingMotorPolicy = await MotorPolicyModel.findOne({
-        policyNumber,
-      });
+      const existingMotorPolicy = await MotorPolicyModel.findOne({ policyNumber });
       if (existingMotorPolicy) {
         return res.status(400).json({
           status: "error",
@@ -611,7 +600,7 @@ export const createMotorPolicy = async (req, res) => {
         createdBy: savedMotorPolicy.createdBy,
       });
 
-      const savedMotorPolicyPayment = await newMotorPolicyPayment.save();
+      await newMotorPolicyPayment.save();
 
       const existingBookingRequest = await BookingRequestModel.findOne({
         policyNumber,
@@ -625,10 +614,9 @@ export const createMotorPolicy = async (req, res) => {
         status: "success",
         success: true,
         message: `Policy Number ${policyNumber} created successfully`,
-        data: savedMotorPolicy,  // Ensure this includes all document fields
+        data: savedMotorPolicy,
       });
     } catch (err) {
-      console.error("Error saving motor policy:", err.message);
       return res.status(400).json({
         status: "error",
         success: false,
