@@ -271,6 +271,120 @@ export const uploadMotorPolicy = async (req, res) => {
   }
 };
 
+// Upload motor policy documents
+export const updateMotorPolicyDocument = async (req, res) => {
+  try {
+    const { policyNumber, currentPolicy } = req.body;
+
+    if (!policyNumber) {
+      return res.status(400).json({ message: "Policy number is required." });
+    }
+
+    const updateFields = {};
+
+    if (currentPolicy) {
+      updateFields.currentPolicy = currentPolicy;
+    }
+
+    if (Object.keys(updateFields).length === 0) {
+      return res.status(400).json({ message: "No valid fields to update." });
+    }
+
+    updateFields.updatedOn = Date.now();
+    if (updatedBy) {
+      updateFields.updatedBy = updatedBy;
+    }
+
+    const updatedPolicy = await MotorPolicy.findOneAndUpdate(
+      { policyNumber },
+      { $set: updateFields },
+      { new: true }
+    );
+
+    if (!updatedPolicy) {
+      return res.status(404).json({ message: "Policy not found." });
+    }
+
+    res.status(200).json({
+      message: "Motor policy document updated successfully.",
+      data: updatedPolicy,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+// Upload motor policy documents by excel.
+export const updateMotorPolicyFromExcel = async (req, res) => {
+  try {
+    if (!req.file) {
+      console.log("No file was uploaded.");
+      return res.status(400).json({ message: "No file was uploaded." });
+    }
+
+    const file = req.file;
+    const fileHash = computeHash(file.buffer);
+    console.log(`File hash: ${fileHash}`);
+
+    let storedHashes = [];
+    if (fs.existsSync(hashFilePath)) {
+      const rawHashData = fs.readFileSync(hashFilePath);
+      storedHashes = JSON.parse(rawHashData);
+    }
+    console.log(`Stored hashes: ${storedHashes}`);
+
+    if (storedHashes.includes(fileHash)) {
+      console.log("This file has already been uploaded.");
+      return res.status(400).json({ message: "This file has already been uploaded." });
+    }
+
+    const workbook = XLSX.read(file.buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { raw: true });
+
+    console.log(`Parsed data from sheet: ${JSON.stringify(worksheet)}`);
+
+    const updates = worksheet.map((row) => {
+      const policyNumber = row.policyNumber || row["Policy Number"] || "";
+      const currentPolicy = row.currentPolicy || row["Current Policy"] || "";
+
+      return {
+        policyNumber: typeof policyNumber === 'string' ? policyNumber.trim() : "",
+        currentPolicy: typeof currentPolicy === 'string' ? currentPolicy : "",
+      };
+    });
+
+    for (const update of updates) {
+      const query = { policyNumber: update.policyNumber };
+      let existingRecord = await MotorPolicyModel.findOne(query);
+
+      if (existingRecord) {
+        existingRecord.currentPolicy = update.currentPolicy || existingRecord.currentPolicy;
+        await existingRecord.save();
+        console.log(`Updated existing record: ${JSON.stringify(existingRecord)}`);
+      } else {
+        // Create a new record with 'createdBy' set to 'partner' if not present
+        await MotorPolicyModel.create({
+          policyNumber: update.policyNumber,
+          currentPolicy: update.currentPolicy,
+          createdBy: "partner", // Set default value for createdBy
+        });
+        console.log(`Created new record with policy number: ${update.policyNumber}`);
+      }
+    }
+
+    storedHashes.push(fileHash);
+    fs.writeFileSync(hashFilePath, JSON.stringify(storedHashes, null, 2));
+    console.log("File hash saved successfully.");
+
+    res.status(200).json({ message: "Motor policies updated successfully." });
+  } catch (error) {
+    console.error("Error occurred while updating motor policies:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
 // Update motor policy dates
 export const updateMotorPolicyDates = async (req, res) => {
   try {
