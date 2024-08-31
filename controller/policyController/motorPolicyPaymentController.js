@@ -141,6 +141,7 @@ export const policyStatusManage = async (req, res) => {
         payInBalance,
         payOutBalance,
         partnerBalance,
+        brokerBalance,
         remarks,
         updatedBy,
         updatedOn,
@@ -159,6 +160,7 @@ export const policyStatusManage = async (req, res) => {
             payInBalance,
             payOutBalance,
             partnerBalance,
+            brokerBalance,
             createdOn: new Date(),
             transactionCode,
             updatedOn,
@@ -172,6 +174,7 @@ export const policyStatusManage = async (req, res) => {
           existingPayment.payInBalance = payInBalance;
           existingPayment.payOutBalance = payOutBalance;
           existingPayment.partnerBalance = partnerBalance;
+          existingPayment.brokerBalance=brokerBalance;
           existingPayment.updatedOn = updatedOn;
           existingPayment.transactionCode = transactionCode;
           existingPayment.remarks = remarks;
@@ -182,72 +185,44 @@ export const policyStatusManage = async (req, res) => {
         const policyDate = new Date(existingPayment.policyDate);
 
         if (["UnPaid", "Partial", "Paid"].includes(payOutPaymentStatus)) {
-          let existingDebit = await debitModel.findOne({ policyNumber });
+          const newDebit = new debitModel({
+            transactionCode,
+            policyNumber,
+            partnerId: existingPayment.partnerId,
+            payOutAmount,
+            payOutCommission,
+            payOutPaymentStatus,
+            payOutBalance,
+            partnerBalance,
+            policyDate: policyDate,
+            createdBy: existingPayment.createdBy,
+            updatedBy,
+            createdOn: existingPayment.createdOn,
+            updatedOn: updatedOn,
+            remarks,
+          });
 
-          if (existingDebit) {
-            existingDebit.transactionCode = transactionCode;
-            existingDebit.payOutAmount = payOutAmount;
-            existingDebit.payOutCommission = payOutCommission;
-            existingDebit.payOutPaymentStatus = payOutPaymentStatus;
-            existingDebit.payOutBalance = payOutBalance;
-            existingDebit.partnerBalance = partnerBalance;
-            existingDebit.updatedBy = updatedBy;
-            existingDebit.updatedOn = updatedOn;
-            existingDebit.policyDate = policyDate;
-            existingDebit.remarks = remarks; 
-            await existingDebit.save();
-          } else {
-            const newDebit = new debitModel({
-              transactionCode,
-              policyNumber,
-              partnerId: existingPayment.partnerId,
-              payOutAmount,
-              payOutCommission,
-              payOutPaymentStatus,
-              payOutBalance,
-              partnerBalance,
-              policyDate: policyDate,
-              createdBy: existingPayment.createdBy,
-              updatedBy,
-              createdOn: existingPayment.createdOn,
-              updatedOn: updatedOn,
-              remarks,
-            });
-
-            await newDebit.save();
-          }
+          await newDebit.save();
         }
 
         if (["UnPaid", "Partial", "Paid"].includes(payInPaymentStatus)) {
-          let existingCredit = await creditModel.findOne({ policyNumber });
+          const newCredit = new creditModel({
+            transactionCode,
+            policyNumber,
+            brokerId: existingPayment.brokerId,
+            brokerBalance,
+            payInAmount,
+            payInPaymentStatus,
+            payInBalance,
+            policyDate: policyDate,
+            createdBy: existingPayment.createdBy,
+            updatedBy,
+            createdOn: existingPayment.createdOn,
+            updatedOn: updatedOn,
+            remarks,
+          });
 
-          if (existingCredit) {
-            existingCredit.payInAmount = payInAmount;
-            existingCredit.payInPaymentStatus = payInPaymentStatus;
-            existingCredit.payInBalance = payInBalance;
-            existingCredit.updatedBy = updatedBy;
-            existingCredit.updatedOn = updatedOn;
-            existingCredit.policyDate = policyDate;
-            existingCredit.remarks = remarks;
-            await existingCredit.save();
-          } else {
-            const newCredit = new creditModel({
-              transactionCode,
-              policyNumber,
-              partnerId: existingPayment.partnerId,
-              payInAmount,
-              payInPaymentStatus,
-              payInBalance,
-              policyDate: policyDate,
-              createdBy: existingPayment.createdBy,
-              updatedBy,
-              createdOn: existingPayment.createdOn,
-              updatedOn: updatedOn,
-              remarks,
-            });
-
-            await newCredit.save();
-          }
+          await newCredit.save();
         }
 
         return savedPayment;
@@ -272,7 +247,6 @@ export const policyStatusManage = async (req, res) => {
     });
   }
 };
-
 
 // Get UnPaid and Partial Paid by date range and partnerId
 export const getUnPaidAndPartialPaidPayments = async (req, res) => {
