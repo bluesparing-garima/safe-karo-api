@@ -590,6 +590,7 @@ export const createMotorPolicy = async (req, res) => {
       updatedBy: null,
       updatedOn: null,
       // Add document fields
+      currentPolicy:fileDetails.currentPolicy || "",
       rcFront: fileDetails.rcFront || "",
       rcBack: fileDetails.rcBack || "",
       survey: fileDetails.survey || "",
