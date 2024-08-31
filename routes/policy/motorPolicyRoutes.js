@@ -15,10 +15,14 @@ import {
   uploadMotorPolicy,
   updateMotorPolicyDates,
   getMotorPoliciesByDateRange,
-  getInactiveMotorPolicies 
+  getInactiveMotorPolicies,
+  updateMotorPolicyDocument,
+  updateMotorPolicyFromExcel
 } from "../../controller/policyController/motorPolicyController.js";
 const router = express.Router();
 
+router.put("/upload-excel",logActivity,uploadSingleExcel,updateMotorPolicyFromExcel);
+router.put("/update-documents",logActivity,updateMotorPolicyDocument);
 router.post("/", logActivity, createMotorPolicy);
 router.get("/", logActivity, getMotorPolicies);
 router.get("/date-range",logActivity,getMotorPoliciesByDateRange);
