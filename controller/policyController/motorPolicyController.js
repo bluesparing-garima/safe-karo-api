@@ -362,7 +362,7 @@ export const updateMotorPolicyFromExcel = async (req, res) => {
 
     for (const update of updates) {
       const query = { policyNumber: update.policyNumber };
-      let existingRecord = await MotorPolicyModel.findOne(query);
+      let existingRecord = await MotorPolicyModel.findOneAndUpdate(query);
 
       if (existingRecord) {
         existingRecord.currentPolicy = update.currentPolicy || existingRecord.currentPolicy;
@@ -388,7 +388,7 @@ export const updateMotorPolicyFromExcel = async (req, res) => {
           fitness: update.fitness,
           proposal: update.proposal,
           other: update.other,
-          createdBy: "partner", // Set default value for createdBy
+          createdBy: "partner",
         });
         console.log(`Created new record with policy number: ${update.policyNumber}`);
       }
