@@ -329,41 +329,19 @@ export const updateMotorPolicyFromExcel = async (req, res) => {
     console.log(`Parsed data from sheet: ${JSON.stringify(worksheet)}`);
 
     const updates = worksheet.map(row => ({
-      policyNumber: row.policyNumber|| row["Policy Number"]?.trim() || "",
-      currentPolicy: row.currentPolicy || row["Current Policy"] || "",
-      rcFront: row.rcFront?.trim() || "",
-      rcBack: row.rcBack?.trim() || "",
-      previousPolicy: row.previousPolicy?.trim() || "",
-      survey: row.survey?.trim() || "",
-      puc: row.puc?.trim() || "",
-      fitness: row.fitness?.trim() || "",
-      proposal: row.proposal?.trim() || "",
-      other: row.other?.trim() || ""
+      policyNumber: row.policyNumber || row["Policy Number"] || "",
+      currentPolicy: row.currentPolicy?.trim() || row["Current Policy"]?.trim() || "",
     }));
 
     for (const update of updates) {
       const existingRecord = await MotorPolicyModel.findOne({ policyNumber: update.policyNumber });
 
       if (existingRecord) {
-        Object.assign(existingRecord, {
-          currentPolicy: update.currentPolicy || existingRecord.currentPolicy,
-          rcFront: update.rcFront || existingRecord.rcFront,
-          rcBack: update.rcBack || existingRecord.rcBack,
-          previousPolicy: update.previousPolicy || existingRecord.previousPolicy,
-          survey: update.survey || existingRecord.survey,
-          puc: update.puc || existingRecord.puc,
-          fitness: update.fitness || existingRecord.fitness,
-          proposal: update.proposal || existingRecord.proposal,
-          other: update.other || existingRecord.other
-        });
+        existingRecord.currentPolicy = update.currentPolicy || existingRecord.currentPolicy;
         await existingRecord.save();
-        console.log(`Updated existing record: ${existingRecord.policyNumber}`);
+        console.log(`Updated currentPolicy for record: ${existingRecord.policyNumber}`);
       } else {
-        await MotorPolicyModel.create({
-          ...update,
-          createdBy: "partner",
-        });
-        console.log(`Created new record with policy number: ${update.policyNumber}`);
+        console.log(`No record found with policy number: ${update.policyNumber}`);
       }
     }
 
@@ -373,6 +351,7 @@ export const updateMotorPolicyFromExcel = async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
 
 // Update motor policy dates
 export const updateMotorPolicyDates = async (req, res) => {
