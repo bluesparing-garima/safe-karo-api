@@ -346,12 +346,17 @@ export const updateMotorPolicyFromExcel = async (req, res) => {
     console.log(`Parsed data from sheet: ${JSON.stringify(worksheet)}`);
 
     const updates = worksheet.map((row) => {
-      const policyNumber = row.policyNumber || row["Policy Number"] || "";
-      const currentPolicy = row.currentPolicy || row["Current Policy"] || "";
-
       return {
-        policyNumber: typeof policyNumber === 'string' ? policyNumber.trim() : "",
-        currentPolicy: typeof currentPolicy === 'string' ? currentPolicy : "",
+        policyNumber: typeof (row.policyNumber || row["Policy Number"]) === 'string' ? (row.policyNumber || row["Policy Number"]).trim() : "",
+        currentPolicy: typeof (row.currentPolicy || row["Current Policy"]) === 'string' ? row.currentPolicy || row["Current Policy"] : "",
+        rcFront: typeof row.rcFront === 'string' ? row.rcFront.trim() : "",
+        rcBack: typeof row.rcBack === 'string' ? row.rcBack.trim() : "",
+        previousPolicy: typeof row.previousPolicy === 'string' ? row.previousPolicy.trim() : "",
+        survey: typeof row.survey === 'string' ? row.survey.trim() : "",
+        puc: typeof row.puc === 'string' ? row.puc.trim() : "",
+        fitness: typeof row.fitness === 'string' ? row.fitness.trim() : "",
+        proposal: typeof row.proposal === 'string' ? row.proposal.trim() : "",
+        other: typeof row.other === 'string' ? row.other.trim() : ""
       };
     });
 
@@ -361,13 +366,28 @@ export const updateMotorPolicyFromExcel = async (req, res) => {
 
       if (existingRecord) {
         existingRecord.currentPolicy = update.currentPolicy || existingRecord.currentPolicy;
+        existingRecord.rcFront = update.rcFront || existingRecord.rcFront;
+        existingRecord.rcBack = update.rcBack || existingRecord.rcBack;
+        existingRecord.previousPolicy = update.previousPolicy || existingRecord.previousPolicy;
+        existingRecord.survey = update.survey || existingRecord.survey;
+        existingRecord.puc = update.puc || existingRecord.puc;
+        existingRecord.fitness = update.fitness || existingRecord.fitness;
+        existingRecord.proposal = update.proposal || existingRecord.proposal;
+        existingRecord.other = update.other || existingRecord.other;
         await existingRecord.save();
         console.log(`Updated existing record: ${JSON.stringify(existingRecord)}`);
       } else {
-        // Create a new record with 'createdBy' set to 'partner' if not present
         await MotorPolicyModel.create({
           policyNumber: update.policyNumber,
           currentPolicy: update.currentPolicy,
+          rcFront: update.rcFront,
+          rcBack: update.rcBack,
+          previousPolicy: update.previousPolicy,
+          survey: update.survey,
+          puc: update.puc,
+          fitness: update.fitness,
+          proposal: update.proposal,
+          other: update.other,
           createdBy: "partner", // Set default value for createdBy
         });
         console.log(`Created new record with policy number: ${update.policyNumber}`);
@@ -459,7 +479,7 @@ export const createMotorPolicy = async (req, res) => {
   // upload.array('rcback', 10)(req, res, (err) => {
   upload(req, res, async (err) => {
     if (err) {
-      return res.status(400).json({ message: err });
+      return res.status(400).json({ message: err.message });
     }
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ message: "No files selected!" });
@@ -507,20 +527,12 @@ export const createMotorPolicy = async (req, res) => {
       finalPremium,
       paymentMode,
       policyCreatedBy,
-      rcFront,
-      rcBack,
-      survey,
-      previosPolicy,
-      puc,
-      fitness,
-      proposal,
-      currentPolicy,
-      other,
       productType,
       createdBy,
       isActive,
     } = req.body;
 
+    // Handle file uploads
     const fileDetails = Object.keys(req.files).reduce((acc, key) => {
       req.files[key].forEach((file) => {
         acc[file.fieldname] = file.filename;
@@ -572,12 +584,19 @@ export const createMotorPolicy = async (req, res) => {
       finalPremium,
       paymentMode,
       policyCreatedBy,
-      ...fileDetails,
       productType,
       createdBy,
       isActive: isActive !== undefined ? isActive : true,
       updatedBy: null,
       updatedOn: null,
+      // Add document fields
+      rcFront: fileDetails.rcFront || "",
+      rcBack: fileDetails.rcBack || "",
+      survey: fileDetails.survey || "",
+      previosPolicy: fileDetails.previosPolicy || "",
+      puc: fileDetails.puc || "",
+      fitness: fileDetails.fitness || "",
+      proposal: fileDetails.proposal || "",
     });
 
     try {
@@ -636,9 +655,10 @@ export const createMotorPolicy = async (req, res) => {
         status: "success",
         success: true,
         message: `Policy Number ${policyNumber} created successfully`,
-        data: savedMotorPolicy,
+        data: savedMotorPolicy,  // Ensure this includes all document fields
       });
     } catch (err) {
+      console.error("Error saving motor policy:", err.message);
       return res.status(400).json({
         status: "error",
         success: false,
