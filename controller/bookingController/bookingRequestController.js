@@ -132,7 +132,7 @@ export const getAllBookingRequests = async (req, res) => {
   try {
     const bookings = await BookingRequestModel.find({
       isRejected: false,
-      bookingStatus: "accepted"
+      bookingStatus: "requested"
     });
     
     res.status(200).json({
