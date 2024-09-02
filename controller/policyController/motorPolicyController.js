@@ -777,7 +777,6 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
   }
 };
 
-
 // Check Vehicle Number exist or not.
 export const validateVehicleNumber = async (req, res) => {
   try {
@@ -802,6 +801,64 @@ export const validateVehicleNumber = async (req, res) => {
     res.status(500).json({
       message: "Error checking policy number",
       error: error.message,
+    });
+  }
+};
+
+// Get Motor Policy by Policy Number
+export const getMotorPolicyByPolicyNumber = async (req, res) => {
+  try {
+    const { policyNumber } = req.params;
+    const motorPolicy = await MotorPolicyModel.findOne({ policyNumber });
+
+    if (!motorPolicy) {
+      return res.status(404).json({
+        status: "error",
+        success: false,
+        message: `No Motor Policy found with policy number ${policyNumber}.`,
+      });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      success: true,
+      message: `Motor Policy details retrieved successfully`,
+      data: motorPolicy,
+    });
+  } catch (err) {
+    return res.status(400).json({
+      status: "error",
+      success: false,
+      message: err.message,
+    });
+  }
+};
+
+// Get Motor Policy by Vehicle Number
+export const getMotorPolicyByVehicleNumber = async (req, res) => {
+  try {
+    const { vehicleNumber } = req.params;
+    const motorPolicy = await MotorPolicyModel.findOne({ vehicleNumber });
+
+    if (!motorPolicy) {
+      return res.status(404).json({
+        status: "error",
+        success: false,
+        message: `No Motor Policy found with vehicle number ${vehicleNumber}.`,
+      });
+    }
+
+    return res.status(200).json({
+      status: "success",
+      success: true,
+      message: `Motor Policy details retrieved successfully`,
+      data: motorPolicy,
+    });
+  } catch (err) {
+    return res.status(400).json({
+      status: "error",
+      success: false,
+      message: err.message,
     });
   }
 };
