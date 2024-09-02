@@ -130,7 +130,11 @@ export const validatePolicyNumber = async (req, res) => {
 // Get all bookings
 export const getAllBookingRequests = async (req, res) => {
   try {
-    const bookings = await BookingRequestModel.find({isRejected:false});
+    const bookings = await BookingRequestModel.find({
+      isRejected: false,
+      bookingStatus: "accepted"
+    });
+    
     res.status(200).json({
       message: "Bookings retrieved successfully.",
       data: bookings,
@@ -221,16 +225,15 @@ export const getBookingRequestsByAcceptedBy = async (req, res) => {
       bookingAcceptedBy, 
       bookingStatus: "accepted" 
     });
-
     if (bookings.length === 0) {
       return res.status(404).json({
-        message: `No accepted bookings found for bookingAcceptedBy: ${bookingAcceptedBy}`,
+        message: `No bookings found for bookingAcceptedBy: ${bookingAcceptedBy}`,
         status: "success",
       });
     }
 
     res.status(200).json({
-      message: "Accepted bookings retrieved successfully.",
+      message: "Accepted Bookings retrieved successfully.",
       data: bookings,
       status: "success",
     });
@@ -241,7 +244,6 @@ export const getBookingRequestsByAcceptedBy = async (req, res) => {
     });
   }
 };
-
 
 // Get booking requests by partnerId
 export const getBookingRequestsByPartnerId = async (req, res) => {
