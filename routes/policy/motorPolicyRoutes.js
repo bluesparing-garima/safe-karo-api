@@ -17,7 +17,9 @@ import {
   getMotorPoliciesByDateRange,
   getInactiveMotorPolicies,
   updateMotorPolicyDocument,
-  updateMotorPolicyFromExcel
+  updateMotorPolicyFromExcel,
+  getMotorPolicyByPolicyNumber,
+  getMotorPolicyByVehicleNumber
 } from "../../controller/policyController/motorPolicyController.js";
 const router = express.Router();
 
@@ -35,6 +37,8 @@ router.put(
   uploadSingleExcel,
   updateMotorPolicyDates
 );
+router.get('/policy-number/:policyNumber', getMotorPolicyByPolicyNumber);
+router.get('/vehicle-number/:vehicleNumber', getMotorPolicyByVehicleNumber);
 router.get("/policyId/:policyId", logActivity, getMotorPolicyByPolicyId);
 router.get("/partner/:partnerId", logActivity, getMotorPolicyByPartnerId);
 router.get(
