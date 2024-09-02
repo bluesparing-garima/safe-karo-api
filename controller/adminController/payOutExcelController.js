@@ -4,6 +4,7 @@ import path from "path";
 import crypto from "crypto";
 import PayOutExcelDataModel from "../../models/adminModels/payOutExcelDataSchema.js";
 import MotorPolicyPaymentModel from "../../models/policyModel/motorPolicyPaymentSchema.js";
+import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
 
 const dataFilePath = path.join(process.cwd(), "data", "data.json");
 const hashFilePath = path.join(process.cwd(), "data", "hashes.json");
@@ -31,151 +32,148 @@ const formatDateString = (dateValue) => {
 };
 
 const uploadExcel = async (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).send("No files were uploaded.");
-      }
-  
-      const file = req.file;
-      const fileHash = computeHash(file.buffer);
-  
-      let storedHashes = [];
-      if (fs.existsSync(hashFilePath)) {
-        const rawHashData = fs.readFileSync(hashFilePath);
-        storedHashes = JSON.parse(rawHashData);
-      }
-  
-      if (storedHashes.includes(fileHash)) {
-        return res
-          .status(400)
-          .json({ message: "File has already been uploaded." });
-      }
-  
-      const workbook = XLSX.read(file.buffer, { type: "buffer" });
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
-  
-      const extractedData = worksheet.map((row) => ({
-        productType: (row.productType || row["Product Type"] || "").toLowerCase(),
-        subCategory: (row.subCategory || row["SubCategory"] || "").toLowerCase(),
-        fuelType: (row.fuelType || row["Fuel Type"] || "").toLowerCase(),
-        engine: row.engine || row["Engine"] || "",
-        weight: row.weight || row["Weight"] || "0",
-        ncb: (row.ncb || row["NCB"] || "").toLowerCase(),
-        policyType: (row.policyType || row["Policy Type"] || "").toLowerCase(),
-        rto: (row.rto || row["RTO"] || "").toLowerCase(),
-        caseType: (row.caseType || row["Case Type"] || "").toLowerCase(),
-        companyName: (row.companyName || row["Company Name"] || "").toLowerCase(),
-        make: (row.make || row["Make"] || "").toLowerCase(),
-        model: (row.model || row["Model"] || "").toLowerCase(),
-        vehicleAge: (row.vehicleAge || row["Vehicle Age"] || "").toLowerCase(),
-        od: row.od || row["OD"] || "",
-        tp: row.tp || row["TP"] || "",
-        createdBy: "admin",
-        createdOn: new Date(),
-        updatedBy: null,
-        updatedOn: null,
-      }));
-  
-      let newRecords = [];
-      let updatedRecords = [];
-  
-      for (const record of extractedData) {
-        const existingRecord = await PayOutExcelDataModel.findOne({
-          productType: record.productType,
-          subCategory: record.subCategory,
-          fuelType: record.fuelType,
-          engine: record.engine,
-          weight: record.weight,
-          ncb: record.ncb,
-          policyType: record.policyType,
-          rto: record.rto,
-          caseType: record.caseType,
-          companyName: record.companyName,
-          make: record.make,
-          model: record.model,
-          vehicleAge: record.vehicleAge,
+  try {
+    if (!req.file) {
+      return res.status(400).send("No files were uploaded.");
+    }
+
+    const file = req.file;
+    const fileHash = computeHash(file.buffer);
+
+    let storedHashes = [];
+    if (fs.existsSync(hashFilePath)) {
+      const rawHashData = fs.readFileSync(hashFilePath);
+      storedHashes = JSON.parse(rawHashData);
+    }
+
+    if (storedHashes.includes(fileHash)) {
+      return res.status(400).json({ message: "File has already been uploaded." });
+    }
+
+    const workbook = XLSX.read(file.buffer, { type: "buffer" });
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { raw: false });
+
+    const extractedData = worksheet.map((row) => ({
+      policyType: row.policyType || row["Policy Type"] || "",
+      caseType: row.caseType || row["Case Type"] || "",
+      productType: row.productType || row["Product Type"] || "",
+      subCategory: row.subCategory || row["SubCategory"] || "",
+      fuelType: row.fuelType || row["Fuel Type"] || "",
+      weight: row.weight || row["Weight"] || 0,
+      ncb: row.ncb || row["NCB"] || "",
+      rto: row.rto || row["RTO"] || "",
+      companyName: row.companyName || row["Company Name"] || "",
+      make: row.make || row["Make"] || "",
+      model: row.model || row["Model"] || "",
+      vehicleAge: row.vehicleAge || row["Vehicle Age"] || "",
+      seatingCapacity: row.seatingCapacity || row["Seating Capacity"] || "",
+      payOutODPercentage: Number(row.payOutODPercentage || row["PayOut OD Percentage"] || 0),
+      payOutTPPercentage: Number(row.payOutTPPercentage || row["PayOut TP Percentage"] || 0),
+      createdBy: "admin",
+      createdOn: new Date(),
+      updatedBy: null,
+      updatedOn: null,
+    }));
+
+    let matchCount = 0;
+    let updateCount = 0;
+
+    for (const data of extractedData) {
+      const lowerCaseData = {
+        policyType: (data.policyType || "").toLowerCase(),
+        caseType: (data.caseType || "").toLowerCase(),
+        productType: (data.productType || "").toLowerCase(),
+        subCategory: (data.subCategory || "").toLowerCase(),
+        fuelType: (data.fuelType || "").toLowerCase(),
+        weight: (data.weight || 0),
+        ncb: (data.ncb || "").toLowerCase(),
+        rto: (data.rto || "").toLowerCase(),
+        companyName: (data.companyName || "").toLowerCase(),
+        make: (data.make || "").toLowerCase(),
+        model: (data.model || "").toLowerCase(),
+        vehicleAge: (data.vehicleAge || "").toLowerCase(),
+        seatingCapacity: data.seatingCapacity,
+      };
+
+      const matchingPolicies = await MotorPolicyModel.find({
+        policyType: { $regex: `^${lowerCaseData.policyType}$`, $options: "i" },
+        caseType: { $regex: `^${lowerCaseData.caseType}$`, $options: "i" },
+        productType: { $regex: `^${lowerCaseData.productType}$`, $options: "i" },
+        subCategory: { $regex: `^${lowerCaseData.subCategory}$`, $options: "i" },
+        fuelType: { $regex: `^${lowerCaseData.fuelType}$`, $options: "i" },
+        weight: lowerCaseData.weight,
+        ncb: { $regex: `^${lowerCaseData.ncb}$`, $options: "i" },
+        rto: { $regex: `^${lowerCaseData.rto}$`, $options: "i" },
+        companyName: { $regex: `^${lowerCaseData.companyName}$`, $options: "i" },
+        make: { $regex: `^${lowerCaseData.make}$`, $options: "i" },
+        model: { $regex: `^${lowerCaseData.model}$`, $options: "i" },
+        vehicleAge: { $regex: `^${lowerCaseData.vehicleAge}$`, $options: "i" },
+        seatingCapacity: lowerCaseData.seatingCapacity
+      }, 'policyNumber');
+
+      if (matchingPolicies.length > 0) {
+        matchCount += matchingPolicies.length;
+        const policyNumbers = matchingPolicies.map(policy => policy.policyNumber);
+
+        const motorPolicyRecords = await MotorPolicyPaymentModel.find({
+          policyNumber: { $in: policyNumbers }
         });
-  
-        if (existingRecord) {
-          existingRecord.od = record.od;
-          existingRecord.tp = record.tp;
-          existingRecord.updatedBy = "admin";
-          existingRecord.updatedOn = new Date();
-          await existingRecord.save();
-          updatedRecords.push(existingRecord);
-        } else {
-          newRecords.push(record);
-        }
-      }
-  
-      if (newRecords.length > 0) {
-        await PayOutExcelDataModel.insertMany(newRecords);
-      }
-  
-      // Update MotorPolicyPaymentModel based on the PayOutExcelDataModel
-      for (const record of extractedData) {
-        const motorPolicyRecord = await MotorPolicyPaymentModel.findOne({
-          productType: record.productType,
-          subCategory: record.subCategory,
-          fuelType: record.fuelType,
-          engine: record.engine,
-          weight: record.weight,
-          ncb: record.ncb,
-          policyType: record.policyType,
-          rto: record.rto,
-          caseType: record.caseType,
-          companyName: record.companyName,
-          make: record.make,
-          model: record.model,
-          vehicleAge: record.vehicleAge,
-        });
-  
-        if (motorPolicyRecord) {
+
+        for (const motorPolicyRecord of motorPolicyRecords) {
+          let updated = false;
+
+          const payOutODPercentage = data.payOutODPercentage || motorPolicyRecord.payOutODPercentage || 0;
+          const payOutTPPercentage = data.payOutTPPercentage || motorPolicyRecord.payOutTPPercentage || 0;
+
           const calculatedPayOutODAmount = Math.round(
-            (motorPolicyRecord.od * (Number(record.od) || 0)) / 100
+            (motorPolicyRecord.od * payOutODPercentage) / 100
           );
           const calculatedPayOutTPAmount = Math.round(
-            (motorPolicyRecord.tp * (Number(record.tp) || 0)) / 100
+            (motorPolicyRecord.tp * payOutTPPercentage) / 100
           );
           const payOutCommission = calculatedPayOutODAmount + calculatedPayOutTPAmount;
-  
-          motorPolicyRecord.payOutODAmount = calculatedPayOutODAmount;
-          motorPolicyRecord.payOutTPAmount = calculatedPayOutTPAmount;
-          motorPolicyRecord.payOutCommission = payOutCommission;
-          motorPolicyRecord.updatedBy = "admin";
-          motorPolicyRecord.updatedOn = new Date();
-          await motorPolicyRecord.save();
+
+          if (
+            motorPolicyRecord.payOutODPercentage !== payOutODPercentage ||
+            motorPolicyRecord.payOutTPPercentage !== payOutTPPercentage ||
+            motorPolicyRecord.payOutODAmount !== calculatedPayOutODAmount ||
+            motorPolicyRecord.payOutTPAmount !== calculatedPayOutTPAmount ||
+            motorPolicyRecord.payOutCommission !== payOutCommission
+          ) {
+            updated = true;
+            motorPolicyRecord.payOutODPercentage = payOutODPercentage;
+            motorPolicyRecord.payOutTPPercentage = payOutTPPercentage;
+            motorPolicyRecord.payOutODAmount = calculatedPayOutODAmount;
+            motorPolicyRecord.payOutTPAmount = calculatedPayOutTPAmount;
+            motorPolicyRecord.payOutCommission = payOutCommission;
+            motorPolicyRecord.updatedBy = "admin";
+            motorPolicyRecord.updatedOn = new Date();
+            await motorPolicyRecord.save();
+          }
+
+          if (updated) {
+            updateCount++;
+          }
         }
       }
-  
-      let existingData = [];
-      if (fs.existsSync(dataFilePath)) {
-        const rawData = fs.readFileSync(dataFilePath);
-        existingData = JSON.parse(rawData);
-      }
-  
-      existingData.push(...newRecords);
-      fs.writeFileSync(dataFilePath, JSON.stringify(existingData, null, 2));
-  
-      // Store the hash of the newly uploaded file
-      storedHashes.push(fileHash);
-      fs.writeFileSync(hashFilePath, JSON.stringify(storedHashes, null, 2));
-  
-      res.status(200).json({
-        message: "File uploaded and data processed successfully.",
-        newRecords,
-        updatedRecords,
-        status: "Success",
-      });
-    } catch (error) {
-      console.error("Error processing file:", error);
-      res
-        .status(500)
-        .json({ message: "Error processing file", error: error.message });
     }
-  };
-  
+
+    storedHashes.push(fileHash);
+    fs.writeFileSync(hashFilePath, JSON.stringify(storedHashes, null, 2));
+
+    res.status(200).json({
+      message: "File uploaded and data processed successfully.",
+      matchCount,
+      updateCount,
+      status: "Success"
+    });
+  } catch (error) {
+    console.error("Error processing file:", error);
+    res.status(500).json({ message: "Error processing file.", status: "Failure" });
+  }
+};
+
 const updatePayOutValuesByPolicyNumber = async (req, res) => {
     try {
       if (!req.file) {
