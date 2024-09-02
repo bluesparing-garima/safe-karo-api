@@ -68,6 +68,9 @@ import adminChart from "./routes/barAndLineChartRoutes/adminChartRoutes.js";
 import bookingChart from "./routes/barAndLineChartRoutes/bookingChartRoutes.js";
 import brokerChart from "./routes/barAndLineChartRoutes/brokerChartRoutes.js";
 
+// pdf reader
+import pdfRoutes from './routes/pdfReaderRoute.js';
+
 import testRoutes from "./routes/testRoutes.js";
 
 const app = express();
@@ -92,6 +95,8 @@ const __dirname = path.dirname(__filename);
 import serveIndex from 'serve-index';
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')), serveIndex(path.join(__dirname, 'uploads'), { icons: true }));
+
+app.use('/api/pdf', pdfRoutes);
 
 // JSON
 app.use(express.json());
