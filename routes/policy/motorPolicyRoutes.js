@@ -41,11 +41,8 @@ router.get('/policy-number/:policyNumber', getMotorPolicyByPolicyNumber);
 router.get('/vehicle-number/:vehicleNumber', getMotorPolicyByVehicleNumber);
 router.get("/policyId/:policyId", logActivity, getMotorPolicyByPolicyId);
 router.get("/partner/:partnerId", logActivity, getMotorPolicyByPartnerId);
-router.get(
-  "/policy-completed-by/:policyCompletedBy",
-  logActivity,
-  getMotorPolicyByPolicyCompletedBy
-);
+router.get("/policy-completed-by/:policyCompletedBy", logActivity, getMotorPolicyByPolicyCompletedBy);
+
 router.put("/:id", logActivity, updateMotorPolicy);
 router.delete("/:id", logActivity, deactivateMotorPolicy);
 router.get("/validatePolicyNumber", logActivity, validatePolicyNumber);
