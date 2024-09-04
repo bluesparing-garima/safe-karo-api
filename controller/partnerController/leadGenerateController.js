@@ -289,30 +289,32 @@ export const updateLead = async (req, res) => {
       );
 
       if (status && status !== existingLead.status) {
-        let notificationFor, notificationBy, role;
+        const notificationBy = existingLead.leadCreatedBy;
+        const notificationFor = existingLead.partnerId;
 
-        // Determine who updated the lead
-        if (updatedBy === 'Operation') {
-          notificationFor = existingLead.partnerId;  // Notify the partner
-          notificationBy = existingLead.leadCreatedBy;  // Notification sent by Operation
-          role = 'operation';
-        } else if (updatedBy === 'partner') {
-          notificationFor = existingLead.leadCreatedBy;  // Notify the operation person
-          notificationBy = existingLead.partnerId;  // Notification sent by Partner
-          role = 'partner';
-        }
+        // Log notification values
+        console.log("NotificationBy:", notificationBy);
+        console.log("NotificationFor:", notificationFor);
 
-        // Create and save the notification
         const newNotification = new NotificationModel({
           title: `Lead Status changed to ${status}`,
           type: 'success',
-          role,
+          isView: false,
+          isActive: true,
           notificationFor,
           notificationBy,
           createdBy: updatedBy,
         });
 
-        await newNotification.save();
+        // Log the notification data to debug
+        console.log("Notification Data:", newNotification);
+
+        // Save the notification
+        await newNotification.save().then(() => {
+          console.log("Notification saved successfully");
+        }).catch((saveError) => {
+          console.error("Error saving notification:", saveError.message);
+        });
       }
 
       res.status(200).json({
@@ -321,6 +323,7 @@ export const updateLead = async (req, res) => {
         status: "success",
       });
     } catch (error) {
+      console.error("Error updating lead:", error.message);
       res.status(500).json({
         status: "failed",
         message: "Unable to update Lead",
@@ -329,7 +332,6 @@ export const updateLead = async (req, res) => {
     }
   });
 };
-
 
 // Delete Lead
 export const deleteLead = async (req, res) => {
