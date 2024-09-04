@@ -1,15 +1,16 @@
 import express from 'express';
-import { createNotification, getNotificationsForUser, markNotificationAsViewed } from '../../controllers/notificationController.js';
+import { 
+  createNotification, 
+  getNotificationsForUser, 
+  markNotificationAsViewed, 
+  getAllNotifications 
+} from '../controller/notificationController.js';
 
 const router = express.Router();
 
-// Create a notification
-router.post('/notifications', createNotification);
-
-// Get notifications for a specific user
-router.get('/notifications/:userId', getNotificationsForUser);
-
-// Mark notification as viewed
-router.put('/notifications/view/:notificationId', markNotificationAsViewed);
+router.post('/', createNotification);
+router.get('/user/:userId', getNotificationsForUser);
+router.put('/view/:notificationId', markNotificationAsViewed);
+router.get('/', getAllNotifications);
 
 export default router;

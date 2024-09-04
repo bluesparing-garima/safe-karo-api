@@ -1,9 +1,8 @@
-import NotificationModel from '../../models/notificationModel.js';
+import NotificationModel from '../models/notificationModel.js';
 
-// Create a new notification
 export const createNotification = async (req, res) => {
   try {
-    const { title, type, role, notificationFor, notificationBy, createdBy } = req.body;
+    const { title, type, role, notificationFor, notificationBy, createdBy,isView } = req.body;
 
     const newNotification = new NotificationModel({
       title,
@@ -11,7 +10,8 @@ export const createNotification = async (req, res) => {
       role,
       notificationFor,
       notificationBy,
-      createdBy
+      createdBy,
+      isView
     });
 
     await newNotification.save();
@@ -29,7 +29,31 @@ export const createNotification = async (req, res) => {
   }
 };
 
-// Get all notifications for a specific user
+// Get all notifications
+export const getAllNotifications = async (req, res) => {
+  try {
+    const { role, type, isView } = req.query;
+
+    let filter = {};
+    if (role) filter.role = role;
+    if (type) filter.type = type;
+    if (typeof isView !== 'undefined') filter.isView = isView;
+
+    const notifications = await NotificationModel.find(filter);
+
+    res.status(200).json({
+      message: "All notifications retrieved successfully",
+      data: notifications,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving notifications",
+      error: error.message,
+    });
+  }
+};
+
 export const getNotificationsForUser = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -49,7 +73,6 @@ export const getNotificationsForUser = async (req, res) => {
   }
 };
 
-// Mark notification as viewed
 export const markNotificationAsViewed = async (req, res) => {
   try {
     const { notificationId } = req.params;

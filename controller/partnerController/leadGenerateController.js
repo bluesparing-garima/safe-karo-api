@@ -1,5 +1,6 @@
 import leadGenerateModel from "../../models/partnerModels/leadGenerateSchema.js";
 import upload from "../../middlewares/uploadMiddleware.js";
+import NotificationModel from '../../models/notificationModel.js';
 
 export const createNewLead = async (req, res) => {
   upload(req, res, async (err) => {
@@ -32,6 +33,7 @@ export const createNewLead = async (req, res) => {
         });
         return acc;
       }, {});
+
       const newLead = new leadGenerateModel({
         policyType,
         category,
@@ -40,8 +42,8 @@ export const createNewLead = async (req, res) => {
         status,
         ...fileDetails,
         remarks,
-        partnerId: partnerId,
-        partnerName: partnerName,
+        partnerId: partnerId || "",
+        partnerName: partnerName || "",
         relationshipManagerId: relationshipManagerId || "",
         relationshipManagerName: relationshipManagerName || "",
         leadCreatedBy,
@@ -51,6 +53,28 @@ export const createNewLead = async (req, res) => {
       });
 
       const savedLead = await newLead.save();
+
+      let notificationFor;
+      let notificationBy;
+
+      if (partnerId) {
+        notificationFor = 'operation';
+        notificationBy = partnerId;
+      } else {
+        notificationFor = partnerId;  
+        notificationBy = leadCreatedBy;
+      }
+
+      const notification = new NotificationModel({
+        title: 'Lead Generated',
+        type: 'success',
+        role: partnerId ? 'partner' : 'operation',
+        notificationFor,
+        notificationBy,
+        createdBy,
+      });
+
+      await notification.save();
 
       res.status(200).json({
         message: "New Lead created successfully",
@@ -200,6 +224,18 @@ export const acceptLeadRequest = async (req, res) => {
       { new: true }
     );
 
+    if (req.body.status === "accepted") {
+      const newNotification = new NotificationModel({
+        title: 'Lead Accepted',
+        type: 'success',
+        role: "operation",
+        notificationFor: existingLead.partnerId,
+        notificationBy: req.body.leadCreatedBy,
+        createdBy: req.body.createdBy,
+      });
+
+      await newNotification.save();
+    }
     res.status(200).json({
       message: "Lead Accepted successfully",
       data: updatedLead,
@@ -221,7 +257,16 @@ export const updateLead = async (req, res) => {
     }
 
     try {
-      const updateData = req.body;
+      const { status, updatedBy } = req.body;
+      const existingLead = await leadGenerateModel.findById(req.params.id);
+
+      if (!existingLead) {
+        return res.status(404).json({
+          status: "failed",
+          message: "Lead not found",
+        });
+      }
+
       let fileDetails = {};
       if (req.files && Object.keys(req.files).length > 0) {
         fileDetails = Object.keys(req.files).reduce((acc, key) => {
@@ -233,7 +278,7 @@ export const updateLead = async (req, res) => {
       }
 
       const updatedLeadData = {
-        ...updateData,
+        ...req.body,
         ...fileDetails,
       };
 
@@ -243,11 +288,31 @@ export const updateLead = async (req, res) => {
         { new: true }
       );
 
-      if (!updatedLead) {
-        return res.status(404).json({
-          status: "failed",
-          message: "Lead not found",
+      if (status && status !== existingLead.status) {
+        let notificationFor, notificationBy, role;
+
+        // Determine who updated the lead
+        if (updatedBy === 'Operation') {
+          notificationFor = existingLead.partnerId;  // Notify the partner
+          notificationBy = existingLead.leadCreatedBy;  // Notification sent by Operation
+          role = 'operation';
+        } else if (updatedBy === 'partner') {
+          notificationFor = existingLead.leadCreatedBy;  // Notify the operation person
+          notificationBy = existingLead.partnerId;  // Notification sent by Partner
+          role = 'partner';
+        }
+
+        // Create and save the notification
+        const newNotification = new NotificationModel({
+          title: `Lead Status changed to ${status}`,
+          type: 'success',
+          role,
+          notificationFor,
+          notificationBy,
+          createdBy: updatedBy,
         });
+
+        await newNotification.save();
       }
 
       res.status(200).json({
@@ -264,6 +329,7 @@ export const updateLead = async (req, res) => {
     }
   });
 };
+
 
 // Delete Lead
 export const deleteLead = async (req, res) => {

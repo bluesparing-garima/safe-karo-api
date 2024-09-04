@@ -78,7 +78,6 @@ export const createBookingRequest = async (req, res) => {
         rejectionReason,
       });
 
-      // Update lead status if leadId is provided
       if (leadId) {
         const lead = await leadGenerateModel.findByIdAndUpdate(
           leadId,
@@ -88,6 +87,17 @@ export const createBookingRequest = async (req, res) => {
       }
 
       await newBooking.save();
+      const notification = new NotificationModel({
+        title: 'Lead Accepted',
+        type: 'success',
+        role: 'operation',
+        notificationFor: partnerId,
+        notificationBy: leadId || operationId,
+        createdBy: operationId,
+      });
+
+      await notification.save();
+
       res.status(200).json({
         message: "Booking Request generated successfully",
         data: newBooking,

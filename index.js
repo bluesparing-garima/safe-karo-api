@@ -148,6 +148,8 @@ app.use(express.urlencoded({ extended: true }));
 //   res.send("Files uploaded successfully.");
 // });
 
+app.use('/api/notification', notificationRoutes);
+
 // userProfile
 app.use("/api/user-profile", checkUserAuth, userProfile);
 

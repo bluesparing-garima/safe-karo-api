@@ -3,15 +3,15 @@ import mongoose from 'mongoose';
 const notificationSchema = new mongoose.Schema({
   title: { type: String },
   type: { type: String, enum: ['success', 'error', 'warning'] },
-  role: { type: String, enum: ['booking', 'operation', 'partner'] },
-  notificationFor: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // assuming you have a User model
-  notificationBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // assuming you have a User model
+  role: { type: String, enum: ['booking', 'operation', 'partner','admin','Relationship Manager'] },
+  notificationFor: { type: String, trim:true },
+  notificationBy: { type: String, trim:true },
   isView: { type: Boolean, default: false },
   isActive: { type: Boolean, default: true },
   createdOn: { type: Date, default: Date.now },
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  createdBy: { type: String, trim:true },
   updatedOn: { type: Date },
-  updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+  updatedBy: { type: String, trim:true }
 });
 
 const NotificationModel = mongoose.model('Notification', notificationSchema);
