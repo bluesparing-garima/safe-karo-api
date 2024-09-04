@@ -921,30 +921,56 @@ export const getMotorPolicyByPolicyId = async (req, res) => {
 export const getMotorPolicyByPartnerId = async (req, res) => {
   try {
     const { partnerId } = req.params;
-    const policies = await MotorPolicyModel.find({ partnerId });
+    const { startDate, endDate, page = 1, limit = Infinity } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        message: "Please provide both startDate and endDate.",
+        success: false,
+        status: "error",
+      });
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    const policies = await MotorPolicyModel.find({
+      partnerId,
+      isActive: true,
+      issueDate: { $gte: start, $lte: end },
+    })
+      .sort({ createdOn: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit))
+      .lean();
 
     if (policies.length === 0) {
-      return res.status(404).json({
-        message: `No Motor Policy for partnerId ${partnerId}`,
-        success: false,
+      return res.status(200).json({
+        message: `No motor policies found for partner ${partnerId} between ${startDate} and ${endDate}.`,
+        data: [],
+        success: true,
         status: "success",
+        totalCount: 0,
       });
     }
 
     res.status(200).json({
-      message: "Motor Policies retrieved successfully.",
+      message: `Motor Policies from ${startDate} to ${endDate} for partner ${partnerId}.`,
       data: policies,
       success: true,
       status: "success",
+      totalCount: policies.length,
     });
   } catch (error) {
     res.status(500).json({
-      message: "Error retrieving motor policies",
+      status: "error",
       success: false,
-      error: error.message,
+      message: error.message,
     });
   }
 };
+
+
 
 /*export const getMotorPolicyByPartnerId = async (req, res) => {
   try {
@@ -1103,27 +1129,51 @@ export const getMotorPolicyWithPaymentDetails = async (req, res) => {
 export const getMotorPolicyByPolicyCompletedBy = async (req, res) => {
   try {
     const { policyCompletedBy } = req.params;
-    const policies = await MotorPolicyModel.find({ policyCompletedBy });
+    const { startDate, endDate, page = 1, limit = Infinity } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        message: "Please provide both startDate and endDate.",
+        success: false,
+        status: "error",
+      });
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    const policies = await MotorPolicyModel.find({
+      policyCompletedBy,
+      isActive: true,
+      issueDate: { $gte: start, $lte: end },
+    })
+      .sort({ createdOn: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit))
+      .lean();
 
     if (policies.length === 0) {
-      return res.status(404).json({
-        message: `No Motor Policy for policyCompletedBy ${policyCompletedBy}`,
-        success: false,
+      return res.status(200).json({
+        message: `No motor policies found for policyCompletedBy ${policyCompletedBy} between ${startDate} and ${endDate}.`,
+        data: [],
+        success: true,
         status: "success",
+        totalCount: 0,
       });
     }
 
     res.status(200).json({
-      message: "Motor Policies retrieved successfully for policyCompletedBy.",
+      message: `Motor Policies from ${startDate} to ${endDate} for policyCompletedBy ${policyCompletedBy}.`,
       data: policies,
       success: true,
       status: "success",
+      totalCount: policies.length,
     });
   } catch (error) {
     res.status(500).json({
-      message: "Error retrieving motor policies for policyCompletedBy",
+      status: "error",
       success: false,
-      error: error.message,
+      message: error.message,
     });
   }
 };
