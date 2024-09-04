@@ -5,6 +5,7 @@ import cors from "cors";
 import connectDB from "./config/connectdb.js";
 import userRoutes from "./routes/userRoutes.js";
 import path from "path";
+import serveIndex from 'serve-index';
 import { fileURLToPath } from 'url';
 
 // middleware
@@ -92,7 +93,6 @@ app.get("/", (req, res) => {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-import serveIndex from 'serve-index';
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')), serveIndex(path.join(__dirname, 'uploads'), { icons: true }));
 
