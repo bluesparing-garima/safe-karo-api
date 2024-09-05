@@ -99,18 +99,15 @@ const __dirname = path.dirname(__filename);
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    // Define the directory for uploads
     const uploadPath = path.join(__dirname, "../uploads/");
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
-    // Create a unique filename using the original name, fieldname, and timestamp
     const uniqueSuffix = `${file.fieldname}_${Date.now()}${path.extname(file.originalname)}`;
     cb(null, uniqueSuffix);
   },
 });
 
-// Check file type with an allowed mime type list
 const checkFileType = (file, cb) => {
   const allowedTypes = [
     "image/jpeg",
@@ -122,23 +119,19 @@ const checkFileType = (file, cb) => {
     "application/vnd.ms-excel",
   ];
 
-  // Check if the file's MIME type is in the allowed list
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
     cb(
-      new Error(
-        "Unsupported file type! Please upload an image, a PDF document, or an Excel file."
-      ),
+      new Error("Unsupported file type! Please upload an image, a PDF document, or an Excel file."),
       false
     );
   }
 };
 
-// Initialize upload with storage, file size limit, and file filter
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 2000000 }, // Limit file size to 2MB
+  limits: { fileSize: 2000000 },
   fileFilter: (req, file, cb) => {
     checkFileType(file, cb);
   },
@@ -151,7 +144,6 @@ const upload = multer({
   { name: "proposal", maxCount: 1 },
   { name: "currentPolicy", maxCount: 1 },
   { name: "previousPolicy", maxCount: 1 },
-  // userProfile documents
   { name: "image", maxCount: 1 },
   { name: "adharCardFront", maxCount: 1 },
   { name: "adharCardBack", maxCount: 1 },
@@ -160,8 +152,8 @@ const upload = multer({
   { name: "bankProof", maxCount: 1 },
   { name: "experience", maxCount: 1 },
   { name: "quotationImage", maxCount: 1 },
-  // common for all documents file.
   { name: "other", maxCount: 1 },
 ]);
 
 export default upload;
+

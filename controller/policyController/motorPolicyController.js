@@ -1485,14 +1485,14 @@ export const getInactiveMotorPolicies = async (req, res) => {
     });
 
     if (!inactivePolicies || inactivePolicies.length === 0) {
-      return res.status(404).json({
-        status: "error",
+      return res.status(200).json({
+        status: "success",
         message: "No inactive motor policies found in the specified date range",
       });
     }
 
-    res.status(200).json({
-      status: "success",
+    res.status(404).json({
+      status: "error",
       data: inactivePolicies,
     });
   } catch (error) {
