@@ -74,7 +74,7 @@ const extractTypeOfCover = (text) => {
 
 export const TataPDFParsing = async (req, res) => {
   const filePath = req.files["file"][0].path;
-  const { companyName, policyType } = req.body;
+  const { companyName, policyType,broker } = req.body;
 
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ message: "File not found" });
@@ -127,6 +127,7 @@ export const TataPDFParsing = async (req, res) => {
         category: "motor",
         companyName,
         policyType, 
+        broker
       };
 
       return res.status(200).json({
