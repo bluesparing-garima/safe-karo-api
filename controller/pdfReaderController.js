@@ -35,8 +35,8 @@ const extractVehicleDetailsDynamic = (text) => {
     make: extractField(makeModelRegex, text),
     model: extractField(makeModelRegex, text),
     mfgYear: extractField(mfgYearRegex, text),
-    ccKw: extractField(ccKwRegex, text),
-    licensedCarryingCapacity: extractField(capacityRegex, text),
+    cc: extractField(ccKwRegex, text),
+    seatingCapacity: extractField(capacityRegex, text),
   };
 };
 
@@ -74,7 +74,7 @@ const extractTypeOfCover = (text) => {
 
 export const TataPDFParsing = async (req, res) => {
   const filePath = req.files["file"][0].path;
-  const { companyName, policyType } = req.body;
+  const { companyName, policyType,broker } = req.body;
 
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ message: "File not found" });
@@ -109,12 +109,12 @@ export const TataPDFParsing = async (req, res) => {
         policyNumber: extractField(/Policy Number:\s*([\d\s]+)/, extractedText),
         caseType: extractCaseType(extractField(/Policy Number:\s*([\d\s]+)/, extractedText)),
         netPremium: parseFloat(extractField(/NET PREMIUM \(A\+B\+C\)\s*₹\s*([\d,.]+)/i, extractedText)) || null,
-        IDV: parseFloat(extractIDV(extractedText)) || null,
+        idv: parseFloat(extractIDV(extractedText)) || null,
         ...extractVehicleDetailsDynamic(extractedText),
         policyType: finalPolicyType,
         fuelType: extractField(/Fuel Type\s*:\s*([A-Za-z]+)/i, extractedText),
-        TP: parseFloat(extractField(/TOTAL\s*LIABILITY\s*PREMIUM\s*\(B\)\s*₹\s*([\d,.]+)/i, extractedText)) || null,
-        OD: parseFloat(extractField(/TOTAL\s*OWN\s*DAMAGE\s*PREMIUM\s*\(A\)\s*₹\s*([\d,.]+)/i, extractedText)) || null,
+        tp: parseFloat(extractField(/TOTAL\s*LIABILITY\s*PREMIUM\s*\(B\)\s*₹\s*([\d,.]+)/i, extractedText)) || null,
+        od: parseFloat(extractField(/TOTAL\s*OWN\s*DAMAGE\s*PREMIUM\s*\(A\)\s*₹\s*([\d,.]+)/i, extractedText)) || null,
         issueDate: new Date(extractField(/Own Damage period of insurance desired from\*:\s*(\d{2}\/\d{2}\/\d{4})/, extractedText)) || null,
         endDate: new Date(extractField(/to Midnight of (\d{2}\/\d{2}\/\d{4})/, extractedText)) || null,
         tenure: extractTypeOfCover(extractedText),
@@ -127,6 +127,7 @@ export const TataPDFParsing = async (req, res) => {
         category: "motor",
         companyName,
         policyType, 
+        broker
       };
 
       return res.status(200).json({
