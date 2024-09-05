@@ -90,9 +90,12 @@
 
 // export default upload;
 
-import multer from "multer";
-import path from "path";
-import { fileURLToPath } from "url";
+import { PDFDocument } from 'pdf-lib';
+import fs from 'fs';
+import path from 'path';
+import multer from 'multer';
+import sharp from 'sharp';
+import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -122,20 +125,16 @@ const checkFileType = (file, cb) => {
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(
-      new Error("Unsupported file type! Please upload an image, a PDF document, or an Excel file."),
-      false
-    );
+    cb(new Error("Unsupported file type! Please upload an image, a PDF document, or an Excel file."), false);
   }
 };
 
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 2000000 }, // 2MB
+  limits: { fileSize: 2000000 },
   fileFilter: (req, file, cb) => {
     checkFileType(file, cb);
   },
-
 }).fields([
   { name: "rcFront", maxCount: 1 },
   { name: "rcBack", maxCount: 1 },
@@ -154,11 +153,33 @@ const upload = multer({
   { name: "experience", maxCount: 1 },
   { name: "quotationImage", maxCount: 1 },
   { name: "other", maxCount: 1 },
-  { name: "file", maxCount: 1 }, // Handle file field with specific PDF restriction
+  { name: "file", maxCount: 1 },
 ]);
 
+const compressImage = async (filePath) => {
+  const compressedPath = `${filePath}-compressed.jpg`;
+  await sharp(filePath)
+    .resize(700)
+    .jpeg({ quality: 50 })
+    .toFile(compressedPath);
+  fs.unlinkSync(filePath);
+  return compressedPath;
+};
+
+const compressPDF = async (filePath) => {
+  const existingPdfBytes = fs.readFileSync(filePath);
+  const pdfDoc = await PDFDocument.load(existingPdfBytes);
+  
+  const compressedPdfBytes = await pdfDoc.save();
+  
+  const compressedPath = `${filePath}-compressed.pdf`;
+  fs.writeFileSync(compressedPath, compressedPdfBytes);
+  fs.unlinkSync(filePath);
+  return compressedPath;
+};
+
 export const handleFileUpload = (req, res, next) => {
-  upload(req, res, function (err) {
+  upload(req, res, async (err) => {
     if (err) {
       if (err instanceof multer.MulterError) {
         return res.status(400).json({ message: err.message });
@@ -166,7 +187,24 @@ export const handleFileUpload = (req, res, next) => {
         return res.status(500).json({ message: err.message });
       }
     }
-    next();
+
+    try {
+      if (req.files && req.files.image) {
+        const imageFilePath = req.files.image[0].path;
+        const compressedImagePath = await compressImage(imageFilePath);
+        req.files.image[0].path = compressedImagePath;
+      }
+
+      if (req.files && req.files.file) {
+        const pdfFilePath = req.files.file[0].path;
+        const compressedPDFPath = await compressPDF(pdfFilePath);
+        req.files.file[0].path = compressedPDFPath;
+      }
+
+      next();
+    } catch (compressionError) {
+      return res.status(500).json({ message: "File compression failed", error: compressionError.message });
+    }
   });
 };
 
