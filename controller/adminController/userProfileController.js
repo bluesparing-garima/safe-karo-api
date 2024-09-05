@@ -11,16 +11,26 @@ const generatePartnerId = async (role) => {
   switch (role) {
     case "Relationship Manager":
     case "RM":
+      prefix = "717RM";
+      break;
+    case "account":
+    case "Account":
       prefix = "717A";
       break;
     case "Booking":
+    case "booking":
       prefix = "717B";
       break;
     case "Operation":
+    case "operation":
       prefix = "717O";
       break;
     case "HR":
       prefix = "717H";
+      break;
+      case "partner":
+      case "Partner": 
+      prefix = "717P";
       break;
     default:
       throw new Error("Invalid role");
