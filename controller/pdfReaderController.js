@@ -85,7 +85,7 @@ const extractNCB = (text) => {
 
 export const TataPDFParsing = async (req, res) => {
   const filePath = req.files["file"][0].path;
-  const { companyName, policyType, broker } = req.body;
+  const { companyName, policyType, broker,brokerId } = req.body;
 
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ message: "File not found" });
@@ -138,7 +138,8 @@ export const TataPDFParsing = async (req, res) => {
         ncb: extractNCB(extractedText), // Add the NCB extraction
         companyName,
         policyType, 
-        broker
+        broker,
+        brokerId
       };
 
       return res.status(200).json({
