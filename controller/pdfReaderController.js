@@ -1,5 +1,6 @@
 import fs from "fs";
 import { PDFExtract } from "pdf.js-extract";
+import moment from "moment";
 import policyTypeSchema from "../models/adminModels/policyTypeSchema.js";
 
 const extractField = (pattern, text) => {
@@ -72,9 +73,19 @@ const extractTypeOfCover = (text) => {
   return 0;
 };
 
+// New function to extract NCB (No Claim Bonus)
+const extractNCB = (text) => {
+  const ncbPattern = /NCB claimed\s*:\s*([A-Za-z]+)/i;
+  const ncbValue = extractField(ncbPattern, text);
+  if (ncbValue && ["NA", "no", "No", "na"].includes(ncbValue.trim().toLowerCase())) {
+    return "no";
+  }
+  return "yes";
+};
+
 export const TataPDFParsing = async (req, res) => {
   const filePath = req.files["file"][0].path;
-  const { companyName, policyType,broker } = req.body;
+  const { companyName, policyType, broker } = req.body;
 
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ message: "File not found" });
@@ -92,18 +103,17 @@ export const TataPDFParsing = async (req, res) => {
         .map((page) => page.content.map((item) => item.str).join(" "))
         .join("\n");
 
-        const rawPolicyType = extractField(/Policy Type\s*:\s*([A-Za-z\s-]+)/i, extractedText);
+      const rawPolicyType = extractField(/Policy Type\s*:\s*([A-Za-z\s-]+)/i, extractedText);
 
-        let finalPolicyType = rawPolicyType;
-  
-        if (rawPolicyType === "Auto Secure - Commercial Vehicle Package Policy - Passenger Carrying Vehicle  Commercial Class") {
-          const policyTypeData = await policyTypeSchema.findOne({ type: rawPolicyType });
-          if (policyTypeData && policyTypeData.value) {
-            finalPolicyType = policyTypeData.value;
-          } else {
-            finalPolicyType = "Comprehensive/ Package";
-          }
-        }
+      let finalPolicyType = rawPolicyType;
+
+      if (rawPolicyType === "Auto Secure - Commercial Vehicle Package Policy - Passenger Carrying Vehicle  Commercial Class") {
+        const policyTypeData = await policyTypeSchema.findOne({ type: rawPolicyType });
+        finalPolicyType = policyTypeData?.value || "Comprehensive/ Package";
+      }
+
+      const issueDate = moment(extractField(/Own Damage period of insurance desired from\*:\s*(\d{2}\/\d{2}\/\d{4})/, extractedText), "DD/MM/YYYY").format("MM-DD-YYYY") || null;
+      const endDate = moment(extractField(/to Midnight of (\d{2}\/\d{2}\/\d{4})/, extractedText), "DD/MM/YYYY").format("MM-DD-YYYY") || null;
 
       const extractedData = {
         policyNumber: extractField(/Policy Number:\s*([\d\s]+)/, extractedText),
@@ -115,8 +125,8 @@ export const TataPDFParsing = async (req, res) => {
         fuelType: extractField(/Fuel Type\s*:\s*([A-Za-z]+)/i, extractedText),
         tp: parseFloat(extractField(/TOTAL\s*LIABILITY\s*PREMIUM\s*\(B\)\s*₹\s*([\d,.]+)/i, extractedText)) || null,
         od: parseFloat(extractField(/TOTAL\s*OWN\s*DAMAGE\s*PREMIUM\s*\(A\)\s*₹\s*([\d,.]+)/i, extractedText)) || null,
-        issueDate: new Date(extractField(/Own Damage period of insurance desired from\*:\s*(\d{2}\/\d{2}\/\d{4})/, extractedText)) || null,
-        endDate: new Date(extractField(/to Midnight of (\d{2}\/\d{2}\/\d{4})/, extractedText)) || null,
+        issueDate,
+        endDate,
         tenure: extractTypeOfCover(extractedText),
         fullName: extractFullName(extractedText),
         phoneNumber: extractField(/Contact Number:\s*(\d{10})/, extractedText),
@@ -125,6 +135,7 @@ export const TataPDFParsing = async (req, res) => {
         productType: extractProductType(extractedText),
         finalPremium: extractFinalPremium(extractedText),
         category: "motor",
+        ncb: extractNCB(extractedText), // Add the NCB extraction
         companyName,
         policyType, 
         broker

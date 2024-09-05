@@ -131,10 +131,11 @@ const checkFileType = (file, cb) => {
 
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 2000000 },
+  limits: { fileSize: 2000000 }, // 2MB
   fileFilter: (req, file, cb) => {
     checkFileType(file, cb);
   },
+
 }).fields([
   { name: "rcFront", maxCount: 1 },
   { name: "rcBack", maxCount: 1 },
@@ -153,7 +154,20 @@ const upload = multer({
   { name: "experience", maxCount: 1 },
   { name: "quotationImage", maxCount: 1 },
   { name: "other", maxCount: 1 },
+  { name: "file", maxCount: 1 }, // Handle file field with specific PDF restriction
 ]);
 
-export default upload;
+export const handleFileUpload = (req, res, next) => {
+  upload(req, res, function (err) {
+    if (err) {
+      if (err instanceof multer.MulterError) {
+        return res.status(400).json({ message: err.message });
+      } else {
+        return res.status(500).json({ message: err.message });
+      }
+    }
+    next();
+  });
+};
 
+export default upload;
