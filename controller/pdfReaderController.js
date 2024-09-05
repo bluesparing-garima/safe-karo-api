@@ -89,7 +89,7 @@ export const PDFParsing = async (req, res) => {
         if (policyTypeData && policyTypeData.value) {
           finalPolicyType = policyTypeData.value;
         } else {
-          finalPolicyType = "Comprehensive/Package";
+          finalPolicyType = "Comprehensive/ Package";
         }
       }
 
