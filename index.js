@@ -96,7 +96,7 @@ const __dirname = path.dirname(__filename);
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')), serveIndex(path.join(__dirname, 'uploads'), { icons: true }));
 
-app.use('/api/pdf', pdfRoutes);
+app.use('/api/policy/pdf', pdfRoutes);
 
 // JSON
 app.use(express.json());

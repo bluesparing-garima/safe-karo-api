@@ -5,10 +5,6 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import {
   PDFParsing,
-  getAllExtractedData,
-  getExtractedDataById,
-  updateExtractedDataById,
-  deleteExtractedDataById,
 } from '../controller/pdfReaderController.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -39,7 +35,7 @@ const upload = multer({
 const router = express.Router();
 
 // Create - PDF upload and extraction
-router.post('/upload-extract', (req, res) => {
+router.post('/upload', (req, res) => {
   upload(req, res, function (err) {
     if (err) {
       if (err instanceof multer.MulterError) {
@@ -52,13 +48,5 @@ router.post('/upload-extract', (req, res) => {
     PDFParsing(req, res);
   });
 });
-
-router.get('/extracted-data', getAllExtractedData);
-
-router.get('/extracted-data/:id', getExtractedDataById);
-
-router.put('/extracted-data/:id', updateExtractedDataById);
-
-router.delete('/extracted-data/:id', deleteExtractedDataById);
 
 export default router;
