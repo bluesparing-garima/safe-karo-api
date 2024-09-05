@@ -118,6 +118,7 @@ export const PDFParsing = async (req, res) => {
       return res.status(200).json({
         message: "PDF data extracted successfully",
         data: extractedData,
+        status:"Success"
       });
     });
   } catch (error) {
@@ -125,6 +126,7 @@ export const PDFParsing = async (req, res) => {
     return res.status(500).json({
       message: "Error parsing PDF",
       error: error.message,
+      status:"error"
     });
   }
 };
