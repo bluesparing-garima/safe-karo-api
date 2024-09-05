@@ -372,18 +372,27 @@ export const updateUserProfile = (req, res) => {
         { new: true }
       );
 
-      const updatedUserData = { ...updatedData };
-      delete updatedUserData.partnerId;
-
-      const updatedUser = await UserModel.findOneAndUpdate(
-        { email: updateData.email },
-        updatedUserData,
-        { new: true }
-      );
-
-      if (!updatedProfile && !updatedUser) {
+      if (!updatedProfile) {
         return res.status(404).json({ message: "User profile not found" });
       }
+
+      const userUpdateData = {};
+      if (updateData.email) userUpdateData.email = updateData.email;
+      if (updateData.phoneNumber) userUpdateData.phoneNumber = updateData.phoneNumber;
+      if (updateData.password) userUpdateData.password = updateData.password;
+
+      if (Object.keys(userUpdateData).length > 0) {
+        const updatedUser = await UserModel.findOneAndUpdate(
+          { partnerId: updatedProfile._id }, 
+          userUpdateData,
+          { new: true }
+        );
+
+        if (!updatedUser) {
+          return res.status(404).json({ message: "User not found in UserModel" });
+        }
+      }
+
       res.status(200).json({
         message: "User profile updated successfully",
         data: updatedProfile,
@@ -397,6 +406,7 @@ export const updateUserProfile = (req, res) => {
     }
   });
 };
+
 
 // Delete (deactivate) a user profile by ID
 export const deleteUserProfile = async (req, res) => {
