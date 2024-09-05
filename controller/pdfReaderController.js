@@ -1,6 +1,6 @@
 import fs from "fs";
 import { PDFExtract } from "pdf.js-extract";
-import policyType from "../models/adminModels/policyTypeSchema.js";
+import policyTypeSchema from "../models/adminModels/policyTypeSchema.js";
 
 const extractField = (pattern, text) => {
   const match = text.match(pattern);
@@ -61,8 +61,20 @@ const extractFinalPremium = (text) => {
   return premium ? parseFloat(premium.replace(/,/g, "")) : null;
 };
 
-export const PDFParsing = async (req, res) => {
+const extractTypeOfCover = (text) => {
+  const typeOfCoverPattern = /Package\s*\((\d+)\s*year\s*OD\s*\+\s*(\d+)\s*year\s*TP\)/i;
+  const match = text.match(typeOfCoverPattern);
+  
+  if (match) {
+    const [odYear, tpYear] = match.slice(1, 3).map(Number);
+    return Math.min(odYear, tpYear);
+  } 
+  return 0;
+};
+
+export const TataPDFParsing = async (req, res) => {
   const filePath = req.files["file"][0].path;
+  const { companyName, policyType } = req.body;
 
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ message: "File not found" });
@@ -80,32 +92,32 @@ export const PDFParsing = async (req, res) => {
         .map((page) => page.content.map((item) => item.str).join(" "))
         .join("\n");
 
-      const rawPolicyType = extractField(/Policy Type\s*:\s*([A-Za-z\s-]+)/i, extractedText);
+        const rawPolicyType = extractField(/Policy Type\s*:\s*([A-Za-z\s-]+)/i, extractedText);
 
-      let finalPolicyType = rawPolicyType;
-
-      if (rawPolicyType === "Auto Secure - Commercial Vehicle Package Policy - Passenger Carrying Vehicle  Commercial Class") {
-        const policyTypeData = await policyType.findOne({ type: rawPolicyType });
-        if (policyTypeData && policyTypeData.value) {
-          finalPolicyType = policyTypeData.value;
-        } else {
-          finalPolicyType = "Comprehensive/ Package";
+        let finalPolicyType = rawPolicyType;
+  
+        if (rawPolicyType === "Auto Secure - Commercial Vehicle Package Policy - Passenger Carrying Vehicle  Commercial Class") {
+          const policyTypeData = await policyTypeSchema.findOne({ type: rawPolicyType });
+          if (policyTypeData && policyTypeData.value) {
+            finalPolicyType = policyTypeData.value;
+          } else {
+            finalPolicyType = "Comprehensive/ Package";
+          }
         }
-      }
 
       const extractedData = {
         policyNumber: extractField(/Policy Number:\s*([\d\s]+)/, extractedText),
         caseType: extractCaseType(extractField(/Policy Number:\s*([\d\s]+)/, extractedText)),
         netPremium: parseFloat(extractField(/NET PREMIUM \(A\+B\+C\)\s*₹\s*([\d,.]+)/i, extractedText)) || null,
-        totalIDV: parseFloat(extractIDV(extractedText)) || null,
+        IDV: parseFloat(extractIDV(extractedText)) || null,
         ...extractVehicleDetailsDynamic(extractedText),
         policyType: finalPolicyType,
         fuelType: extractField(/Fuel Type\s*:\s*([A-Za-z]+)/i, extractedText),
-        totalLiabilityPremium: parseFloat(extractField(/TOTAL\s*LIABILITY\s*PREMIUM\s*\(B\)\s*₹\s*([\d,.]+)/i, extractedText)) || null,
-        totalOwnDamagePremium: parseFloat(extractField(/TOTAL\s*OWN\s*DAMAGE\s*PREMIUM\s*\(A\)\s*₹\s*([\d,.]+)/i, extractedText)) || null,
-        issuedDate: new Date(extractField(/Own Damage period of insurance desired from\*:\s*(\d{2}\/\d{2}\/\d{4})/, extractedText)) || null,
+        TP: parseFloat(extractField(/TOTAL\s*LIABILITY\s*PREMIUM\s*\(B\)\s*₹\s*([\d,.]+)/i, extractedText)) || null,
+        OD: parseFloat(extractField(/TOTAL\s*OWN\s*DAMAGE\s*PREMIUM\s*\(A\)\s*₹\s*([\d,.]+)/i, extractedText)) || null,
+        issueDate: new Date(extractField(/Own Damage period of insurance desired from\*:\s*(\d{2}\/\d{2}\/\d{4})/, extractedText)) || null,
         endDate: new Date(extractField(/to Midnight of (\d{2}\/\d{2}\/\d{4})/, extractedText)) || null,
-        typeOfCover: extractField(/Type of Cover\s*:\s*(Package\s*\(\d{1,2} year OD\s*\+\s*\d{1,2} year TP\))/i, extractedText),
+        tenure: extractTypeOfCover(extractedText),
         fullName: extractFullName(extractedText),
         phoneNumber: extractField(/Contact Number:\s*(\d{10})/, extractedText),
         rto: extractRtoAndVehicleNumber(extractField(/Registration\s*Number:\s*([A-Za-z0-9]+)/, extractedText)).rto,
@@ -113,11 +125,14 @@ export const PDFParsing = async (req, res) => {
         productType: extractProductType(extractedText),
         finalPremium: extractFinalPremium(extractedText),
         category: "motor",
+        companyName,
+        policyType, 
       };
 
       return res.status(200).json({
         message: "PDF data extracted successfully",
         data: extractedData,
+        status: "Success",
       });
     });
   } catch (error) {
@@ -125,6 +140,7 @@ export const PDFParsing = async (req, res) => {
     return res.status(500).json({
       message: "Error parsing PDF",
       error: error.message,
+      status: "error",
     });
   }
 };

@@ -4,7 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import {
-  PDFParsing,
+  TataPDFParsing,
 } from '../controller/pdfReaderController.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -45,7 +45,7 @@ router.post('/upload', (req, res) => {
       }
     }
     // Proceed to extract data if no errors
-    PDFParsing(req, res);
+    TataPDFParsing(req, res);
   });
 });
 
