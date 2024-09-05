@@ -30,7 +30,7 @@ const generatePartnerId = async (role) => {
       break;
       case "partner":
       case "Partner": 
-      prefix = "717P";
+      prefix = "8717A";
       break;
     default:
       throw new Error("Invalid role");
