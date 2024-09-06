@@ -933,7 +933,8 @@ export const getMotorPolicyByPartnerId = async (req, res) => {
 
     const start = new Date(startDate);
     const end = new Date(endDate);
-
+    end.setHours(23, 59, 59, 999);
+    
     const policies = await MotorPolicyModel.find({
       partnerId,
       isActive: true,
@@ -1485,13 +1486,13 @@ export const getInactiveMotorPolicies = async (req, res) => {
     });
 
     if (!inactivePolicies || inactivePolicies.length === 0) {
-      return res.status(200).json({
+      return res.status(404).json({
         status: "success",
         message: "No inactive motor policies found in the specified date range",
       });
     }
 
-    res.status(404).json({
+    res.status(200).json({
       status: "error",
       data: inactivePolicies,
     });
