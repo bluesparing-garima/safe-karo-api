@@ -933,7 +933,8 @@ export const getMotorPolicyByPartnerId = async (req, res) => {
 
     const start = new Date(startDate);
     const end = new Date(endDate);
-
+    end.setHours(23, 59, 59, 999);
+    
     const policies = await MotorPolicyModel.find({
       partnerId,
       isActive: true,
