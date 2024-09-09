@@ -161,7 +161,7 @@ app.use("/api/lead-quotation", checkUserAuth, leadQuotation);
 // lead payment.
 app.use("/api/lead-payment", checkUserAuth, leadPayment);
 
-// Load Routes
+// user login/register
 app.use("/api/user", userRoutes);
 
 //assignee roles Routes
