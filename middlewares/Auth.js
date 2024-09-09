@@ -13,14 +13,16 @@ const checkUserAuth = async (req, res, next) => {
 
       req.user = await UserModel.findById(userID).select("-password");
 
-      next();
+      if (req.user) {
+        next();
+      } else {
+        res.status(401).json({ status: "failed", message: "Unauthorized User" });
+      }
     } catch (error) {
-      res.status(401).send({ status: "failed", message: "Unauthorized User" });
+      res.status(401).json({ status: "failed", message: "Invalid Token" });
     }
   } else {
-    res
-      .status(401)
-      .send({ status: "failed", message: "Unauthorized User, No Token" });
+    res.status(401).json({ status: "failed", message: "Unauthorized User, No Token Provided" });
   }
 };
 
