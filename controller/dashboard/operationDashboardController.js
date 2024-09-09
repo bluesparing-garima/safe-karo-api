@@ -11,6 +11,7 @@ export const getOperationDashboardCount = async (req, res) => {
       status: "error",
     });
   }
+
   const startDate = new Date(req.query.startDate);
   const endDate = new Date(req.query.endDate);
   endDate.setHours(23, 59, 59, 999);
@@ -21,17 +22,19 @@ export const getOperationDashboardCount = async (req, res) => {
   };
 
   try {
-    // Aggregate lead counts for the specified partnerId
+    // Aggregate lead counts for the specified leadCreatedBy
     const leadCounts = await leadGenerateModel.aggregate([
       { $match: { leadCreatedBy: leadCreatedBy } },
       { $group: { _id: "$status", count: { $sum: 1 } } },
     ]);
+
     const formattedLeadCounts = {};
     let totalLead = 0;
     leadCounts.forEach((lead) => {
       formattedLeadCounts[lead._id] = lead.count;
       totalLead += lead.count;
     });
+
     // Prepare leadCounts dynamically
     const leadRequests = {
       "Total Lead": totalLead,
@@ -40,7 +43,8 @@ export const getOperationDashboardCount = async (req, res) => {
       leadRequests[`${key.charAt(0).toUpperCase()}${key.slice(1)} Lead`] =
         formattedLeadCounts[key];
     });
-    // Aggregate booking requests by status for the specified policyCompletedBy
+
+    // Aggregate booking requests by status for the specified leadCreatedBy
     const bookingRequestsAggregate = await BookingRequest.aggregate([
       { $match: { bookingCreatedBy: leadCreatedBy } },
       { $group: { _id: "$bookingStatus", count: { $sum: 1 } } },
@@ -63,7 +67,10 @@ export const getOperationDashboardCount = async (req, res) => {
       message: "Operation dashboard counts retrieved successfully",
       data: [
         {
-          leadCounts: leadRequests,
+          leadCounts: {
+            ...leadRequests,
+            "Requested Lead": requestedLeadsCount,
+          },
           bookingRequests: {
             "Total Booking": totalBookingRequests,
             "Accepted Booking": formattedBookingRequests["accepted"] || 0,

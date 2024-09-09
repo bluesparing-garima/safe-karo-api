@@ -1,6 +1,7 @@
 import leadQuotationModel from "../../models/partnerModels/leadQuotationSchema.js";
 import leadGenerateModel from "../../models/partnerModels/leadGenerateSchema.js";
 import upload from "../../middlewares/uploadMiddleware.js";
+import NotificationModel from '../../models/notificationModel.js';
 
 // Create a new quotation
 export const createNewQuotation = async (req, res) => {
@@ -21,12 +22,14 @@ export const createNewQuotation = async (req, res) => {
         partnerName,
         createdBy,
       } = req.body;
+
       const fileDetails = Object.keys(req.files).reduce((acc, key) => {
         req.files[key].forEach((file) => {
           acc[file.fieldname] = file.filename;
         });
         return acc;
       }, {});
+
       const missingFields = [];
       if (!leadId) missingFields.push("leadId");
       if (!status) missingFields.push("status");
@@ -50,6 +53,7 @@ export const createNewQuotation = async (req, res) => {
       });
 
       await newQuotation.save();
+      
       if (newQuotation) {
         // Update lead status
         const updatedLead = await leadGenerateModel.findByIdAndUpdate(
@@ -63,6 +67,22 @@ export const createNewQuotation = async (req, res) => {
             message: "Related lead not found",
           });
         }
+
+        // Create a notification based on who initiates the action
+        const notificationBy = partnerId ? partnerId : createdBy; // Either partner or operation
+        const notificationFor = partnerId ? "operation" : partnerId; // Notify either operation or partner
+        
+        const newNotification = new NotificationModel({
+          title: 'New Quotation Created',
+          type: 'success',
+          role: partnerId ? 'partner' : 'operation',
+          notificationFor,
+          notificationBy,
+          createdBy,
+        });
+
+        await newNotification.save();
+
         res.status(200).json({
           message: "New Quotation created successfully",
           data: newQuotation,
@@ -161,7 +181,7 @@ export const updateQuotation = async (req, res) => {
     }
     try {
       const { id } = req.params;
-      const updateData = req.body;
+      const { status, updatedBy } = req.body;
 
       // Check if the quotation exists
       const existingQuotation = await leadQuotationModel.findById(id);
@@ -171,44 +191,33 @@ export const updateQuotation = async (req, res) => {
           .json({ status: "failed", message: "Quotation not found" });
       }
 
-      if (req.files) {
-        if (
-          updateData.status &&
-          updateData.status === existingQuotation.status
-        ) {
-          existingQuotation.quotationImage = req.files.filename;
-        } else {
-          // If status is different, keep the previous file
-          updateData.quotationImage = existingQuotation.quotationImage;
-        }
-      }
+      const fileDetails = Object.keys(req.files || {}).reduce((acc, key) => {
+        req.files[key].forEach((file) => {
+          acc[file.fieldname] = file.filename;
+        });
+        return acc;
+      }, {});
 
-      // Update the quotation
       const updatedQuotation = await leadQuotationModel.findByIdAndUpdate(
         id,
-        updateData,
+        { ...req.body, ...fileDetails },
         { new: true }
       );
 
-      if (!updatedQuotation) {
-        return res
-          .status(404)
-          .json({ status: "failed", message: "Quotation not found" });
-      }
+      if (status && status !== existingQuotation.status) {
+        const notificationBy = updatedBy;
+        const notificationFor = existingQuotation.partnerId || "operation";
 
-      // Update lead status if quotation status has updated
-      if (updateData.status) {
-        const updatedLead = await leadGenerateModel.findByIdAndUpdate(
-          updatedQuotation.leadId,
-          { status: updateData.status },
-          { new: true }
-        );
+        const newNotification = new NotificationModel({
+          title: `Quotation Status changed to ${status}`,
+          type: 'success',
+          role: "operation",
+          notificationFor,
+          notificationBy,
+          createdBy: updatedBy,
+        });
 
-        if (!updatedLead) {
-          return res
-            .status(404)
-            .json({ status: "failed", message: "Related lead not found" });
-        }
+        await newNotification.save();
       }
 
       res.status(200).json({
@@ -219,7 +228,7 @@ export const updateQuotation = async (req, res) => {
     } catch (error) {
       res.status(500).json({
         status: "failed",
-        message: "Unable to update quotation",
+        message: "Unable to update Quotation",
         error: error.message,
       });
     }

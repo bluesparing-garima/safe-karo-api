@@ -1,5 +1,6 @@
 import leadPaymentModel from "../../models/partnerModels/leadPaymentSchema.js";
 import leadGenerateModel from "../../models/partnerModels/leadGenerateSchema.js";
+import NotificationModel from '../../models/notificationModel.js';
 
 // Create a new lead payment
 export const createNewLeadPayment = async (req, res) => {
@@ -54,6 +55,18 @@ export const createNewLeadPayment = async (req, res) => {
         message: "Related lead not found",
       });
     }
+
+    // Create notification for operation person to partner
+    const notification = new NotificationModel({
+      title: 'Lead Payment Created',
+      type: 'success',
+      role: 'operation',
+      notificationFor: partnerId,
+      notificationBy: createdBy,
+      createdBy,
+    });
+
+    await notification.save();
 
     res.status(200).json({
       message: "New Lead Payment created successfully",
@@ -150,12 +163,24 @@ export const updateLeadPayment = async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
 
-    // Check if lead payment exists and update in one step
+    // Check if lead payment exists and update
     const updatedLeadPayment = await leadPaymentModel.findByIdAndUpdate(id, updateData, { new: true });
 
     if (!updatedLeadPayment) {
       return res.status(404).json({ status: 'failed', message: 'Lead payment not found' });
     }
+
+    // Create notification for update
+    const notification = new NotificationModel({
+      title: `Lead Payment Updated`,
+      type: 'success',
+      role: 'operation',
+      notificationFor: updatedLeadPayment.partnerId,
+      notificationBy: updateData.createdBy,
+      createdBy: updateData.createdBy,
+    });
+
+    await notification.save();
 
     res.status(200).json({
       message: 'Lead payment updated successfully',

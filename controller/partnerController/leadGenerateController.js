@@ -299,6 +299,7 @@ export const updateLead = async (req, res) => {
         const newNotification = new NotificationModel({
           title: `Lead Status changed to ${status}`,
           type: 'success',
+          role:'operation',
           isView: false,
           isActive: true,
           notificationFor,
