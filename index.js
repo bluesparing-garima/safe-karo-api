@@ -162,7 +162,7 @@ app.use("/api/lead-quotation", checkUserAuth, leadQuotation);
 app.use("/api/lead-payment", checkUserAuth, leadPayment);
 
 // Load Routes
-app.use("/api/user", checkUserAuth, userRoutes);
+app.use("/api/user", userRoutes);
 
 //assignee roles Routes
 app.use("/api/user-roles", checkUserAuth, assigneeRolesRouters);
