@@ -138,7 +138,7 @@ app.use(express.urlencoded({ extended: true }));
 // });
 
 // userProfile
-app.use("/api/user-profile", userProfile);
+app.use("/api/user-profile", checkUserAuth,userProfile);
 
 // Booking request
 app.use("/api/booking-request", checkUserAuth, bookingRequestRoute);
