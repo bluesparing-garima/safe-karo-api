@@ -2,16 +2,27 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import UserModel from "../models/userSchema.js";
 
-export const userRegistration = async (req, res) => {
+const generateAccessToken = (user) => {
+  return jwt.sign({ userID: user._id }, process.env.JWT_SECRET_KEY, {
+    expiresIn: "1m",
+  });
+};
 
-  const { name, email, password, phoneNumber,partnerId,partnerCode, role, isActive } = req.body; 
+const generateRefreshToken = (user) => {
+  return jwt.sign({ userID: user._id }, process.env.JWT_REFRESH_SECRET_KEY, {
+    expiresIn: "1d",
+  });
+};
+
+const userRegistration = async (req, res) => {
+  const { name, email, password, phoneNumber, partnerId, partnerCode, role, isActive } = req.body; 
 
   try {
     const user = await UserModel.findOne({ email: email, partnerCode: partnerCode });
     if (user) {
       return res
         .status(400)
-        .json({ status: "failed", message: "Email already exists or PartnerCode already exists." });
+        .json({ status: "failed", message: "Email or PartnerCode already exists." });
     }
 
     if (!name || !email || !password || !partnerId || !phoneNumber || !role) {
@@ -32,20 +43,17 @@ export const userRegistration = async (req, res) => {
       partnerId,
       partnerCode,
       isActive: isActive !== undefined ? isActive : false,
-
     });
 
     await newUser.save();
 
-    const token = jwt.sign(
-      { userID: newUser._id },
-      process.env.JWT_SECRET_KEY,
-      { expiresIn: "5d" }
-    );
+    const accessToken = generateAccessToken(newUser);
+    const refreshToken = generateRefreshToken(newUser);
 
     res.status(201).json({
       message: "Registration Success",
-      token: token,
+      accessToken: accessToken,
+      refreshToken: refreshToken,
       status: "success",
     });
   } catch (error) {
@@ -54,14 +62,12 @@ export const userRegistration = async (req, res) => {
   }
 };
 
-// login
-export const userLogin = async (req, res) => {
+const userLogin = async (req, res) => {
   const { email, password } = req.body;
+
   try {
     if (!email || !password) {
-      return res
-        .status(400)
-        .json({ status: "failed", message: "All Fields are Required" });
+      return res.status(400).json({ status: "failed", message: "All Fields are Required" });
     }
 
     const user = await UserModel.findOne({
@@ -70,31 +76,33 @@ export const userLogin = async (req, res) => {
     });
 
     if (!user) {
-      return res
-        .status(400)
-        .json({ status: "failed", message: "You are not a Registered User or your account is inactive" });
+      return res.status(400).json({
+        status: "failed",
+        message: "You are not a Registered User or your account is inactive",
+      });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res
-        .status(400)
-        .json({ status: "failed", message: "Email / PartnerCode or Password is not Valid" });
+      return res.status(400).json({
+        status: "failed",
+        message: "Email / PartnerCode or Password is not Valid",
+      });
     }
 
-    const token = jwt.sign({ userID: user._id }, process.env.JWT_SECRET_KEY, {
-      expiresIn: "5d",
-    });
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user);
 
     res.json({
       status: "success",
       message: "Login Success",
-      token: token,
+      accessToken: accessToken,
+      refreshToken: refreshToken,
       name: user.name,
       email: user.email,
       role: user.role,
       partnerId: user.partnerId,
-      partnerCode:user.partnerCode,
+      partnerCode: user.partnerCode,
       phoneNumber: user.phoneNumber,
       id: user._id,
     });
@@ -103,3 +111,33 @@ export const userLogin = async (req, res) => {
     res.status(500).json({ status: "failed", message: "Unable to Login" });
   }
 };
+
+// const refreshToken = async (req, res) => {
+//   const { refreshToken } = req.body;
+//   if (!refreshToken) {
+//     return res.status(401).json({ message: "Refresh Token not found" });
+//   }
+
+//   try {
+//     const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET_KEY);
+//     const user = await UserModel.findById(decoded.userID);
+//     if (!user) {
+//       return res.status(403).json({ message: "User not found" });
+//     }
+
+//     const newAccessToken = generateAccessToken(user);
+//     res.json({
+//       accessToken: newAccessToken,
+//       refreshToken: refreshToken,
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(403).json({ message: "Invalid Refresh Token" });
+//   }
+// };
+
+const logout = async (req, res) => {
+  res.status(200).json({ message: "Logout successful" });
+};
+
+export { userRegistration, userLogin, generateAccessToken, logout };
