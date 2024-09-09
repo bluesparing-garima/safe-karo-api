@@ -1,101 +1,10 @@
-// import express from "express";
-// import multer from "multer";
-// import path from "path";
-// import fs from "fs";
-
-// // Function to determine the folder name based on the document type
-// const getFolderName = (document) => {
-//   const baseUploadPath = "../uploads/";
-//   switch (document) {
-//     case "teamDocuments":
-//       return path.join(baseUploadPath, "teamDocuments");
-//     case "bookingRequest":
-//       return path.join(baseUploadPath, "bookingRequest");
-//     case "motorPolicy":
-//       return path.join(baseUploadPath, "motorPolicy");
-//     default:
-//       return baseUploadPath;
-//   }
-// };
-
-// // Ensure the directory exists, if not, create it
-// const ensureDirExists = (dir) => {
-//   if (!fs.existsSync(dir)) {
-//     fs.mkdirSync(dir, { recursive: true });
-//   }
-// };
-
-// // Multer storage configuration
-// const storage = multer.diskStorage({
-//   destination: (req, file, cb) => {
-//     const { document } = req.body;
-//     const folder = getFolderName(document);
-//     ensureDirExists(folder);
-//     cb(null, folder);
-//   },
-//   filename: (req, file, cb) => {
-//    // const { fullName, docName, partnerId } = req.body;
-//     const uniqueSuffix = `${fullName}_${docName}_${partnerId}${path.extname(
-//       file.originalname
-//     )}`;
-//     cb(null, uniqueSuffix);
-//   },
-// });
-
-// // File filter function
-// const fileFilter = (req, file, cb) => {
-//   if (
-//     file.mimetype.startsWith("image/") ||
-//     file.mimetype === "application/pdf" ||
-//     file.mimetype ===
-//       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
-//     file.mimetype === "application/vnd.ms-excel"
-//   ) {
-//     cb(null, true);
-//   } else {
-//     cb(
-//       new Error(
-//         "Unsupported file type! Please upload an image, a PDF document, or an Excel file."
-//       ),
-//       false
-//     );
-//   }
-// };
-// // Multer upload instance
-// const upload = multer({ dest: '../uploads/' })
-
-// // Middleware to handle file uploads
-// const uploadMiddleware = (req, res, next) => {
-//   upload(req, res, (err) => {
-//     if (err) {
-//       return res.status(400).json({ message: err.message });
-//     }
-//     next();
-//   });
-// };
-
-// const app = express();
-
-// app.use(express.json());
-// app.use(express.urlencoded({ extended: true }));
-
-// // app.post('/upload', uploadMiddleware, (req, res) => {
-// //   res.status(200).json({ message: 'Files uploaded successfully!', files: req.files });
-// // });
-
-// const PORT = process.env.PORT || 3000;
-
-// app.listen(PORT, () => {
-// });
-
-// export default upload;
-
-import { PDFDocument } from 'pdf-lib';
 import fs from 'fs';
 import path from 'path';
 import multer from 'multer';
 import sharp from 'sharp';
 import { fileURLToPath } from 'url';
+import { statSync } from 'fs';
+import { exec } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -156,26 +65,44 @@ const upload = multer({
   { name: "file", maxCount: 1 },
 ]);
 
-const compressImage = async (filePath) => {
-  const compressedPath = `${filePath}-compressed.jpg`;
-  await sharp(filePath)
-    .resize(700)
-    .jpeg({ quality: 50 })
-    .toFile(compressedPath);
-  fs.unlinkSync(filePath);
+const compressImageToSize = async (filePath, targetSize = 100000) => {
+  let quality = 80;
+  let compressedPath = filePath;
+  let fileSize = statSync(filePath).size;
+
+  while (fileSize > targetSize && quality > 10) {
+    compressedPath = `${filePath}-compressed.jpg`;
+    await sharp(filePath)
+      .resize(700)
+      .jpeg({ quality })
+      .toFile(compressedPath);
+
+    fileSize = statSync(compressedPath).size;
+    quality -= 10;
+  }
+
+  fs.unlinkSync(filePath); 
   return compressedPath;
 };
 
-const compressPDF = async (filePath) => {
-  const existingPdfBytes = fs.readFileSync(filePath);
-  const pdfDoc = await PDFDocument.load(existingPdfBytes);
-  
-  const compressedPdfBytes = await pdfDoc.save();
-  
-  const compressedPath = `${filePath}-compressed.pdf`;
-  fs.writeFileSync(compressedPath, compressedPdfBytes);
-  fs.unlinkSync(filePath);
-  return compressedPath;
+const compressPDFWithGhostscript = (inputPath, outputPath, targetSize, callback) => {
+  const gsCommand = `"C:\\Program Files\\gs\\gs10.03.1\\bin\\gswin64c.exe" -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen -dNOPAUSE -dQUIET -dBATCH -sOutputFile=${outputPath} ${inputPath}`;
+
+  exec(gsCommand, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`Error during Ghostscript compression: ${error.message}`);
+      return callback(error, null);
+    }
+    const fileSize = fs.statSync(outputPath).size;
+
+    if (fileSize > targetSize) {
+      console.warn(`Warning: Final compressed file is larger than target size of ${targetSize} bytes.`);
+    }
+
+    fs.unlinkSync(inputPath);
+
+    callback(null, outputPath);
+  });
 };
 
 export const handleFileUpload = (req, res, next) => {
@@ -191,17 +118,25 @@ export const handleFileUpload = (req, res, next) => {
     try {
       if (req.files && req.files.image) {
         const imageFilePath = req.files.image[0].path;
-        const compressedImagePath = await compressImage(imageFilePath);
+        const compressedImagePath = await compressImageToSize(imageFilePath, 100000);
         req.files.image[0].path = compressedImagePath;
       }
 
       if (req.files && req.files.file) {
         const pdfFilePath = req.files.file[0].path;
-        const compressedPDFPath = await compressPDF(pdfFilePath);
-        req.files.file[0].path = compressedPDFPath;
-      }
+        const compressedPDFPath = `${pdfFilePath}-compressed.pdf`;
 
-      next();
+        compressPDFWithGhostscript(pdfFilePath, compressedPDFPath, 500000, (error, finalPath) => {
+          if (error) {
+            return res.status(500).json({ message: "PDF compression failed", error: error.message });
+          }
+
+          req.files.file[0].path = finalPath;
+          next();
+        });
+      } else {
+        next();
+      }
     } catch (compressionError) {
       return res.status(500).json({ message: "File compression failed", error: compressionError.message });
     }
