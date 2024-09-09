@@ -4,13 +4,13 @@ import UserModel from "../models/userSchema.js";
 
 const generateAccessToken = (user) => {
   return jwt.sign({ userID: user._id }, process.env.JWT_SECRET_KEY, {
-    expiresIn: "1m",
+    expiresIn: "1h",
   });
 };
 
 const generateRefreshToken = (user) => {
   return jwt.sign({ userID: user._id }, process.env.JWT_REFRESH_SECRET_KEY, {
-    expiresIn: "1h",
+    expiresIn: "1d",
   });
 };
 
