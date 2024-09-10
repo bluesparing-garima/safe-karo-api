@@ -4,6 +4,6 @@ import refreshAccessToken  from "../controller/refreshToken.js";
 
 const router = express.Router();
 
-router.post("/refresh-token", refreshAccessToken);
+router.post("/", refreshAccessToken);
 
 export default router;

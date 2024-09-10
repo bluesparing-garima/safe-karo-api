@@ -169,7 +169,7 @@ app.use("/api/lead-payment", checkUserAuth, leadPayment);
 app.use("/api/user", userRoutes);
 
 // Refresh token
-app.use("/api", refreshTokenRoutes);
+app.use("/api/user/refresh-token", refreshTokenRoutes);
 
 //assignee roles Routes
 app.use("/api/user-roles", checkUserAuth, assigneeRolesRouters);
