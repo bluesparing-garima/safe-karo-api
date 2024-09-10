@@ -90,6 +90,10 @@ import brokerChart from "./routes/barAndLineChartRoutes/brokerChartRoutes.js";
 // pdf reader
 import pdfRoutes from "./routes/pdfReaderRoute.js";
 import pdfCompress from "./routes/pdfCompress.js";
+
+// Refresh Token
+import refreshTokenRoutes from "./routes/refreshTokenRoute.js";
+
 import testRoutes from "./routes/testRoutes.js";
 
 // ranks
@@ -163,6 +167,9 @@ app.use("/api/lead-payment", checkUserAuth, leadPayment);
 
 // user login/register
 app.use("/api/user", userRoutes);
+
+// Refresh token
+app.use("/api", refreshTokenRoutes);
 
 //assignee roles Routes
 app.use("/api/user-roles", checkUserAuth, assigneeRolesRouters);
