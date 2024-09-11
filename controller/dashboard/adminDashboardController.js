@@ -10,10 +10,8 @@ import Category from "../../models/adminModels/categorySchema.js";
 import Company from "../../models/adminModels/companySchema.js";
 import ProductType from "../../models/adminModels/productSchema.js";
 import SubProductType from "../../models/adminModels/productSubTypeSchema.js";
-import Roles from "../../models/adminModels/roleSchema.js";
 import Account from "../../models/accountsModels/accountSchema.js";
 
-// Controller function to get dashboard count
 export const getDashboardCount = async (req, res) => {
   const { startDate, endDate } = req.query;
 
@@ -23,7 +21,6 @@ export const getDashboardCount = async (req, res) => {
   };
 
   try {
-    // Count users by role
     const roleCounts = await UserProfileModel.aggregate([
       {
         $project: {
@@ -44,7 +41,6 @@ export const getDashboardCount = async (req, res) => {
     ]);
 
     const distinctRoles = await UserProfileModel.distinct("role");
-
     const formattedRoleCounts = {
       Total: distinctRoles.length,
     };
@@ -52,14 +48,11 @@ export const getDashboardCount = async (req, res) => {
       formattedRoleCounts[role._id] = role.count;
     });
 
-    // Count policies by category and calculate net and final premiums
     const policyCounts = await MotorPolicyModel.aggregate([
       { $match: { issueDate: dateFilter } },
       {
         $group: {
-          _id: {
-            $toLower: "$category",
-          },
+          _id: { $toLower: "$category" },
           count: { $sum: 1 },
         },
       },
@@ -75,11 +68,7 @@ export const getDashboardCount = async (req, res) => {
         },
       },
       {
-        $project: {
-          _id: 0,
-          NetPremium: 1,
-          FinalPremium: 1,
-        },
+        $project: { _id: 0, NetPremium: 1, FinalPremium: 1 },
       },
     ]);
 
@@ -87,11 +76,10 @@ export const getDashboardCount = async (req, res) => {
     policyCounts.forEach((policy) => {
       formattedPolicyCounts[policy._id] = policy.count;
     });
-    const netPremium = netPremiums.length > 0 ? netPremiums[0].NetPremium : 0;
-    const finalPremium =
-      netPremiums.length > 0 ? netPremiums[0].FinalPremium : 0;
 
-    // Sum payInCommission, payInAmount, payOutCommission, and payInBalance
+    const netPremium = netPremiums.length > 0 ? Math.round(netPremiums[0].NetPremium) : 0;
+    const finalPremium = netPremiums.length > 0 ? Math.round(netPremiums[0].FinalPremium) : 0;
+
     const commissionSums = await MotorPolicyPaymentModel.aggregate([
       { $match: { policyDate: dateFilter } },
       {
@@ -104,25 +92,15 @@ export const getDashboardCount = async (req, res) => {
         },
       },
       {
-        $project: {
-          _id: 0,
-          totalPayIn: 1,
-          receivedAmount: 1,
-          totalPayInBalance: 1,
-          totalPartnerPayout: 1,
-        },
+        $project: { _id: 0, totalPayIn: 1, receivedAmount: 1, totalPayInBalance: 1, totalPartnerPayout: 1 },
       },
     ]);
 
-    const totalPayIn =
-      commissionSums.length > 0 ? commissionSums[0].totalPayIn : 0;
-    const receivedAmount =
-      commissionSums.length > 0 ? commissionSums[0].receivedAmount : 0;
-    const totalPayInBalance = totalPayIn - receivedAmount;
-    const totalPartnerPayout =
-      commissionSums.length > 0 ? commissionSums[0].totalPartnerPayout : 0;
+    const totalPayIn = commissionSums.length > 0 ? Math.round(commissionSums[0].totalPayIn) : 0;
+    const receivedAmount = commissionSums.length > 0 ? Math.round(commissionSums[0].receivedAmount) : 0;
+    const totalPayInBalance = Math.round(totalPayIn - receivedAmount);
+    const totalPartnerPayout = commissionSums.length > 0 ? Math.round(commissionSums[0].totalPartnerPayout) : 0;
 
-    // Count booking requests by status
     const bookingCounts = await BookingRequest.aggregate([
       { $match: { createdOn: dateFilter } },
       { $group: { _id: "$bookingStatus", count: { $sum: 1 } } },
@@ -135,7 +113,6 @@ export const getDashboardCount = async (req, res) => {
       totalBookingRequest += booking.count;
     });
 
-    // Count leads by status
     const leadCounts = await Lead.aggregate([
       { $match: { createdOn: dateFilter } },
       { $group: { _id: "$status", count: { $sum: 1 } } },
@@ -156,44 +133,28 @@ export const getDashboardCount = async (req, res) => {
     const productTypeCount = await ProductType.countDocuments();
     const subProductTypeCount = await SubProductType.countDocuments();
 
-    // Prepare bookingRequests dynamically
     const bookingRequests = {
       "Total Booking": totalBookingRequest,
     };
     Object.keys(formattedBookingCounts).forEach((key) => {
-      bookingRequests[`${key.charAt(0).toUpperCase()}${key.slice(1)} Booking`] =
-        formattedBookingCounts[key];
+      bookingRequests[`${key.charAt(0).toUpperCase()}${key.slice(1)} Booking`] = formattedBookingCounts[key];
     });
 
-    // Prepare leadRequests dynamically
     const leadRequests = {
       "Total Lead": totalLead,
     };
     Object.keys(formattedLeadCounts).forEach((key) => {
-      leadRequests[`${key.charAt(0).toUpperCase()}${key.slice(1)} Lead`] =
-        formattedLeadCounts[key];
+      leadRequests[`${key.charAt(0).toUpperCase()}${key.slice(1)} Lead`] = formattedLeadCounts[key];
     });
 
-    // Count the number of accounts
     const totalAccounts = await Account.countDocuments();
-
-    // Sum the total amount across all accounts
     const totalAmountData = await Account.aggregate([
-      {
-        $group: {
-          _id: null,
-          totalAmount: { $sum: "$amount" },
-        },
-      },
+      { $group: { _id: null, totalAmount: { $sum: "$amount" } } },
     ]);
+    const totalAmount = totalAmountData.length > 0 ? Math.round(totalAmountData[0].totalAmount) : 0;
 
-    // Get individual accounts and their amounts
     const accounts = await Account.find({}, "accountCode amount");
 
-    const totalAmount =
-      totalAmountData.length > 0 ? totalAmountData[0].totalAmount : 0;
-
-    // Prepare final response data
     const data = {
       message: "Dashboard Count retrieved successfully",
       data: [

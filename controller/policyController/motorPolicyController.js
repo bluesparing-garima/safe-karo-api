@@ -1400,6 +1400,10 @@ export const updateMotorPolicy = async (req, res) => {
         partnerId,
         partnerName,
       };
+      
+      if (typeof isActive !== "undefined") {
+        updatedPaymentFields.isActive = isActive;
+      }
 
       const updatedPayment = await MotorPolicyPaymentModel.findOneAndUpdate(
         { policyNumber: updatedPolicyNumber },

@@ -4,7 +4,6 @@ import Lead from "../../models/partnerModels/leadGenerateSchema.js";
 import BookingRequest from "../../models/bookingModel/bookingRequestSchema.js";
 import creditAndDebitSchema from "../../models/accountsModels/creditAndDebitSchema.js";
 
-// Controller function to count policies by partnerId and category
 export const getPartnerDashboardCount = async (req, res) => {
   const { partnerId } = req.query;
 
@@ -25,7 +24,6 @@ export const getPartnerDashboardCount = async (req, res) => {
   };
 
   try {
-    // Aggregate count of policies by category for the specified partnerId
     const policyCounts = await MotorPolicyModel.aggregate([
       { $match: { partnerId, issueDate: dateFilter, isActive: true } },
       { $group: { _id: "$category", count: { $sum: 1 } } },
@@ -36,7 +34,6 @@ export const getPartnerDashboardCount = async (req, res) => {
       return acc;
     }, {});
 
-    // Aggregate net premium for the specified partnerId
     const netPremiumAggregate = await MotorPolicyModel.aggregate([
       { $match: { partnerId, issueDate: dateFilter } },
       { $group: { _id: null, totalNetPremium: { $sum: "$netPremium" } } },
@@ -46,7 +43,6 @@ export const getPartnerDashboardCount = async (req, res) => {
         ? netPremiumAggregate[0].totalNetPremium
         : 0;
 
-    // Aggregate lead counts for the specified partnerId
     const leadCounts = await Lead.aggregate([
       { $match: { partnerId, createdOn: dateFilter } },
       { $group: { _id: "$status", count: { $sum: 1 } } },
@@ -59,7 +55,6 @@ export const getPartnerDashboardCount = async (req, res) => {
       totalLead += lead.count;
     });
 
-    // Prepare leadCounts dynamically
     const leadRequests = {
       "Total Lead": totalLead,
     };
@@ -68,7 +63,6 @@ export const getPartnerDashboardCount = async (req, res) => {
         formattedLeadCounts[key];
     });
 
-    // Aggregate reward (totalPayOutCommission) for the specified partnerId with date filter
     const rewardAggregate = await MotorPolicyPaymentModel.aggregate([
       { $match: { partnerId, policyDate: dateFilter } },
       {
@@ -81,7 +75,6 @@ export const getPartnerDashboardCount = async (req, res) => {
     const reward =
       rewardAggregate.length > 0 ? rewardAggregate[0].totalPayOutCommission : 0;
 
-    // Aggregate reward (totalPayOutCommission) for the specified partnerId without date filter
     const totalRewardAggregate = await MotorPolicyPaymentModel.aggregate([
       { $match: { partnerId } },
       {
@@ -96,7 +89,6 @@ export const getPartnerDashboardCount = async (req, res) => {
         ? totalRewardAggregate[0].totalPayOutCommission
         : 0;
 
-    // Aggregate booking requests by status for the specified partnerId
     const bookingCounts = await BookingRequest.aggregate([
       { $match: { partnerId, createdOn: dateFilter } },
       { $group: { _id: "$bookingStatus", count: { $sum: 1 } } },
@@ -109,7 +101,6 @@ export const getPartnerDashboardCount = async (req, res) => {
       totalBookingRequest += booking.count;
     });
 
-    // Prepare bookingRequests dynamically
     const bookingRequests = {
       "Total Booking": totalBookingRequest,
     };
@@ -118,7 +109,6 @@ export const getPartnerDashboardCount = async (req, res) => {
         formattedBookingCounts[key];
     });
 
-    // Get the last entry of partnerBalance for the specified partnerId
     const lastBalanceEntry = await creditAndDebitSchema.findOne(
       { partnerId },
       { partnerBalance: 1 },
@@ -126,7 +116,6 @@ export const getPartnerDashboardCount = async (req, res) => {
     );
     const balance = lastBalanceEntry ? lastBalanceEntry.partnerBalance : 0;
 
-    // Aggregate total payOutAmount for the specified partnerId
     const payOutAmountAggregate = await MotorPolicyPaymentModel.aggregate([
       { $match: { partnerId, policyDate: dateFilter } },
       { $group: { _id: null, totalPayOutAmount: { $sum: "$payOutAmount" } } },
@@ -136,18 +125,28 @@ export const getPartnerDashboardCount = async (req, res) => {
         ? payOutAmountAggregate[0].totalPayOutAmount
         : 0;
 
+    const totalPayOutAmountAggregate = await MotorPolicyPaymentModel.aggregate([
+      { $match: { partnerId } },
+      { $group: { _id: null, totalPayOutAmount: { $sum: "$payOutAmount" } } },
+    ]);
+    const totalPayOutAmount =
+      totalPayOutAmountAggregate.length > 0
+        ? totalPayOutAmountAggregate[0].totalPayOutAmount
+        : 0;
+
     const data = {
       message: "Partner dashboard counts retrieved successfully",
       data: [
         {
           premiums: {
-            "Net Premium": netPremium,
+            "Net Premium": Math.round(netPremium),
           },
           commissions: {
-            "Monthly Commission": reward,
-            "Total Commission": totalReward,
-            Balance: balance,
-            "Paid Amount": payOutAmount,
+            "Monthly Commission": Math.round(reward),
+            "Total Commission": Math.round(totalReward),
+            Balance: Math.round(balance),
+            "Monthly Paid Amount": Math.round(payOutAmount),
+            "Total Paid Amount": Math.round(totalPayOutAmount),
           },
           policyCounts: formattedPolicyCounts,
           bookingRequests: bookingRequests,
@@ -165,3 +164,4 @@ export const getPartnerDashboardCount = async (req, res) => {
     });
   }
 };
+

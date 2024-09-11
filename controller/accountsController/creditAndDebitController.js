@@ -2,7 +2,7 @@ import CreditAndDebit from "../../models/accountsModels/creditAndDebitSchema.js"
 import Account from "../../models/accountsModels/accountSchema.js";
 import MotorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
 import Debit from "../../models/accountsModels/debitsSchema.js";
-import moment from "moment"; 
+import moment from "moment";
 
 const generateTransactionCode = async (startDate, endDate, credit, debit) => {
   try {
@@ -170,8 +170,8 @@ export const getCreditDetailsByBrokerId = async (req, res) => {
     endDateObj.setHours(23, 59, 59, 999);
 
     const transactions = await CreditAndDebit.find({
-      startDate: { $gte: startDateObj },
-      endDate: { $lte: endDateObj },
+      distributedDate: { $gte: startDateObj },
+      distributedDate: { $lte: endDateObj },
       brokerId,
     });
 
@@ -215,8 +215,8 @@ export const getDebitDetailsByPartnerId = async (req, res) => {
     endDateObj.setHours(23, 59, 59, 999);
     
     const transactions = await CreditAndDebit.find({
-      startDate: { $gte: startDateObj },
-      endDate: { $lte: endDateObj },
+      distributedDate: { $gte: startDateObj },
+      distributedDate: { $lte: endDateObj },
       partnerId,
     });
 
@@ -429,7 +429,7 @@ export const getTotalAmountByDateRangeAndBrokerName = async (req, res) => {
   }
 };
 
-// Get Total Payout Commission by Date Range and Partner ID
+// Get Debit data by Date Range and PartnerId
 export const getCreditAndDebitByDateRangeAndPartnerId = async (req, res) => {
   const { startDate, endDate, partnerId } = req.query;
 
@@ -493,7 +493,7 @@ export const getCreditAndDebitByDateRangeAndPartnerId = async (req, res) => {
   }
 };
 
-// Get Debit data by Date Range and PartnerId
+// Get Total Payout Commission by Date Range and Partner ID 
 export const getTotalAmountByDateRangeAndPartnerId = async (req, res) => {
   const { startDate, endDate, partnerId } = req.query;
 
