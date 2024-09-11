@@ -25,8 +25,8 @@ export const getBookingDashboardCount = async (req, res) => {
       },
       { $group: { _id: null, totalNetPremium: { $sum: "$netPremium" } } },
     ]);
-    const netPremium = netPremiumAggregate.length > 0 ? netPremiumAggregate[0].totalNetPremium : 0;
-
+    const netPremium = netPremiumAggregate.length > 0 ? Math.round(netPremiumAggregate[0].totalNetPremium * 100) / 100 : 0;
+    
     const finalPremiumAggregate = await MotorPolicyModel.aggregate([
       {
         $match: {
@@ -36,8 +36,8 @@ export const getBookingDashboardCount = async (req, res) => {
       },
       { $group: { _id: null, totalFinalPremium: { $sum: "$finalPremium" } } },
     ]);
-    const finalPremium = finalPremiumAggregate.length > 0 ? finalPremiumAggregate[0].totalFinalPremium : 0;
-
+    const finalPremium = finalPremiumAggregate.length > 0 ? Math.round(finalPremiumAggregate[0].totalFinalPremium * 100) / 100 : 0;
+    
     const requestedBookingCount = await BookingRequest.countDocuments({
       bookingStatus: "requested",
       createdOn: { $gte: start, $lte: end },

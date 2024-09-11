@@ -146,6 +146,7 @@ export const policyStatusManage = async (req, res) => {
         updatedBy,
         updatedOn,
         transactionCode,
+        distributedDate,
       }) => {
         let existingPayment = await motorPolicyPayment.findOne({ policyNumber });
 
@@ -163,7 +164,7 @@ export const policyStatusManage = async (req, res) => {
             brokerBalance,
             createdOn: new Date(),
             transactionCode,
-            updatedOn,
+            updatedOn: distributedDate,
             remarks,
           });
         } else {
@@ -174,8 +175,8 @@ export const policyStatusManage = async (req, res) => {
           existingPayment.payInBalance = payInBalance;
           existingPayment.payOutBalance = payOutBalance;
           existingPayment.partnerBalance = partnerBalance;
-          existingPayment.brokerBalance=brokerBalance;
-          existingPayment.updatedOn = updatedOn;
+          existingPayment.brokerBalance = brokerBalance;
+          existingPayment.updatedOn = distributedDate;
           existingPayment.transactionCode = transactionCode;
           existingPayment.remarks = remarks;
         }
@@ -200,6 +201,7 @@ export const policyStatusManage = async (req, res) => {
             createdOn: existingPayment.createdOn,
             updatedOn: updatedOn,
             remarks,
+            distributedDate: distributedDate,
           });
 
           await newDebit.save();
@@ -220,6 +222,7 @@ export const policyStatusManage = async (req, res) => {
             createdOn: existingPayment.createdOn,
             updatedOn: updatedOn,
             remarks,
+            distributedDate: distributedDate,
           });
 
           await newCredit.save();
