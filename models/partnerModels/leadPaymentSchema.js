@@ -17,10 +17,21 @@ const leadPaymentSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  operationId: {
+    type: String,
+  },  
+  operationName:{
+    type:String,
+  },
   partnerId: {
     type: String,
     required: true,
-  },createdBy: {
+  },
+  partnerName:{
+    type:String,
+    required:true
+  },
+  createdBy: {
     type: String,
     trim: true,
   },

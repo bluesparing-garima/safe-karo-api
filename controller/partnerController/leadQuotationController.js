@@ -20,6 +20,8 @@ export const createNewQuotation = async (req, res) => {
         status,
         partnerId,
         partnerName,
+        operationId,
+        operationName,
         createdBy,
       } = req.body;
 
@@ -33,7 +35,9 @@ export const createNewQuotation = async (req, res) => {
       const missingFields = [];
       if (!leadId) missingFields.push("leadId");
       if (!status) missingFields.push("status");
-      if (!partnerId) missingFields.push("partnerId");
+
+      // Either partnerId or operationId should be present
+      if (!partnerId && !operationId) missingFields.push("partnerId or operationId");
 
       if (missingFields.length > 0) {
         return res.status(400).json({
@@ -49,13 +53,14 @@ export const createNewQuotation = async (req, res) => {
         status,
         partnerId,
         partnerName,
+        operationId,
+        operationName,
         createdBy,
       });
 
       await newQuotation.save();
       
       if (newQuotation) {
-        // Update lead status
         const updatedLead = await leadGenerateModel.findByIdAndUpdate(
           leadId,
           { status },
@@ -68,14 +73,13 @@ export const createNewQuotation = async (req, res) => {
           });
         }
 
-        // Create a notification based on who initiates the action
-        const notificationBy = partnerId ? partnerId : createdBy; // Either partner or operation
-        const notificationFor = partnerId ? "operation" : partnerId; // Notify either operation or partner
-        
+        const notificationBy = operationId ? operationId : partnerId ? partnerId : createdBy;
+        const notificationFor = operationId ? "operation" : partnerId ? "partner" : createdBy;
+
         const newNotification = new NotificationModel({
           title: 'New Quotation Created',
           type: 'success',
-          role: partnerId ? 'partner' : 'operation',
+          role: operationId ? 'operation' : 'partner',
           notificationFor,
           notificationBy,
           createdBy,
@@ -181,9 +185,8 @@ export const updateQuotation = async (req, res) => {
     }
     try {
       const { id } = req.params;
-      const { status, updatedBy } = req.body;
+      const { status, updatedBy, partnerId, partnerName, operationId, operationName } = req.body;
 
-      // Check if the quotation exists
       const existingQuotation = await leadQuotationModel.findById(id);
       if (!existingQuotation) {
         return res
@@ -198,20 +201,25 @@ export const updateQuotation = async (req, res) => {
         return acc;
       }, {});
 
+      const updatedData = {
+        ...req.body,
+        ...fileDetails,
+      };
+
       const updatedQuotation = await leadQuotationModel.findByIdAndUpdate(
         id,
-        { ...req.body, ...fileDetails },
+        updatedData,
         { new: true }
       );
 
       if (status && status !== existingQuotation.status) {
-        const notificationBy = updatedBy;
-        const notificationFor = existingQuotation.partnerId || "operation";
+        const notificationBy = operationId ? operationId : partnerId ? partnerId : updatedBy;
+        const notificationFor = operationId ? "operation" : partnerId ? "partner" : "other";
 
         const newNotification = new NotificationModel({
           title: `Quotation Status changed to ${status}`,
           type: 'success',
-          role: "operation",
+          role: operationId ? 'operation' : 'partner',
           notificationFor,
           notificationBy,
           createdBy: updatedBy,
