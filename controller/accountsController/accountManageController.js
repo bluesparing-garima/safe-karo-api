@@ -17,7 +17,7 @@ const generateTransactionCode = async (startDate, endDate, type, amount) => {
     const formattedEndDate = moment(endDate).format("DDMMYY");
     const formattedAmount = amount ? String(amount).padStart(4, '0') : '0000';
     const currentDate = moment().format("DDMMYYYY");
-    const currentTime = moment().format("[T]HH:mm:ss");
+    const currentTime = moment().format("[T]HHmmss");
 
     return `PC${formattedStartDate}${formattedEndDate}AM${formattedAmount}${currentDate}${currentTime}`;
   } catch (error) {

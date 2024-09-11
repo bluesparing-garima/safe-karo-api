@@ -14,6 +14,10 @@ const creditSchema = new mongoose.Schema({
   paymentCreatedOn: { type: Date, default: Date.now },
   paymentUpdatedOn: { type: Date, default: Date.now },
   remarks:{type:String,trim:true},
+  distributedDate:{
+    type: Date,
+    trim: true,
+  },
 });
 
 const credits = mongoose.model("credit", creditSchema);
