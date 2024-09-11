@@ -38,10 +38,7 @@ export const getPartnerDashboardCount = async (req, res) => {
       { $match: { partnerId, issueDate: dateFilter } },
       { $group: { _id: null, totalNetPremium: { $sum: "$netPremium" } } },
     ]);
-    const netPremium =
-      netPremiumAggregate.length > 0
-        ? netPremiumAggregate[0].totalNetPremium
-        : 0;
+    const netPremium = netPremiumAggregate.length > 0 ? netPremiumAggregate[0].totalNetPremium : 0;
 
     const leadCounts = await Lead.aggregate([
       { $match: { partnerId, createdOn: dateFilter } },
@@ -65,29 +62,15 @@ export const getPartnerDashboardCount = async (req, res) => {
 
     const rewardAggregate = await MotorPolicyPaymentModel.aggregate([
       { $match: { partnerId, policyDate: dateFilter } },
-      {
-        $group: {
-          _id: null,
-          totalPayOutCommission: { $sum: "$payOutCommission" },
-        },
-      },
+      { $group: { _id: null, totalPayOutCommission: { $sum: "$payOutCommission" } } },
     ]);
-    const reward =
-      rewardAggregate.length > 0 ? rewardAggregate[0].totalPayOutCommission : 0;
+    const reward = rewardAggregate.length > 0 ? rewardAggregate[0].totalPayOutCommission : 0;
 
     const totalRewardAggregate = await MotorPolicyPaymentModel.aggregate([
       { $match: { partnerId } },
-      {
-        $group: {
-          _id: null,
-          totalPayOutCommission: { $sum: "$payOutCommission" },
-        },
-      },
+      { $group: { _id: null, totalPayOutCommission: { $sum: "$payOutCommission" } } },
     ]);
-    const totalReward =
-      totalRewardAggregate.length > 0
-        ? totalRewardAggregate[0].totalPayOutCommission
-        : 0;
+    const totalReward = totalRewardAggregate.length > 0 ? totalRewardAggregate[0].totalPayOutCommission : 0;
 
     const bookingCounts = await BookingRequest.aggregate([
       { $match: { partnerId, createdOn: dateFilter } },
@@ -101,13 +84,13 @@ export const getPartnerDashboardCount = async (req, res) => {
       totalBookingRequest += booking.count;
     });
 
-    const bookingRequests = {
-      "Total Booking": totalBookingRequest,
-    };
-    Object.keys(formattedBookingCounts).forEach((key) => {
-      bookingRequests[`${key.charAt(0).toUpperCase()}${key.slice(1)} Booking`] =
-        formattedBookingCounts[key];
-    });
+    // Ensure all possible statuses are included with default values
+    const bookingStatuses = ["accepted", "requested", "booked", "Rejected"];
+    const bookingRequestsWithDefaults = bookingStatuses.reduce((acc, status) => {
+      acc[`${status.charAt(0).toUpperCase()}${status.slice(1)} Booking`] = formattedBookingCounts[status] || 0;
+      totalBookingRequest += acc[`${status.charAt(0).toUpperCase()}${status.slice(1)} Booking`];
+      return acc;
+    }, { "Total Booking": totalBookingRequest });
 
     const lastBalanceEntry = await creditAndDebitSchema.findOne(
       { partnerId },
@@ -120,19 +103,13 @@ export const getPartnerDashboardCount = async (req, res) => {
       { $match: { partnerId, policyDate: dateFilter } },
       { $group: { _id: null, totalPayOutAmount: { $sum: "$payOutAmount" } } },
     ]);
-    const payOutAmount =
-      payOutAmountAggregate.length > 0
-        ? payOutAmountAggregate[0].totalPayOutAmount
-        : 0;
+    const payOutAmount = payOutAmountAggregate.length > 0 ? payOutAmountAggregate[0].totalPayOutAmount : 0;
 
     const totalPayOutAmountAggregate = await MotorPolicyPaymentModel.aggregate([
       { $match: { partnerId } },
       { $group: { _id: null, totalPayOutAmount: { $sum: "$payOutAmount" } } },
     ]);
-    const totalPayOutAmount =
-      totalPayOutAmountAggregate.length > 0
-        ? totalPayOutAmountAggregate[0].totalPayOutAmount
-        : 0;
+    const totalPayOutAmount = totalPayOutAmountAggregate.length > 0 ? totalPayOutAmountAggregate[0].totalPayOutAmount : 0;
 
     const data = {
       message: "Partner dashboard counts retrieved successfully",
@@ -149,7 +126,7 @@ export const getPartnerDashboardCount = async (req, res) => {
             "Total Paid Amount": Math.round(totalPayOutAmount),
           },
           policyCounts: formattedPolicyCounts,
-          bookingRequests: bookingRequests,
+          bookingRequests: bookingRequestsWithDefaults,
           leadCounts: leadRequests,
         },
       ],
@@ -164,4 +141,3 @@ export const getPartnerDashboardCount = async (req, res) => {
     });
   }
 };
-
