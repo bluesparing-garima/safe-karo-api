@@ -2,28 +2,6 @@ import AccountManage from "../../models/accountsModels/accountManageSchema.js";
 import Account from "../../models/accountsModels/accountSchema.js";
 import MotorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchema.js";
 import Debit from "../../models/accountsModels/debitsSchema.js";
-import moment from 'moment';
-
-const generateTransactionCode = async (startDate, endDate, type, amount) => {
-  try {
-    if (!moment(startDate, "YYYY-MM-DD", true).isValid()) {
-      throw new Error("Invalid startDate");
-    }
-    if (!moment(endDate, "YYYY-MM-DD", true).isValid()) {
-      throw new Error("Invalid endDate");
-    }
-
-    const formattedStartDate = moment(startDate).format("DDMMYY");
-    const formattedEndDate = moment(endDate).format("DDMMYY");
-    const formattedAmount = amount ? String(amount).padStart(4, '0') : '0000';
-    const currentDate = moment().format("DDMMYYYY");
-    const currentTime = moment().format("[T]HHmmss");
-
-    return `PC${formattedStartDate}${formattedEndDate}AM${formattedAmount}${currentDate}${currentTime}`;
-  } catch (error) {
-    throw new Error("Error generating transaction code");
-  }
-};
 
 // Create a new credit and debit transaction
 export const createAccountManage = async (req, res) => {
@@ -50,7 +28,8 @@ export const createAccountManage = async (req, res) => {
       createdBy,
       createdOn,
       partnerBalance,
-      brokerBalance = 0
+      brokerBalance = 0,
+      transactionCode
     } = req.body;
 
     const transactionType = type.toLowerCase();
@@ -107,8 +86,6 @@ export const createAccountManage = async (req, res) => {
           message: "Motor policy payment not found.",
         });
       }
-
-      const transactionCode = await generateTransactionCode(startDate, endDate, transactionType, amount);
 
       const newDebitEntry = new Debit({
         policyNumber,
@@ -170,8 +147,6 @@ export const createAccountManage = async (req, res) => {
 
     await account.save();
 
-    const transactionCode = await generateTransactionCode(startDate, endDate, transactionType, amount);
-
     const newAccountManage = new AccountManage({
       accountType,
       type: transactionType,
@@ -195,7 +170,7 @@ export const createAccountManage = async (req, res) => {
       createdOn,
       partnerBalance,
       brokerBalance,
-      transactionCode, 
+      transactionCode,
     });
 
     await newAccountManage.save();
