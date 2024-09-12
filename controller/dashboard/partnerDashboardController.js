@@ -124,6 +124,8 @@ export const getPartnerDashboardCount = async (req, res) => {
             Balance: Math.round(balance),
             "Monthly Paid Amount": Math.round(payOutAmount),
             "Total Paid Amount": Math.round(totalPayOutAmount),
+            "Monthly UnPaid Amount":Math.round(reward-payOutAmount),
+            "Total UnPaid Amount":Math.round(totalReward-totalPayOutAmount)
           },
           policyCounts: formattedPolicyCounts,
           bookingRequests: bookingRequestsWithDefaults,
