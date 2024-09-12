@@ -29,7 +29,7 @@ export const createAccountManage = async (req, res) => {
       createdOn,
       partnerBalance,
       brokerBalance = 0,
-      transactionCode
+      transactionCode,
     } = req.body;
 
     const transactionType = type.toLowerCase();
@@ -53,10 +53,15 @@ export const createAccountManage = async (req, res) => {
       accountType: "CutPay",
     });
 
-    if (existingMotorPolicyPayment && existingDebitEntry && existingAccountManage) {
+    if (
+      existingMotorPolicyPayment &&
+      existingDebitEntry &&
+      existingAccountManage
+    ) {
       return res.status(400).json({
         status: "error",
-        message: "The CutPay amount has already been paid for this partner for this policy number.",
+        message:
+          "The CutPay amount has already been paid for this partner for this policy number.",
       });
     }
 
@@ -102,6 +107,7 @@ export const createAccountManage = async (req, res) => {
       await newDebitEntry.save();
 
       account.amount -= amount;
+
       await account.save();
 
       const newAccountManage = new AccountManage({
@@ -141,13 +147,17 @@ export const createAccountManage = async (req, res) => {
         },
       });
     }
+    let prevAmount = account.amount;
+    let enteredAmount = amount;
+    let finalBalance = 0;
 
     if (transactionType === "credit") {
       account.amount += amount;
+      finalBalance = prevAmount + enteredAmount;
     } else if (transactionType === "debit") {
       account.amount -= amount;
+      finalBalance = prevAmount - enteredAmount;
     }
-
     await account.save();
 
     const newAccountManage = new AccountManage({
@@ -174,6 +184,7 @@ export const createAccountManage = async (req, res) => {
       partnerBalance,
       brokerBalance,
       transactionCode,
+      accountBalance: finalBalance,
     });
 
     await newAccountManage.save();
@@ -199,18 +210,9 @@ export const createAccountManage = async (req, res) => {
 export const getAccountManage = async (req, res) => {
   try {
     const transactions = await AccountManage.find();
-    
-    const transactionsWithBalance = await Promise.all(transactions.map(async (transaction) => {
-      const account = await Account.findById(transaction.accountId);
-      return {
-        ...transaction.toObject(),
-        accountBalance: account ? account.amount : 0,
-      };
-    }));
-
     res.status(200).json({
       message: "Transactions retrieved successfully",
-      data: transactionsWithBalance,
+      data: transactions,
       status: "success",
     });
   } catch (error) {
