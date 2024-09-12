@@ -41,6 +41,10 @@ const accountManageSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
+  accountBalance:{
+    type:Number,
+    trim:true
+  },
   partnerBalance:{
     type:Number,
     trim:true,

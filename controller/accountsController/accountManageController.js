@@ -135,7 +135,10 @@ export const createAccountManage = async (req, res) => {
       return res.status(201).json({
         status: "success",
         message: "CutPay debit transaction processed successfully.",
-        data: newAccountManage,
+        data: {
+          ...newAccountManage.toObject(),
+          accountBalance: account.amount,
+        },
       });
     }
 
@@ -177,7 +180,10 @@ export const createAccountManage = async (req, res) => {
 
     res.status(201).json({
       message: "Transaction created successfully",
-      data: newAccountManage,
+      data: {
+        ...newAccountManage.toObject(),
+        accountBalance: account.amount,
+      },
       status: "success",
     });
   } catch (error) {
@@ -193,9 +199,18 @@ export const createAccountManage = async (req, res) => {
 export const getAccountManage = async (req, res) => {
   try {
     const transactions = await AccountManage.find();
+    
+    const transactionsWithBalance = await Promise.all(transactions.map(async (transaction) => {
+      const account = await Account.findById(transaction.accountId);
+      return {
+        ...transaction.toObject(),
+        accountBalance: account ? account.amount : 0,
+      };
+    }));
+
     res.status(200).json({
       message: "Transactions retrieved successfully",
-      data: transactions,
+      data: transactionsWithBalance,
       status: "success",
     });
   } catch (error) {
@@ -212,7 +227,6 @@ export const getAccountDetailsByAccountId = async (req, res) => {
   try {
     const { accountId } = req.params;
 
-    // Find all related transactions for the account using accountId in the AccountManage table
     const transactions = await AccountManage.find({ accountId });
 
     if (!transactions.length) {
@@ -222,11 +236,18 @@ export const getAccountDetailsByAccountId = async (req, res) => {
       });
     }
 
-    // Return the transactions directly in the response
+    const account = await Account.findById(accountId);
+    const accountBalance = account ? account.amount : 0;
+
+    const transactionsWithBalance = transactions.map((transaction) => ({
+      ...transaction.toObject(),
+      accountBalance,
+    }));
+
     res.status(200).json({
       status: "success",
       message: "Account details retrieved successfully",
-      data: transactions,
+      data: transactionsWithBalance,
     });
   } catch (error) {
     res.status(500).json({
@@ -236,7 +257,6 @@ export const getAccountDetailsByAccountId = async (req, res) => {
     });
   }
 };
-
 
 // Get credit details by date range and broker ID
 export const getAccountDetailsByBrokerId = async (req, res) => {
@@ -270,10 +290,20 @@ export const getAccountDetailsByBrokerId = async (req, res) => {
       });
     }
 
+    const transactionsWithBalance = await Promise.all(
+      transactions.map(async (transaction) => {
+        const account = await Account.findById(transaction.accountId);
+        return {
+          ...transaction.toObject(),
+          accountBalance: account ? account.amount : 0,
+        };
+      })
+    );
+
     res.status(200).json({
       status: "success",
       message: "Credit and debit data retrieved successfully.",
-      data: transactions,
+      data: transactionsWithBalance,
     });
   } catch (error) {
     res.status(500).json({
@@ -316,10 +346,20 @@ export const getAccountDetailsByPartnerId = async (req, res) => {
       });
     }
 
+    const transactionsWithBalance = await Promise.all(
+      transactions.map(async (transaction) => {
+        const account = await Account.findById(transaction.accountId);
+        return {
+          ...transaction.toObject(),
+          accountBalance: account ? account.amount : 0,
+        };
+      })
+    );
+
     res.status(200).json({
       status: "success",
       message: "Debit data retrieved successfully.",
-      data: transactions,
+      data: transactionsWithBalance,
     });
   } catch (error) {
     res.status(500).json({
