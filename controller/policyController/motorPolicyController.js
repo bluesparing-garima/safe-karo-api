@@ -934,7 +934,7 @@ export const getMotorPolicyByPartnerId = async (req, res) => {
     const start = new Date(startDate);
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
-    
+
     const policies = await MotorPolicyModel.find({
       partnerId,
       isActive: true,
@@ -955,12 +955,43 @@ export const getMotorPolicyByPartnerId = async (req, res) => {
       });
     }
 
+    const policyNumbers = policies.map(policy => policy.policyNumber);
+
+    const payments = await MotorPolicyPaymentModel.find({
+      policyNumber: { $in: policyNumbers },
+    }).lean();
+
+    const paymentMap = {};
+    payments.forEach(payment => {
+      paymentMap[payment.policyNumber] = payment;
+    });
+
+    const policiesWithDetails = policies.map(policy => {
+      const payment = paymentMap[policy.policyNumber] || {};
+
+      return {
+        ...policy,
+        payOutODPercentage: payment.payOutODPercentage || 0,
+        payOutTPPercentage: payment.payOutTPPercentage || 0,
+        payOutODAmount: payment.payOutODAmount || 0,
+        payOutTPAmount: payment.payOutTPAmount || 0,
+        payOutCommission: payment.payOutCommission || 0,
+        payOutAmount: payment.payOutAmount || 0,
+        payOutPaymentStatus: payment.payOutPaymentStatus || "UnPaid",
+        payOutBalance: payment.payOutBalance || 0,
+        paymentCreatedBy: payment.createdBy || 0,
+        paymentCreatedOn: payment.createdOn || 0,
+        paymentUpdatedBy: payment.updatedBy || 0,
+        paymentUpdatedOn: payment.updatedOn || 0,
+      };
+    });
+
     res.status(200).json({
-      message: `Motor Policies from ${startDate} to ${endDate} for partner ${partnerId}.`,
-      data: policies,
+      message: `Motor Policies from ${startDate} to ${endDate} for partner ${partnerId} with payout details.`,
+      data: policiesWithDetails,
       success: true,
       status: "success",
-      totalCount: policies.length,
+      totalCount: policiesWithDetails.length,
     });
   } catch (error) {
     res.status(500).json({
@@ -970,8 +1001,6 @@ export const getMotorPolicyByPartnerId = async (req, res) => {
     });
   }
 };
-
-
 
 /*export const getMotorPolicyByPartnerId = async (req, res) => {
   try {
