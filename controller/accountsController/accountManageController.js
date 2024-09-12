@@ -224,7 +224,7 @@ export const getAccountManage = async (req, res) => {
   }
 };
 
-// Get all account details bu accoutn Id
+// Get all account details by account Id
 export const getAccountDetailsByAccountId = async (req, res) => {
   try {
     const { accountId } = req.params;
