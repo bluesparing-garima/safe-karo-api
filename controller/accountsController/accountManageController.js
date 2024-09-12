@@ -224,7 +224,7 @@ export const getAccountManage = async (req, res) => {
   }
 };
 
-// Get all account details bu accoutn Id
+// Get all account details by account Id
 export const getAccountDetailsByAccountId = async (req, res) => {
   try {
     const { accountId } = req.params;
@@ -238,8 +238,8 @@ export const getAccountDetailsByAccountId = async (req, res) => {
       });
     }
 
-    const account = await Account.findById(accountId);
-    const accountBalance = account ? account.amount : 0;
+    const account = await AccountManage.findById(accountId);
+    const accountBalance = account ? account.accountBalance : 0;
 
     const transactionsWithBalance = transactions.map((transaction) => ({
       ...transaction.toObject(),
