@@ -135,10 +135,7 @@ export const createAccountManage = async (req, res) => {
       return res.status(201).json({
         status: "success",
         message: "CutPay debit transaction processed successfully.",
-        data: {
-          ...newAccountManage.toObject(),
-          accountBalance: account.amount,
-        },
+        data: newAccountManage,
       });
     }
 
@@ -180,10 +177,7 @@ export const createAccountManage = async (req, res) => {
 
     res.status(201).json({
       message: "Transaction created successfully",
-      data: {
-        ...newAccountManage.toObject(),
-        accountBalance: account.amount,
-      },
+      data: newAccountManage,
       status: "success",
     });
   } catch (error) {
@@ -199,18 +193,10 @@ export const createAccountManage = async (req, res) => {
 export const getAccountManage = async (req, res) => {
   try {
     const transactions = await AccountManage.find();
-    
-    const transactionsWithBalance = await Promise.all(transactions.map(async (transaction) => {
-      const account = await Account.findById(transaction.accountId);
-      return {
-        ...transaction.toObject(),
-        accountBalance: account ? account.amount : 0,
-      };
-    }));
 
     res.status(200).json({
       message: "Transactions retrieved successfully",
-      data: transactionsWithBalance,
+      data: transactions,
       status: "success",
     });
   } catch (error) {
@@ -222,7 +208,7 @@ export const getAccountManage = async (req, res) => {
   }
 };
 
-// Get all account details bu accoutn Id
+// Get all account details by account Id
 export const getAccountDetailsByAccountId = async (req, res) => {
   try {
     const { accountId } = req.params;
@@ -236,18 +222,10 @@ export const getAccountDetailsByAccountId = async (req, res) => {
       });
     }
 
-    const account = await Account.findById(accountId);
-    const accountBalance = account ? account.amount : 0;
-
-    const transactionsWithBalance = transactions.map((transaction) => ({
-      ...transaction.toObject(),
-      accountBalance,
-    }));
-
     res.status(200).json({
       status: "success",
       message: "Account details retrieved successfully",
-      data: transactionsWithBalance,
+      data: transactions,
     });
   } catch (error) {
     res.status(500).json({
