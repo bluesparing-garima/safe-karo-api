@@ -230,26 +230,16 @@ export const getAccountDetailsByAccountId = async (req, res) => {
     const { accountId } = req.params;
 
     const transactions = await AccountManage.find({ accountId });
-
     if (!transactions.length) {
       return res.status(404).json({
         status: "error",
         message: "No transactions found for this account",
       });
     }
-
-    const account = await AccountManage.findById(accountId);
-    const accountBalance = account ? account.accountBalance : 0;
-
-    const transactionsWithBalance = transactions.map((transaction) => ({
-      ...transaction.toObject(),
-      accountBalance,
-    }));
-
     res.status(200).json({
       status: "success",
       message: "Account details retrieved successfully",
-      data: transactionsWithBalance,
+      data: transactions,
     });
   } catch (error) {
     res.status(500).json({
