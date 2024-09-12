@@ -165,6 +165,37 @@ export const getRejectedBookingRequests = async (req, res) => {
   }
 };
 
+export const getRejectedBookingRequestsByPartnerId = async (req, res) => {
+  try {
+    const { partnerId } = req.query;
+
+    if (!partnerId) {
+      return res.status(400).json({
+        message: "Partner ID is required.",
+        status: "error",
+      });
+    }
+
+    const rejectedBookings = await BookingRequestModel.find({
+      isRejected: true,
+      bookingStatus:"rejected",
+      bookingStatus:"Rejected",
+      partnerId: partnerId,
+    });
+
+    res.status(200).json({
+      message: "Rejected bookings of partner retrieved successfully.",
+      data: rejectedBookings,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving rejected bookings",
+      error: error.message,
+    });
+  }
+};
+
 // Get motorpolicy by bookingId
 export const getBookingRequestsByBookingId = async (req, res) => {
   try {
@@ -249,7 +280,11 @@ export const getBookingRequestsByAcceptedBy = async (req, res) => {
 export const getBookingRequestsByPartnerId = async (req, res) => {
   try {
     const { partnerId } = req.params;
-    const bookings = await BookingRequestModel.find({ partnerId });
+
+    const bookings = await BookingRequestModel.find({
+      partnerId,
+      bookingStatus: { $ne: "booked" }
+    });
 
     if (bookings.length === 0) {
       return res.status(404).json({
