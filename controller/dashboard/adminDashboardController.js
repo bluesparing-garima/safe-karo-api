@@ -93,7 +93,7 @@ export const getDashboardCount = async (req, res) => {
 
     // Combine category data
     commissionSums.forEach((commission) => {
-      const category = commission._id;
+      const category = commission._id || ""; // Default to empty string if no category
       if (!categoryData[category]) {
         categoryData[category] = {
           policyCounts: 0,
@@ -132,8 +132,8 @@ export const getDashboardCount = async (req, res) => {
     });
 
     // Format categories data in the desired structure (as array of objects)
-    const formattedCategories = Object.keys(categoryData).map((category) => ({
-      [category]: categoryData[category],
+    const formattedCategories = Object.entries(categoryData).map(([key, value]) => ({
+      [key]: value,
     }));
 
     // Booking requests and leads
@@ -183,23 +183,15 @@ export const getDashboardCount = async (req, res) => {
     const data = [
       {
         roleCounts: formattedRoleCounts,
-      },
-      {
         categories: formattedCategories, // Updated category format
-      },
-      {
         bookingRequests: {
           "Total Booking": totalBookingRequest,
           ...formattedBookingCounts,
         },
-      },
-      {
         leadCounts: {
           "Total Lead": totalLead,
           ...formattedLeadCounts,
         },
-      },
-      {
         adminCounts: {
           Brokers: brokerCount,
           Makes: makeCount,
@@ -209,14 +201,8 @@ export const getDashboardCount = async (req, res) => {
           "Product Types": productTypeCount,
           "SubProduct Types": subProductTypeCount,
         },
-      },
-      {
         totalAccounts,
-      },
-      {
         totalAmount,
-      },
-      {
         accounts: accounts.map((acc) => ({
           accountCode: acc.accountCode,
           amount: acc.amount,
