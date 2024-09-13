@@ -177,8 +177,6 @@ export const getDashboardCount = async (req, res) => {
     ]);
     const totalAmount = totalAmountData.length > 0 ? Math.round(totalAmountData[0].totalAmount) : 0;
 
-    const accounts = await Account.find({}, "accountCode amount");
-
     // Construct the data array
     const data = [
       {
@@ -203,16 +201,13 @@ export const getDashboardCount = async (req, res) => {
         },
         totalAccounts,
         totalAmount,
-        accounts: accounts.map((acc) => ({
-          accountCode: acc.accountCode,
-          amount: acc.amount,
-        })),
+        accounts: [], // Empty array for accounts
       },
     ];
 
     res.status(200).json({
       message: "Dashboard Count retrieved successfully",
-      data, // Now an array
+      data, // Now with empty accounts array
       status: "success",
     });
   } catch (error) {
