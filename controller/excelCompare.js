@@ -2,14 +2,21 @@ import XLSX from 'xlsx';
 import MotorPolicy from '../models/policyModel/motorpolicySchema.js';
 import MotorPolicyPayment from '../models/policyModel/motorPolicyPaymentSchema.js';
 import UserProfile from "../models/adminModels/userProfileSchema.js";
+import Broker from "../models/adminModels/brokerSchema.js"; 
 import moment from 'moment';
 
 // excel compare for broker
 export const compareBrokerExcel = async (req, res) => {
     try {
-        const { startDate, endDate } = req.body;
+        const { startDate, endDate, brokerId } = req.body;
 
-        // Set up date filtering if provided
+        if (!brokerId) {
+            return res.status(400).json({
+                message: 'BrokerId is required.',
+                status: 'Error'
+            });
+        }
+
         const dateQuery = {};
         if (startDate && endDate) {
             dateQuery.createdOn = {
@@ -18,23 +25,27 @@ export const compareBrokerExcel = async (req, res) => {
             };
         }
 
-        // Parse the uploaded Excel file
         const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
-        // Extract broker name from the first row of the Excel sheet
-        const brokerName = worksheet[0]?.broker?.trim() || 'Unknown Broker';
+        const brokerData = await Broker.findOne({ _id: brokerId }).lean();
+        if (!brokerData) {
+            return res.status(404).json({
+                message: 'Broker not found.',
+                status: 'Error'
+            });
+        }
+        const brokerName = brokerData.brokerName || 'Unknown Broker';
 
         const comparisonResults = [];
 
-        // Iterate over each row in the Excel file
         for (const row of worksheet) {
-            const { policyNumber, payInCommission, broker } = row;
+            const { policyNumber, payInCommission } = row;
 
             const policyData = await MotorPolicy.findOne({
                 policyNumber: policyNumber.trim(),
-                broker: broker.trim(),
+                brokerId: brokerId,
                 ...dateQuery
             }).lean();
 
@@ -55,7 +66,6 @@ export const compareBrokerExcel = async (req, res) => {
             }
         }
 
-        // Include the broker's name in the response
         res.status(200).json({
             message: 'File uploaded and data processed successfully.',
             brokerName: brokerName,
@@ -74,7 +84,14 @@ export const compareBrokerExcel = async (req, res) => {
 
 export const comparePartnerExcel = async (req, res) => {
   try {
-    const { startDate, endDate } = req.body;
+    const { startDate, endDate, partnerCode } = req.body;
+
+    if (!partnerCode) {
+      return res.status(400).json({
+        message: 'PartnerCode is required.',
+        status: 'Error'
+      });
+    }
 
     const dateQuery = {};
     if (startDate && endDate) {
@@ -88,9 +105,6 @@ export const comparePartnerExcel = async (req, res) => {
     const sheetName = workbook.SheetNames[0];
     const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
-    const partnerCode = worksheet[0]?.partnerCode?.trim() || 'Unknown Partner';
-    console.log('Extracted partnerCode:', partnerCode);
-
     const userProfile = await UserProfile.findOne({ partnerId: partnerCode }).lean();
     if (!userProfile) {
       return res.status(404).json({
@@ -98,9 +112,8 @@ export const comparePartnerExcel = async (req, res) => {
         status: 'Error'
       });
     }
-
     const partnerId = userProfile._id;
-    console.log('Retrieved partnerId (ObjectId):', partnerId);
+    const partnerName = userProfile.fullName || 'Unknown Partner';
 
     const comparisonResults = [];
 
@@ -108,8 +121,7 @@ export const comparePartnerExcel = async (req, res) => {
       const { policyNumber, payOutCommission } = row;
 
       const policyData = await MotorPolicy.findOne({
-        policyNumber: policyNumber.trim(),
-        partnerId: partnerId,
+        policyNumber: policyNumber,
         ...dateQuery
       }).lean();
 
@@ -127,13 +139,13 @@ export const comparePartnerExcel = async (req, res) => {
           };
 
           comparisonResults.push(result);
-        }
+        } 
       }
     }
 
     res.status(200).json({
       message: 'File uploaded and data processed successfully.',
-      partnerName: comparisonResults[0]?.partnerName || 'Unknown Partner',
+      partnerName: partnerName,
       data: comparisonResults,
       status: 'Success'
     });
@@ -146,4 +158,5 @@ export const comparePartnerExcel = async (req, res) => {
     });
   }
 };
+
 
