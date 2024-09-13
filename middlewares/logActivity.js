@@ -11,10 +11,11 @@ export const getLogActivity = async (req, res) => {
     if (statusCode) query.statusCode = Number(statusCode);
     if (partnerId) query.partnerId = partnerId;
     if (isActive !== undefined) query.isActive = isActive === 'true';
+
     if (startDate || endDate) {
       query.createdOn = {};
-      if (startDate) query.createdOn.$gte = new Date(startDate);
-      if (endDate) query.createdOn.$lte = new Date(endDate);
+      if (startDate) query.createdOn.$gte = new Date(new Date(startDate).setHours(0, 0, 0));
+      if (endDate) query.createdOn.$lte = new Date(new Date(endDate).setHours(23, 59, 59));
     }
 
     const page = parseInt(req.query.page) || 1;
@@ -22,10 +23,10 @@ export const getLogActivity = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const logs = await ActivityLog.find(query)
-      .sort({ createdOn: -1 })  
+      .sort({ createdOn: -1 })
       .skip(skip)               
-      .limit(limit)         
-      .lean(); 
+      .limit(limit)             
+      .lean();
 
     const count = await ActivityLog.countDocuments(query);
 
@@ -43,7 +44,6 @@ export const getLogActivity = async (req, res) => {
     });
   }
 };
-
 
 // Middleware to log activity
 const logActivity = (req, res, next) => {
