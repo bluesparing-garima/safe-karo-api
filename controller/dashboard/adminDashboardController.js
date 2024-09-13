@@ -179,19 +179,27 @@ export const getDashboardCount = async (req, res) => {
 
     const accounts = await Account.find({}, "accountCode amount");
 
-    const data = {
-      message: "Dashboard Count retrieved successfully",
-      data: {
+    // Construct the data array
+    const data = [
+      {
         roleCounts: formattedRoleCounts,
+      },
+      {
         categories: formattedCategories, // Updated category format
+      },
+      {
         bookingRequests: {
           "Total Booking": totalBookingRequest,
           ...formattedBookingCounts,
         },
+      },
+      {
         leadCounts: {
           "Total Lead": totalLead,
           ...formattedLeadCounts,
         },
+      },
+      {
         adminCounts: {
           Brokers: brokerCount,
           Makes: makeCount,
@@ -201,17 +209,26 @@ export const getDashboardCount = async (req, res) => {
           "Product Types": productTypeCount,
           "SubProduct Types": subProductTypeCount,
         },
+      },
+      {
         totalAccounts,
+      },
+      {
         totalAmount,
+      },
+      {
         accounts: accounts.map((acc) => ({
           accountCode: acc.accountCode,
           amount: acc.amount,
         })),
       },
-      status: "success",
-    };
+    ];
 
-    res.status(200).json(data);
+    res.status(200).json({
+      message: "Dashboard Count retrieved successfully",
+      data, // Now an array
+      status: "success",
+    });
   } catch (error) {
     res.status(500).json({
       message: "Something went wrong",
