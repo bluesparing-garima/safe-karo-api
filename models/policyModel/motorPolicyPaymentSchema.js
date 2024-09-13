@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 
 const motorPolicyPaymentSchema = new mongoose.Schema({
+  category:{type:String, trim:true},
   partnerId: { type: String, trim: true },
   policyId: { type: String, trim: true },
   policyNumber: { type: String, trim: true },

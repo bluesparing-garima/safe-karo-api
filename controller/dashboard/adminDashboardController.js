@@ -21,6 +21,7 @@ export const getDashboardCount = async (req, res) => {
   };
 
   try {
+    // Get role counts
     const roleCounts = await UserProfileModel.aggregate([
       {
         $project: {
@@ -48,6 +49,10 @@ export const getDashboardCount = async (req, res) => {
       formattedRoleCounts[role._id] = role.count;
     });
 
+    // Initialize dynamic category data structure
+    const categoryData = {};
+
+    // Get policy counts grouped by category
     const policyCounts = await MotorPolicyModel.aggregate([
       { $match: { issueDate: dateFilter } },
       {
@@ -58,49 +63,80 @@ export const getDashboardCount = async (req, res) => {
       },
     ]);
 
+    // Get premiums grouped by category
     const netPremiums = await MotorPolicyModel.aggregate([
       { $match: { issueDate: dateFilter } },
       {
         $group: {
-          _id: null,
+          _id: { $toLower: "$category" },
           NetPremium: { $sum: "$netPremium" },
           FinalPremium: { $sum: "$finalPremium" },
         },
       },
-      {
-        $project: { _id: 0, NetPremium: 1, FinalPremium: 1 },
-      },
     ]);
 
-    const formattedPolicyCounts = {};
-    policyCounts.forEach((policy) => {
-      formattedPolicyCounts[policy._id] = policy.count;
-    });
-
-    const netPremium = netPremiums.length > 0 ? Math.round(netPremiums[0].NetPremium) : 0;
-    const finalPremium = netPremiums.length > 0 ? Math.round(netPremiums[0].FinalPremium) : 0;
-
+    // Get commissions and additional data grouped by category
     const commissionSums = await MotorPolicyPaymentModel.aggregate([
       { $match: { policyDate: dateFilter } },
       {
         $group: {
-          _id: null,
+          _id: { $toLower: "$category" },
           totalPayIn: { $sum: "$payInCommission" },
-          receivedAmount: { $sum: "$payInAmount" },
+          totalPayInAmount: { $sum: "$payInAmount" },
           totalPayInBalance: { $sum: "$payInBalance" },
-          totalPartnerPayout: { $sum: "$payOutCommission" },
+          totalPayOut: { $sum: "$payOutCommission" },
+          totalPayOutAmount: { $sum: "$payOutAmount" },
+          totalPartnerBalance: { $sum: "$partnerBalance" },
         },
-      },
-      {
-        $project: { _id: 0, totalPayIn: 1, receivedAmount: 1, totalPayInBalance: 1, totalPartnerPayout: 1 },
       },
     ]);
 
-    const totalPayIn = commissionSums.length > 0 ? Math.round(commissionSums[0].totalPayIn) : 0;
-    const receivedAmount = commissionSums.length > 0 ? Math.round(commissionSums[0].receivedAmount) : 0;
-    const totalPayInBalance = Math.round(totalPayIn - receivedAmount);
-    const totalPartnerPayout = commissionSums.length > 0 ? Math.round(commissionSums[0].totalPartnerPayout) : 0;
+    // Combine category data
+    commissionSums.forEach((commission) => {
+      const category = commission._id;
+      if (!categoryData[category]) {
+        categoryData[category] = {
+          policyCounts: 0,
+          NetPremium: 0,
+          FinalPremium: 0,
+          PayInAmount: 0,
+          BrokerAmount: 0,
+          BrokerBalance: 0,
+          PayOutAmount: 0,
+          UnpaidAmount: 0,
+          LeftDistributedAmount: 0,
+          Revenue: 0,
+        };
+      }
+      categoryData[category].PayInAmount = Math.round(commission.totalPayIn);
+      categoryData[category].BrokerAmount = Math.round(commission.totalPayInAmount);
+      categoryData[category].BrokerBalance = Math.round(commission.totalPayIn - commission.totalPayInAmount);
+      categoryData[category].PayOutAmount = Math.round(commission.totalPayOut);
+      categoryData[category].UnpaidAmount = Math.round(commission.totalPayOut - commission.totalPayOutAmount);
+      categoryData[category].LeftDistributedAmount = Math.round(commission.totalPartnerBalance);
+      categoryData[category].Revenue = Math.round(commission.totalPayIn - commission.totalPayOut);
+    });
 
+    // Populate category data with policy counts and premiums
+    policyCounts.forEach((policy) => {
+      if (categoryData[policy._id]) {
+        categoryData[policy._id].policyCounts = policy.count;
+      }
+    });
+
+    netPremiums.forEach((premium) => {
+      if (categoryData[premium._id]) {
+        categoryData[premium._id].NetPremium = Math.round(premium.NetPremium);
+        categoryData[premium._id].FinalPremium = Math.round(premium.FinalPremium);
+      }
+    });
+
+    // Format categories data in the desired structure (as array of objects)
+    const formattedCategories = Object.keys(categoryData).map((category) => ({
+      [category]: categoryData[category],
+    }));
+
+    // Booking requests and leads
     const bookingCounts = await BookingRequest.aggregate([
       { $match: { createdOn: dateFilter } },
       { $group: { _id: "$bookingStatus", count: { $sum: 1 } } },
@@ -125,6 +161,7 @@ export const getDashboardCount = async (req, res) => {
       totalLead += lead.count;
     });
 
+    // Admin related counts
     const brokerCount = await Broker.countDocuments();
     const makeCount = await Make.countDocuments();
     const modelCount = await Model.countDocuments();
@@ -133,20 +170,7 @@ export const getDashboardCount = async (req, res) => {
     const productTypeCount = await ProductType.countDocuments();
     const subProductTypeCount = await SubProductType.countDocuments();
 
-    const bookingRequests = {
-      "Total Booking": totalBookingRequest,
-    };
-    Object.keys(formattedBookingCounts).forEach((key) => {
-      bookingRequests[`${key.charAt(0).toUpperCase()}${key.slice(1)} Booking`] = formattedBookingCounts[key];
-    });
-
-    const leadRequests = {
-      "Total Lead": totalLead,
-    };
-    Object.keys(formattedLeadCounts).forEach((key) => {
-      leadRequests[`${key.charAt(0).toUpperCase()}${key.slice(1)} Lead`] = formattedLeadCounts[key];
-    });
-
+    // Total accounts and amounts
     const totalAccounts = await Account.countDocuments();
     const totalAmountData = await Account.aggregate([
       { $group: { _id: null, totalAmount: { $sum: "$amount" } } },
@@ -157,39 +181,33 @@ export const getDashboardCount = async (req, res) => {
 
     const data = {
       message: "Dashboard Count retrieved successfully",
-      data: [
-        {
-          roleCounts: formattedRoleCounts,
-          policyCounts: formattedPolicyCounts,
-          premiums: {
-            "Net Premium": netPremium,
-            "Final Premium": finalPremium,
-          },
-          commissions: {
-            "PayIn Commission": totalPayIn,
-            "Broker Amount": receivedAmount,
-            "Broker Balance": totalPayInBalance,
-            "PayOut Commission": totalPartnerPayout,
-          },
-          bookingRequests: bookingRequests,
-          leadCounts: leadRequests,
-          adminCounts: {
-            Brokers: brokerCount,
-            Makes: makeCount,
-            Models: modelCount,
-            Categories: categoryCount,
-            Companies: companyCount,
-            "Product Types": productTypeCount,
-            "SubProduct Types": subProductTypeCount,
-          },
-          totalAccounts,
-          totalAmount,
-          accounts: accounts.map((acc) => ({
-            accountCode: acc.accountCode,
-            amount: acc.amount,
-          })),
+      data: {
+        roleCounts: formattedRoleCounts,
+        categories: formattedCategories, // Updated category format
+        bookingRequests: {
+          "Total Booking": totalBookingRequest,
+          ...formattedBookingCounts,
         },
-      ],
+        leadCounts: {
+          "Total Lead": totalLead,
+          ...formattedLeadCounts,
+        },
+        adminCounts: {
+          Brokers: brokerCount,
+          Makes: makeCount,
+          Models: modelCount,
+          Categories: categoryCount,
+          Companies: companyCount,
+          "Product Types": productTypeCount,
+          "SubProduct Types": subProductTypeCount,
+        },
+        totalAccounts,
+        totalAmount,
+        accounts: accounts.map((acc) => ({
+          accountCode: acc.accountCode,
+          amount: acc.amount,
+        })),
+      },
       status: "success",
     };
 

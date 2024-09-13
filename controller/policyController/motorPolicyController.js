@@ -203,6 +203,7 @@ export const uploadMotorPolicy = async (req, res) => {
         });
 
         if (paymentRecord) {
+          paymentRecord.category = existingRecord.category;
           paymentRecord.brokerId = existingRecord.brokerId;
           paymentRecord.partnerId = existingRecord.partnerId;
           paymentRecord.policyNumber = existingRecord.policyNumber;
@@ -230,6 +231,7 @@ export const uploadMotorPolicy = async (req, res) => {
         const newPolicy = await MotorPolicyModel.create(data);
 
         const newMotorPolicyPayment = new MotorPolicyPaymentModel({
+          category:newPolicy.category,
           partnerId: newPolicy.partnerId,
           policyId: newPolicy._id,
           brokerId: newPolicy.brokerId,
@@ -351,7 +353,6 @@ export const updateMotorPolicyFromExcel = async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
-
 
 // Update motor policy dates
 export const updateMotorPolicyDates = async (req, res) => {
@@ -552,6 +553,7 @@ export const createMotorPolicy = async (req, res) => {
       const savedMotorPolicy = await newMotorPolicy.save();
 
       const newMotorPolicyPayment = new MotorPolicyPaymentModel({
+        category:savedMotorPolicy.category,
         partnerId: savedMotorPolicy.partnerId,
         policyId: savedMotorPolicy._id,
         brokerId: savedMotorPolicy.brokerId,
@@ -578,7 +580,6 @@ export const createMotorPolicy = async (req, res) => {
         policyDate: formattedIssueDate,
         createdBy: savedMotorPolicy.createdBy,
       });
-
       await newMotorPolicyPayment.save();
 
       const existingBookingRequest = await BookingRequestModel.findOne({
