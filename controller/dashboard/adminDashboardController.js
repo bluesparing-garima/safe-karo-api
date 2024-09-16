@@ -57,21 +57,25 @@ export const getDashboardCount = async (req, res) => {
     categoryNames.forEach(category => {
       categoryData[category] = {
         "Policy Count": 0,
+        "Total Net Premium": 0,
+        "Total Final Premium": 0,
+        "Total UnPaid Amount": 0,
+        "Total Partner Balance": 0,
+        "Total Revenue": 0,
         "Net Premium": 0,
         "Final Premium": 0,
-        "PayIn Amount": 0,
-        "Broker Amount": 0,
-        "Broker Balance": 0,
-        "PayOut Amount": 0,
-        "UnPaid Amount": 0,
-        "Left Distributed Amount": 0,
+        "Total PayIn Amount": 0,
+        "Received PayIn Amount": 0,
+        "PayIn Balance": 0,
+        "Total PayOut Amount": 0,
+        "Paid PayOut Amount": 0,
+        "UnPaid PayOut Amount": 0,
+        "Partner Balance": 0,
         Revenue: 0,
-        "Total UnPaid Amount": 0,
-        "Total Left Distributed Amount": 0,
-        "Total Revenue": 0,
       };
     });
 
+    // Aggregation with date filter
     const policyCounts = await MotorPolicyModel.aggregate([
       { $match: { issueDate: dateFilter } },
       {
@@ -139,16 +143,17 @@ export const getDashboardCount = async (req, res) => {
           totalPartnerBalance: 0,
         };
 
-        categoryData[category]["PayIn Amount"] = Math.round(commission.totalPayIn);
-        categoryData[category]["Broker Amount"] = Math.round(commission.totalPayInAmount);
-        categoryData[category]["Broker Balance"] = Math.round(commission.totalPayIn - commission.totalPayInAmount);
-        categoryData[category]["PayOut Amount"] = Math.round(commission.totalPayOut);
-        categoryData[category]["UnPaid Amount"] = Math.round(commission.totalPayOut - commission.totalPayOutAmount);
-        categoryData[category]["Left Distributed Amount"] = Math.round(commission.totalPartnerBalance);
+        categoryData[category]["Total PayIn Amount"] = Math.round(commission.totalPayIn);
+        categoryData[category]["Received PayIn Amount"] = Math.round(commission.totalPayInAmount);
+        categoryData[category]["PayIn Balance"] = Math.round(commission.totalPayIn - commission.totalPayInAmount);
+        categoryData[category]["Total PayOut Amount"] = Math.round(commission.totalPayOut);
+        categoryData[category]["Paid PayOut Amount"] = Math.round(commission.totalPayOutAmount);
+        categoryData[category]["UnPaid PayOut Amount"] = Math.round(commission.totalPayOut - commission.totalPayOutAmount);
+        categoryData[category]["Partner Balance"] = Math.round(commission.totalPartnerBalance);
         categoryData[category].Revenue = Math.round(commission.totalPayIn - commission.totalPayOut);
 
         categoryData[category]["Total UnPaid Amount"] = Math.round(totalCommission.totalPayOut - totalCommission.totalPayOutAmount);
-        categoryData[category]["Total Left Distributed Amount"] = Math.round(totalCommission.totalPartnerBalance);
+        categoryData[category]["Total Partner Balance"] = Math.round(totalCommission.totalPartnerBalance);
         categoryData[category]["Total Revenue"] = Math.round(totalCommission.totalPayIn - totalCommission.totalPayOut);
       }
     });
@@ -165,6 +170,25 @@ export const getDashboardCount = async (req, res) => {
       if (categoryData[category]) {
         categoryData[category]["Net Premium"] = Math.round(premium["Net Premium"]);
         categoryData[category]["Final Premium"] = Math.round(premium["Final Premium"]);
+      }
+    });
+
+    // Aggregation without date filter
+    const totalNetPremiumWithoutDate = await MotorPolicyModel.aggregate([
+      {
+        $group: {
+          _id: { $toLower: "$category" },
+          "Net Premium": { $sum: "$netPremium" },
+          "Final Premium": { $sum: "$finalPremium" },
+        },
+      },
+    ]);
+
+    totalNetPremiumWithoutDate.forEach(premium => {
+      const category = premium._id || "";
+      if (categoryData[category]) {
+        categoryData[category]["Total Net Premium"] = Math.round(premium["Net Premium"]);
+        categoryData[category]["Total Final Premium"] = Math.round(premium["Final Premium"]);
       }
     });
 
@@ -239,10 +263,6 @@ export const getDashboardCount = async (req, res) => {
         accountId: account.accountId,
       };
     });
-
-    // Summing up Net Premium and Final Premium across all categories
-    const totalNetPremium = netPremiums.reduce((sum, premium) => sum + premium["Net Premium"], 0);
-    const totalFinalPremium = netPremiums.reduce((sum, premium) => sum + premium["Final Premium"], 0);
 
     const data = [
       {
