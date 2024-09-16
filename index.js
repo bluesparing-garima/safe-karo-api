@@ -41,6 +41,7 @@ import partnerDashboardRoutes from "./routes/dashboardRoutes/partnerDashboardRou
 import bookingDashboardRoutes from "./routes/dashboardRoutes/bookingDashboardRoute.js";
 import operationDashboardRoutes from "./routes/dashboardRoutes/operationDashboardRoute.js";
 import accountDashboardRoutes from "./routes/dashboardRoutes/accountDashboardRoute.js";
+import brokerDashboardRoutes from "./routes/dashboardRoutes/brokerDashboardRoute.js";
 
 import activityLogRoutes from "./routes/adminRoutes/activityLogRoutes.js";
 
@@ -191,18 +192,19 @@ app.use("/api/model", model);
 // Branch
 app.use("/api/branches", branch);
 
-// admin dashboard
+// --------------------------------------- Dashboard Route --------------------------------
+
 app.use("/api/dashboard", adminDashboard);
 
-// partner dashboard
 app.use("/api/partner-dashboard", partnerDashboardRoutes);
 
-// booking dashboard
 app.use("/api/booking-dashboard", bookingDashboardRoutes);
-// operation dashboard
+
 app.use("/api/operation-dashboard", operationDashboardRoutes);
-// account dashboard
+
 app.use("/api/account-dashboard", accountDashboardRoutes);
+
+app.use("/api/broker-dashboard",brokerDashboardRoutes);
 
 // activity logs
 app.use("/api/activityLog", activityLogRoutes);
