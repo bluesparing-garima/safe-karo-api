@@ -58,12 +58,13 @@ export const getDashboardCount = async (req, res) => {
       categoryData[category] = {
         "Policy Count": 0,
         "Total Net Premium": 0,
+        "Net Premium": 0,
         "Total Final Premium": 0,
+        "Final Premium": 0,
         "Total UnPaid Amount": 0,
         "Total Partner Balance": 0,
         "Total Revenue": 0,
-        "Net Premium": 0,
-        "Final Premium": 0,
+        Revenue: 0,
         "Total PayIn Amount": 0,
         "Received PayIn Amount": 0,
         "PayIn Balance": 0,
@@ -71,7 +72,7 @@ export const getDashboardCount = async (req, res) => {
         "Paid PayOut Amount": 0,
         "UnPaid PayOut Amount": 0,
         "Partner Balance": 0,
-        Revenue: 0,
+        
       };
     });
 
