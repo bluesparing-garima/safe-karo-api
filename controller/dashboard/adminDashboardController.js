@@ -109,7 +109,7 @@ export const getDashboardCount = async (req, res) => {
       const category = commission._id || "";
       if (!categoryData[category]) {
         categoryData[category] = {
-          policyCounts: 0,
+          "Policy Count": 0,
           "Net Premium": 0,
           "Final Premium": 0,
           "PayIn Amount": 0,
@@ -141,7 +141,6 @@ export const getDashboardCount = async (req, res) => {
       categoryData[category]["Left Distributed Amount"] = Math.round(commission.totalPartnerBalance);
       categoryData[category].Revenue = Math.round(commission.totalPayIn - commission.totalPayOut);
 
-      // Update totals without date filter
       categoryData[category]["Total UnPaid Amount"] = Math.round(totalCommission.totalPayOut - totalCommission.totalPayOutAmount);
       categoryData[category]["Total Left Distributed Amount"] = Math.round(totalCommission.totalPartnerBalance);
       categoryData[category]["Total Revenue"] = Math.round(totalCommission.totalPayIn - totalCommission.totalPayOut);
@@ -149,7 +148,7 @@ export const getDashboardCount = async (req, res) => {
 
     policyCounts.forEach((policy) => {
       if (categoryData[policy._id]) {
-        categoryData[policy._id].policyCounts = policy.count;
+        categoryData[policy._id]["Policy Count"] = policy.count;
       }
     });
 
@@ -159,6 +158,24 @@ export const getDashboardCount = async (req, res) => {
         categoryData[premium._id]["Final Premium"] = Math.round(premium["Final Premium"]);
       }
     });
+
+    if (!categoryData[""]) {
+      categoryData[""] = {
+        "Policy Count": 0,
+        "Net Premium": 0,
+        "Final Premium": 0,
+        "PayIn Amount": 0,
+        "Broker Amount": 0,
+        "Broker Balance": 0,
+        "PayOut Amount": 0,
+        "UnPaid Amount": 0,
+        "Left Distributed Amount": 0,
+        Revenue: 0,
+        "Total UnPaid Amount": 0,
+        "Total Left Distributed Amount": 0,
+        "Total Revenue": 0,
+      };
+    }
 
     const formattedCategories = categoryData;
 
@@ -221,13 +238,17 @@ export const getDashboardCount = async (req, res) => {
         $group: {
           _id: "$accountCode",
           totalAmount: { $sum: "$amount" },
+          accountId: { $first: "$_id" },
         },
       },
     ]);
 
     const formattedAccounts = {};
     accountsData.forEach((account) => {
-      formattedAccounts[account._id] = { amount: Math.round(account.totalAmount) };
+      formattedAccounts[account._id] = {
+        amount: Math.round(account.totalAmount),
+        accountId: account.accountId,
+      };
     });
 
     // Summing up Net Premium and Final Premium across all categories
