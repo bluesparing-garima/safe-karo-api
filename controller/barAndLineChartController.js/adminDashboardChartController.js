@@ -252,3 +252,125 @@ export const getAllUserCountsByTimeframe = async (req, res) => {
     });
   }
 };
+
+// API to calculate net premium, revenue, and revenue percentage by timeframe
+export const getRevenueByTimeframe = async (req, res) => {
+  const { timeframe } = req.query;
+
+  if (!timeframe) {
+    return res.status(400).json({
+      status: "error",
+      success: false,
+      message: "Timeframe is required.",
+    });
+  }
+
+  let startDate, endDate, groupBy, mapFormat;
+  switch (timeframe) {
+    case "week":
+      startDate = moment().startOf("week");
+      endDate = moment().endOf("week");
+      groupBy = { $dayOfWeek: "$policyDate" };
+      mapFormat = (key) =>
+        ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][key - 1];
+      break;
+    case "month":
+      startDate = moment().startOf("year");
+      endDate = moment().endOf("year");
+      groupBy = { $month: "$policyDate" };
+      mapFormat = (key) => moment(key, "MM").format("MMM");
+      break;
+    case "year":
+      startDate = moment().startOf("year").subtract(5, "years");
+      endDate = moment().endOf("year");
+      groupBy = { $year: "$policyDate" };
+      mapFormat = (key) => key;
+      break;
+    default:
+      return res.status(400).json({ message: "Invalid timeframe parameter" });
+  }
+
+  try {
+    const periods = generatePeriods(startDate, endDate, timeframe);
+
+    const pipelinePayIn = [
+      {
+        $match: {
+          policyDate: { $gte: startDate.toDate(), $lte: endDate.toDate() },
+        },
+      },
+      {
+        $group: {
+          _id: groupBy,
+          totalPayInCommission: { $sum: "$payInCommission" },
+          totalNetPremium: { $sum: "$netPremium" },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ];
+
+    const pipelinePayOut = [
+      {
+        $match: {
+          policyDate: { $gte: startDate.toDate(), $lte: endDate.toDate() },
+        },
+      },
+      {
+        $group: {
+          _id: groupBy,
+          totalPayOutCommission: { $sum: "$payOutCommission" },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ];
+
+    const [payInData, payOutData] = await Promise.all([
+      motorPolicyPayment.aggregate(pipelinePayIn),
+      motorPolicyPayment.aggregate(pipelinePayOut),
+    ]);
+
+    const mergedData = periods.reduce((acc, period) => {
+      const key = Object.keys(period)[0];
+      acc[key] = {
+        payIn: 0,
+        payOut: 0,
+        netPremium: 0,
+        revenue: 0,
+        revenuePercentage: 0,
+      };
+      return acc;
+    }, {});
+
+    payInData.forEach((item) => {
+      const key = mapFormat(item._id);
+      mergedData[key].payIn = item.totalPayInCommission || 0;
+      mergedData[key].netPremium = item.totalNetPremium || 0;
+    });
+    payOutData.forEach((item) => {
+      const key = mapFormat(item._id);
+      mergedData[key].payOut = item.totalPayOutCommission || 0;
+    });
+    Object.keys(mergedData).forEach((key) => {
+      const { payIn, payOut, netPremium } = mergedData[key];
+      const revenue = payIn - payOut;
+      const revenuePercentage = netPremium ? (revenue / netPremium) * 100 : 0;
+
+      mergedData[key].revenue = revenue;
+      mergedData[key].revenuePercentage = revenuePercentage.toFixed(2);
+    });
+
+    res.status(200).json({
+      message: "Revenue data retrieved successfully",
+      data: convertPeriodsToArray(mergedData),
+      success: true,
+      status: "success",
+    });
+  } catch (error) {
+    console.error("Error retrieving revenue data:", error.message);
+    res.status(500).json({
+      message: "Error retrieving revenue data",
+      success: false,
+      error: error.message,
+    });
+  }
+};
