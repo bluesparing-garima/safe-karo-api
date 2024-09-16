@@ -21,7 +21,6 @@ export const getDashboardCount = async (req, res) => {
   };
 
   try {
-    // Get role counts
     const roleCounts = await UserProfileModel.aggregate([
       {
         $project: {
@@ -49,10 +48,8 @@ export const getDashboardCount = async (req, res) => {
       formattedRoleCounts[role._id] = role.count;
     });
 
-    // Initialize dynamic category data structure
     const categoryData = {};
 
-    // Get policy counts grouped by category
     const policyCounts = await MotorPolicyModel.aggregate([
       { $match: { issueDate: dateFilter } },
       {
@@ -63,19 +60,17 @@ export const getDashboardCount = async (req, res) => {
       },
     ]);
 
-    // Get premiums grouped by category
     const netPremiums = await MotorPolicyModel.aggregate([
       { $match: { issueDate: dateFilter } },
       {
         $group: {
           _id: { $toLower: "$category" },
-          NetPremium: { $sum: "$netPremium" },
-          FinalPremium: { $sum: "$finalPremium" },
+          "Net Premium": { $sum: "$netPremium" },
+          "Final Premium": { $sum: "$finalPremium" },
         },
       },
     ]);
 
-    // Get commissions and additional data grouped by category
     const commissionSums = await MotorPolicyPaymentModel.aggregate([
       { $match: { policyDate: dateFilter } },
       {
@@ -91,33 +86,67 @@ export const getDashboardCount = async (req, res) => {
       },
     ]);
 
-    // Combine category data
+    const totalCommissionSums = await MotorPolicyPaymentModel.aggregate([
+      {
+        $group: {
+          _id: { $toLower: "$category" },
+          totalPayIn: { $sum: "$payInCommission" },
+          totalPayInAmount: { $sum: "$payInAmount" },
+          totalPayInBalance: { $sum: "$payInBalance" },
+          totalPayOut: { $sum: "$payOutCommission" },
+          totalPayOutAmount: { $sum: "$payOutAmount" },
+          totalPartnerBalance: { $sum: "$partnerBalance" },
+        },
+      },
+    ]);
+
+    const totalCommissionMap = totalCommissionSums.reduce((map, commission) => {
+      map[commission._id] = commission;
+      return map;
+    }, {});
+
     commissionSums.forEach((commission) => {
-      const category = commission._id || ""; // Default to empty string if no category
+      const category = commission._id || "";
       if (!categoryData[category]) {
         categoryData[category] = {
           policyCounts: 0,
-          NetPremium: 0,
-          FinalPremium: 0,
-          PayInAmount: 0,
-          BrokerAmount: 0,
-          BrokerBalance: 0,
-          PayOutAmount: 0,
-          UnpaidAmount: 0,
-          LeftDistributedAmount: 0,
+          "Net Premium": 0,
+          "Final Premium": 0,
+          "PayIn Amount": 0,
+          "Broker Amount": 0,
+          "Broker Balance": 0,
+          "PayOut Amount": 0,
+          "UnPaid Amount": 0,
+          "Left Distributed Amount": 0,
           Revenue: 0,
+          "Total UnPaid Amount": 0,
+          "Total Left Distributed Amount": 0,
+          "Total Revenue": 0,
         };
       }
-      categoryData[category].PayInAmount = Math.round(commission.totalPayIn);
-      categoryData[category].BrokerAmount = Math.round(commission.totalPayInAmount);
-      categoryData[category].BrokerBalance = Math.round(commission.totalPayIn - commission.totalPayInAmount);
-      categoryData[category].PayOutAmount = Math.round(commission.totalPayOut);
-      categoryData[category].UnpaidAmount = Math.round(commission.totalPayOut - commission.totalPayOutAmount);
-      categoryData[category].LeftDistributedAmount = Math.round(commission.totalPartnerBalance);
+      const totalCommission = totalCommissionMap[category] || {
+        totalPayIn: 0,
+        totalPayInAmount: 0,
+        totalPayInBalance: 0,
+        totalPayOut: 0,
+        totalPayOutAmount: 0,
+        totalPartnerBalance: 0,
+      };
+
+      categoryData[category]["PayIn Amount"] = Math.round(commission.totalPayIn);
+      categoryData[category]["Broker Amount"] = Math.round(commission.totalPayInAmount);
+      categoryData[category]["Broker Balance"] = Math.round(commission.totalPayIn - commission.totalPayInAmount);
+      categoryData[category]["PayOut Amount"] = Math.round(commission.totalPayOut);
+      categoryData[category]["UnPaid Amount"] = Math.round(commission.totalPayOut - commission.totalPayOutAmount);
+      categoryData[category]["Left Distributed Amount"] = Math.round(commission.totalPartnerBalance);
       categoryData[category].Revenue = Math.round(commission.totalPayIn - commission.totalPayOut);
+
+      // Update totals without date filter
+      categoryData[category]["Total UnPaid Amount"] = Math.round(totalCommission.totalPayOut - totalCommission.totalPayOutAmount);
+      categoryData[category]["Total Left Distributed Amount"] = Math.round(totalCommission.totalPartnerBalance);
+      categoryData[category]["Total Revenue"] = Math.round(totalCommission.totalPayIn - totalCommission.totalPayOut);
     });
 
-    // Populate category data with policy counts and premiums
     policyCounts.forEach((policy) => {
       if (categoryData[policy._id]) {
         categoryData[policy._id].policyCounts = policy.count;
@@ -126,28 +155,40 @@ export const getDashboardCount = async (req, res) => {
 
     netPremiums.forEach((premium) => {
       if (categoryData[premium._id]) {
-        categoryData[premium._id].NetPremium = Math.round(premium.NetPremium);
-        categoryData[premium._id].FinalPremium = Math.round(premium.FinalPremium);
+        categoryData[premium._id]["Net Premium"] = Math.round(premium["Net Premium"]);
+        categoryData[premium._id]["Final Premium"] = Math.round(premium["Final Premium"]);
       }
     });
 
-    // Format categories data in the desired structure (as array of objects)
-    const formattedCategories = Object.entries(categoryData).map(([key, value]) => ({
-      [key]: value,
-    }));
+    const formattedCategories = categoryData;
 
-    // Booking requests and leads
     const bookingCounts = await BookingRequest.aggregate([
       { $match: { createdOn: dateFilter } },
       { $group: { _id: "$bookingStatus", count: { $sum: 1 } } },
     ]);
 
-    const formattedBookingCounts = {};
+    const formattedBookingCounts = {
+      "Accepted Booking": 0,
+      "Booked Booking": 0,
+      "Requested Booking": 0,
+      "Rejected Booking": 0,
+    };
     let totalBookingRequest = 0;
+
     bookingCounts.forEach((booking) => {
-      formattedBookingCounts[booking._id] = booking.count;
       totalBookingRequest += booking.count;
+      if (booking._id === "accepted") {
+        formattedBookingCounts["Accepted Booking"] = booking.count;
+      } else if (booking._id === "booked") {
+        formattedBookingCounts["Booked Booking"] = booking.count;
+      } else if (booking._id === "requested") {
+        formattedBookingCounts["Requested Booking"] = booking.count;
+      } else if (booking._id === "Rejected") {
+        formattedBookingCounts["Rejected Booking"] = booking.count;
+      }
     });
+
+    formattedBookingCounts["Total Booking"] = totalBookingRequest;
 
     const leadCounts = await Lead.aggregate([
       { $match: { createdOn: dateFilter } },
@@ -161,7 +202,6 @@ export const getDashboardCount = async (req, res) => {
       totalLead += lead.count;
     });
 
-    // Admin related counts
     const brokerCount = await Broker.countDocuments();
     const makeCount = await Make.countDocuments();
     const modelCount = await Model.countDocuments();
@@ -170,22 +210,35 @@ export const getDashboardCount = async (req, res) => {
     const productTypeCount = await ProductType.countDocuments();
     const subProductTypeCount = await SubProductType.countDocuments();
 
-    // Total accounts and amounts
     const totalAccounts = await Account.countDocuments();
     const totalAmountData = await Account.aggregate([
       { $group: { _id: null, totalAmount: { $sum: "$amount" } } },
     ]);
     const totalAmount = totalAmountData.length > 0 ? Math.round(totalAmountData[0].totalAmount) : 0;
 
-    // Construct the data array
+    const accountsData = await Account.aggregate([
+      {
+        $group: {
+          _id: "$accountCode",
+          totalAmount: { $sum: "$amount" },
+        },
+      },
+    ]);
+
+    const formattedAccounts = {};
+    accountsData.forEach((account) => {
+      formattedAccounts[account._id] = { amount: Math.round(account.totalAmount) };
+    });
+
+    // Summing up Net Premium and Final Premium across all categories
+    const totalNetPremium = netPremiums.reduce((sum, premium) => sum + premium["Net Premium"], 0);
+    const totalFinalPremium = netPremiums.reduce((sum, premium) => sum + premium["Final Premium"], 0);
+
     const data = [
       {
         roleCounts: formattedRoleCounts,
-        categories: formattedCategories, // Updated category format
-        bookingRequests: {
-          "Total Booking": totalBookingRequest,
-          ...formattedBookingCounts,
-        },
+        categories: formattedCategories,
+        bookingRequests: formattedBookingCounts,
         leadCounts: {
           "Total Lead": totalLead,
           ...formattedLeadCounts,
@@ -201,13 +254,13 @@ export const getDashboardCount = async (req, res) => {
         },
         totalAccounts,
         totalAmount,
-        accounts: [], // Empty array for accounts
+        accounts: formattedAccounts,
       },
     ];
 
     res.status(200).json({
       message: "Dashboard Count retrieved successfully",
-      data, // Now with empty accounts array
+      data,
       status: "success",
     });
   } catch (error) {
