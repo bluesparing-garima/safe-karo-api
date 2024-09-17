@@ -50,19 +50,19 @@ export const getDashboardCount = async (req, res) => {
         "Total PayIn Amount": 0,
         "Total Received PayIn Amount": 0,
         "Total PayIn Balance": 0,
-        "Total Left Distributed Amount": 0,
-        "Monthly PayIn Amount": 0,
-        "Monthly Received PayIn Amount": 0,
+        "Total Left Dist.": 0,
+        "Monthly PayIn": 0,
+        "Monthly Received PayIn": 0,
         "Monthly PayIn Balance": 0,
-        "Monthly Left Distributed Amount": 0,
+        "Monthly Left Dist. ": 0,
         "Total PayOut Amount": 0,
         "Total Paid PayOut Amount": 0,
         "Total PayOut Balance": 0,
-        "Total PayOut Left Distributed Amount": 0,
+        "Total PayOut Left Dist.": 0,
         "Monthly PayOut Amount": 0,
         "Monthly Paid PayOut Amount": 0,
         "Monthly PayOut Balance": 0,
-        "Monthly PayOut Left Distributed Amount": 0,
+        "Monthly PayOut Left Dist.": 0,
       };
     });
 
@@ -120,11 +120,11 @@ export const getDashboardCount = async (req, res) => {
         totalData[category]["Total PayIn Amount"] = payment.payInTotal;
         totalData[category]["Total Received PayIn Amount"] = payment.payInPaidTotal;
         totalData[category]["Total PayIn Balance"] = payment.payInUnpaidTotal;
-        totalData[category]["Total Left Distributed Amount"] = payment.brokerBalanceTotal;
+        totalData[category]["Total Left Dist."] = payment.brokerBalanceTotal;
         totalData[category]["Total PayOut Amount"] = payment.payOutTotal;
         totalData[category]["Total Paid PayOut Amount"] = payment.payOutPaidTotal;
         totalData[category]["Total PayOut Balance"] = payment.payOutUnpaidTotal;
-        totalData[category]["Total PayOut Left Distributed Amount"] = payment.partnerBalanceTotal;
+        totalData[category]["Total PayOut Left Dist."] = payment.partnerBalanceTotal;
       }
     });
 
@@ -185,14 +185,14 @@ export const getDashboardCount = async (req, res) => {
       const category = payment._id || "";
       if (totalData[category]) {
         totalData[category]["Monthly Revenue"] = payment.payInTotal - payment.payOutTotal;
-        totalData[category]["Monthly PayIn Amount"] = payment.payInTotal;
-        totalData[category]["Monthly Received PayIn Amount"] = payment.payInPaidTotal;
+        totalData[category]["Monthly PayIn"] = payment.payInTotal;
+        totalData[category]["Monthly Received PayIn"] = payment.payInPaidTotal;
         totalData[category]["Monthly PayIn Balance"] = payment.payInUnpaidTotal;
-        totalData[category]["Monthly Left Distributed Amount"] = payment.brokerBalanceTotal;
+        totalData[category]["Monthly Left Dist."] = payment.brokerBalanceTotal;
         totalData[category]["Monthly PayOut Amount"] = payment.payOutTotal;
         totalData[category]["Monthly Paid PayOut Amount"] = payment.payOutPaidTotal;
         totalData[category]["Monthly PayOut Balance"] = payment.payOutUnpaidTotal;
-        totalData[category]["Monthly PayOut Left Distributed Amount"] = payment.partnerBalanceTotal;
+        totalData[category]["Monthly PayOut Left Dist."] = payment.partnerBalanceTotal;
       }
     });
 
