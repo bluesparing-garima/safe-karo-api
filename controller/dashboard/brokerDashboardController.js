@@ -3,7 +3,7 @@ import MotorPolicyPaymentModel from "../../models/policyModel/motorPolicyPayment
 import BookingRequest from "../../models/bookingModel/bookingRequestSchema.js";
 import creditAndDebitSchema from "../../models/accountsModels/creditAndDebitSchema.js";
 
-export const getBrokerDashboardCount = async (req, res) => {
+const getBrokerDashboardCount = async (req, res) => {
   const { brokerId, companyName } = req.query;
 
   if (!brokerId) {
@@ -139,3 +139,4 @@ export const getBrokerDashboardCount = async (req, res) => {
     });
   }
 };
+export default getBrokerDashboardCount;
