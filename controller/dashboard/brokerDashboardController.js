@@ -3,7 +3,7 @@ import MotorPolicyPaymentModel from "../../models/policyModel/motorPolicyPayment
 import BookingRequest from "../../models/bookingModel/bookingRequestSchema.js";
 import creditAndDebitSchema from "../../models/accountsModels/creditAndDebitSchema.js";
 
-export const getBrokerDashboardCount = async (req, res) => {
+const getBrokerDashboardCount = async (req, res) => {
   const { brokerId, companyName } = req.query;
 
   if (!brokerId) {
@@ -28,29 +28,13 @@ export const getBrokerDashboardCount = async (req, res) => {
   };
 
   try {
-    let policyNumbers = [];
-
-    // Check if companyName is provided and filter accordingly
     if (companyName) {
-      const policies = await MotorPolicyModel.find({ companyName, brokerId, issueDate: dateFilter }, 'policyNumber');
-      policyNumbers = policies.map(policy => policy.policyNumber);
-      
-      if (policyNumbers.length === 0) {
-        return res.status(200).json({
-          message: "No policies found for the provided company",
-          data: [],
-          status: "success",
-        });
-      }
+      matchFilter.companyName = companyName;
     }
 
-    const policyMatchFilter = companyName 
-      ? { policyNumber: { $in: policyNumbers }, brokerId, policyDate: dateFilter } 
-      : { brokerId, policyDate: dateFilter };
-
-    // 1. Policy Counts
+    // Policy Counts
     const policyCounts = await MotorPolicyModel.aggregate([
-      { $match: { ...matchFilter, ...(companyName && { policyNumber: { $in: policyNumbers } }), isActive: true } },
+      { $match: { ...matchFilter, isActive: true } },
       { $group: { _id: "$category", count: { $sum: 1 } } },
     ]);
 
@@ -59,29 +43,16 @@ export const getBrokerDashboardCount = async (req, res) => {
       return acc;
     }, {});
 
-    // 2. Net Premium
+    // Net Premium
     const netPremiumAggregate = await MotorPolicyModel.aggregate([
-      { $match: { ...matchFilter, ...(companyName && { policyNumber: { $in: policyNumbers } }) } },
+      { $match: matchFilter },
       { $group: { _id: null, totalNetPremium: { $sum: "$netPremium" } } },
     ]);
     const netPremium = netPremiumAggregate.length > 0 ? netPremiumAggregate[0].totalNetPremium : 0;
 
-    // 3. Monthly and Total PayIn Commission
-    const monthlyPayInCommissionAggregate = await MotorPolicyPaymentModel.aggregate([
-      { $match: policyMatchFilter },
-      { $group: { _id: null, totalPayInCommission: { $sum: "$payInCommission" } } },
-    ]);
-    const monthlyPayInCommission = monthlyPayInCommissionAggregate.length > 0 ? monthlyPayInCommissionAggregate[0].totalPayInCommission : 0;
-
-    const totalPayInCommissionAggregate = await MotorPolicyPaymentModel.aggregate([
-      { $match: { brokerId } },
-      { $group: { _id: null, totalPayInCommission: { $sum: "$payInCommission" } } },
-    ]);
-    const totalPayInCommission = totalPayInCommissionAggregate.length > 0 ? totalPayInCommissionAggregate[0].totalPayInCommission : 0;
-
-    // 4. Monthly and Total PayIn Amounts
+    // Broker Payment In (PayIn) Calculation
     const payInAggregate = await MotorPolicyPaymentModel.aggregate([
-      { $match: policyMatchFilter },
+      { $match: { brokerId, policyDate: dateFilter } },
       { $group: { _id: null, totalPayInAmount: { $sum: "$payInAmount" } } },
     ]);
     const payInAmount = payInAggregate.length > 0 ? payInAggregate[0].totalPayInAmount : 0;
@@ -92,11 +63,24 @@ export const getBrokerDashboardCount = async (req, res) => {
     ]);
     const totalPayInAmount = totalPayInAggregate.length > 0 ? totalPayInAggregate[0].totalPayInAmount : 0;
 
-    // 5. Calculate Unpaid Amounts
+    // Broker PayIn Commission (Monthly and Total)
+    const monthlyPayInCommissionAggregate = await MotorPolicyPaymentModel.aggregate([
+      { $match: { brokerId, policyDate: dateFilter } },
+      { $group: { _id: null, totalPayInCommission: { $sum: "$payInCommission" } } },
+    ]);
+    const monthlyPayInCommission = monthlyPayInCommissionAggregate.length > 0 ? monthlyPayInCommissionAggregate[0].totalPayInCommission : 0;
+
+    const totalPayInCommissionAggregate = await MotorPolicyPaymentModel.aggregate([
+      { $match: { brokerId } },
+      { $group: { _id: null, totalPayInCommission: { $sum: "$payInCommission" } } },
+    ]);
+    const totalPayInCommission = totalPayInCommissionAggregate.length > 0 ? totalPayInCommissionAggregate[0].totalPayInCommission : 0;
+
+    // Calculate UnPaid Amounts
     const monthlyUnPaidAmount = monthlyPayInCommission - payInAmount;
     const totalUnPaidAmount = totalPayInCommission - totalPayInAmount;
 
-    // 6. Booking Requests
+    // Booking Requests
     const bookingCounts = await BookingRequest.aggregate([
       { $match: { brokerId, createdOn: dateFilter } },
       { $group: { _id: "$bookingStatus", count: { $sum: 1 } } },
@@ -116,7 +100,7 @@ export const getBrokerDashboardCount = async (req, res) => {
       return acc;
     }, { "Total Booking": totalBookingRequest });
 
-    // 7. Balance
+    // Balance
     const lastBalanceEntry = await creditAndDebitSchema.findOne(
       { brokerId },
       { brokerBalance: 1 },
@@ -124,7 +108,6 @@ export const getBrokerDashboardCount = async (req, res) => {
     );
     const balance = lastBalanceEntry ? lastBalanceEntry.brokerBalance : 0;
 
-    // 8. Final Data Structure
     const data = {
       message: "Broker dashboard counts retrieved successfully",
       data: [
@@ -156,3 +139,4 @@ export const getBrokerDashboardCount = async (req, res) => {
     });
   }
 };
+export default getBrokerDashboardCount;
