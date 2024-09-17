@@ -377,7 +377,7 @@ export const getRevenueByTimeframe = async (req, res) => {
       const revenuePercentage = netPremium ? (revenue / netPremium) * 100 : 0;
 
       mergedData[key].revenue = revenue;
-      mergedData[key].revenuePercentage = revenuePercentage.toFixed(2);
+      mergedData[key].revenuePercentage = Math.round(revenuePercentage * 100) / 100;
     });
 
     res.status(200).json({
