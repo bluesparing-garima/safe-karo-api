@@ -67,13 +67,22 @@ export const getDashboardCount = async (req, res) => {
     });
 
     // Fetch total policy data
-    const totalPolicies = await MotorPolicyPaymentModel.aggregate([
+    const totalPolicies = await MotorPolicyModel.aggregate([
       {
         $group: {
           _id: { $toLower: "$category" },
           policyCount: { $sum: 1 },
           netPremiumTotal: { $sum: "$netPremium" },
           finalPremiumTotal: { $sum: "$finalPremium" },
+        },
+      },
+    ]);
+
+    // Fetch total payIn and payOut data
+    const totalPayments = await MotorPolicyPaymentModel.aggregate([
+      {
+        $group: {
+          _id: { $toLower: "$category" },
           payInTotal: { $sum: "$payInCommission" },
           payOutTotal: { $sum: "$payOutCommission" },
           payInPaidTotal: {
@@ -94,29 +103,35 @@ export const getDashboardCount = async (req, res) => {
       },
     ]);
 
-    // Merge total policies data into totalData
+    // Merge total policies and payments data into totalData
     totalPolicies.forEach((policy) => {
       const category = policy._id || "";
       if (totalData[category]) {
         totalData[category]["Total Policy Count"] = policy.policyCount;
         totalData[category]["Total Net Premium"] = policy.netPremiumTotal;
         totalData[category]["Total Final Premium"] = policy.finalPremiumTotal;
-        totalData[category]["Total Revenue"] = policy.payInTotal - policy.payOutTotal;
-        totalData[category]["Total PayIn Amount"] = policy.payInTotal;
-        totalData[category]["Total Received PayIn Amount"] = policy.payInPaidTotal;
-        totalData[category]["Total PayIn Balance"] = policy.payInUnpaidTotal;
-        totalData[category]["Total Left Distributed Amount"] = policy.brokerBalanceTotal;
-        totalData[category]["Total PayOut Amount"] = policy.payOutTotal;
-        totalData[category]["Total Paid PayOut Amount"] = policy.payOutPaidTotal;
-        totalData[category]["Total PayOut Balance"] = policy.payOutUnpaidTotal;
-        totalData[category]["Total PayOut Left Distributed Amount"] = policy.partnerBalanceTotal;
+      }
+    });
+
+    totalPayments.forEach((payment) => {
+      const category = payment._id || "";
+      if (totalData[category]) {
+        totalData[category]["Total Revenue"] = payment.payInTotal - payment.payOutTotal;
+        totalData[category]["Total PayIn Amount"] = payment.payInTotal;
+        totalData[category]["Total Received PayIn Amount"] = payment.payInPaidTotal;
+        totalData[category]["Total PayIn Balance"] = payment.payInUnpaidTotal;
+        totalData[category]["Total Left Distributed Amount"] = payment.brokerBalanceTotal;
+        totalData[category]["Total PayOut Amount"] = payment.payOutTotal;
+        totalData[category]["Total Paid PayOut Amount"] = payment.payOutPaidTotal;
+        totalData[category]["Total PayOut Balance"] = payment.payOutUnpaidTotal;
+        totalData[category]["Total PayOut Left Distributed Amount"] = payment.partnerBalanceTotal;
       }
     });
 
     // Fetch monthly policies data
-    const monthlyPolicies = await MotorPolicyPaymentModel.aggregate([
+    const monthlyPolicies = await MotorPolicyModel.aggregate([
       {
-        $match: { policyDate: dateFilter },
+        $match: { issueDate: dateFilter },
       },
       {
         $group: {
@@ -124,6 +139,18 @@ export const getDashboardCount = async (req, res) => {
           policyCount: { $sum: 1 },
           netPremiumTotal: { $sum: "$netPremium" },
           finalPremiumTotal: { $sum: "$finalPremium" },
+        },
+      },
+    ]);
+
+    // Fetch monthly payIn and payOut data
+    const monthlyPayments = await MotorPolicyPaymentModel.aggregate([
+      {
+        $match: { policyDate: dateFilter },
+      },
+      {
+        $group: {
+          _id: { $toLower: "$category" },
           payInTotal: { $sum: "$payInCommission" },
           payOutTotal: { $sum: "$payOutCommission" },
           payInPaidTotal: {
@@ -144,22 +171,28 @@ export const getDashboardCount = async (req, res) => {
       },
     ]);
 
-    // Merge monthly data into the totalData structure
+    // Merge monthly policies and payments data into the totalData structure
     monthlyPolicies.forEach((policy) => {
       const category = policy._id || "";
       if (totalData[category]) {
         totalData[category]["Monthly Policy Count"] = policy.policyCount;
         totalData[category]["Monthly Net Premium"] = policy.netPremiumTotal;
         totalData[category]["Monthly Final Premium"] = policy.finalPremiumTotal;
-        totalData[category]["Monthly Revenue"] = policy.payInTotal - policy.payOutTotal;
-        totalData[category]["Monthly PayIn Amount"] = policy.payInTotal;
-        totalData[category]["Monthly Received PayIn Amount"] = policy.payInPaidTotal;
-        totalData[category]["Monthly PayIn Balance"] = policy.payInUnpaidTotal;
-        totalData[category]["Monthly Left Distributed Amount"] = policy.brokerBalanceTotal;
-        totalData[category]["Monthly PayOut Amount"] = policy.payOutTotal;
-        totalData[category]["Monthly Paid PayOut Amount"] = policy.payOutPaidTotal;
-        totalData[category]["Monthly PayOut Balance"] = policy.payOutUnpaidTotal;
-        totalData[category]["Monthly PayOut Left Distributed Amount"] = policy.partnerBalanceTotal;
+      }
+    });
+
+    monthlyPayments.forEach((payment) => {
+      const category = payment._id || "";
+      if (totalData[category]) {
+        totalData[category]["Monthly Revenue"] = payment.payInTotal - payment.payOutTotal;
+        totalData[category]["Monthly PayIn Amount"] = payment.payInTotal;
+        totalData[category]["Monthly Received PayIn Amount"] = payment.payInPaidTotal;
+        totalData[category]["Monthly PayIn Balance"] = payment.payInUnpaidTotal;
+        totalData[category]["Monthly Left Distributed Amount"] = payment.brokerBalanceTotal;
+        totalData[category]["Monthly PayOut Amount"] = payment.payOutTotal;
+        totalData[category]["Monthly Paid PayOut Amount"] = payment.payOutPaidTotal;
+        totalData[category]["Monthly PayOut Balance"] = payment.payOutUnpaidTotal;
+        totalData[category]["Monthly PayOut Left Distributed Amount"] = payment.partnerBalanceTotal;
       }
     });
 
@@ -214,7 +247,6 @@ export const getDashboardCount = async (req, res) => {
     });
 
     formattedBookingCounts["Total Booking"] = totalBookingRequest;
-
 
     // Aggregate lead counts
     const leadCounts = await Lead.aggregate([
