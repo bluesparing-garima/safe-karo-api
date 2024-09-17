@@ -2,32 +2,43 @@ import motorPolicyPayment from "../../models/policyModel/motorPolicyPaymentSchem
 import motorPolicy from "../../models/policyModel/motorpolicySchema.js";
 import moment from "moment";
 
-// Helper function to generate all periods
+// Helper function to generate all periods for years
 const generatePeriods = (startDate, endDate, timeframe) => {
   const periods = [];
   let currentDate = moment(startDate);
-  while (currentDate <= moment(endDate)) {
-    const key = currentDate.format(
-      {
-        week: "ddd",
-        month: "MMM",
-        year: "YYYY",
-      }[timeframe]
-    );
-    periods.push({ [key]: 0 });
-    currentDate.add(
-      timeframe === "day" || timeframe === "week"
-        ? 1
-        : timeframe === "month"
-        ? 1
-        : 12,
-      timeframe === "day" || timeframe === "week"
-        ? "day"
-        : timeframe === "month"
-        ? "month"
-        : "year"
-    );
+  
+  if (timeframe === "year") {
+    while (currentDate <= moment(endDate)) {
+      const key = currentDate.format("YYYY"); // Generate year key
+      periods.push({ [key]: 0 }); // Push an object for each year
+      currentDate.add(1, "year"); // Increment by 1 year
+    }
+  } else {
+    // Existing logic for week, month, or other timeframes
+    while (currentDate <= moment(endDate)) {
+      const key = currentDate.format(
+        {
+          week: "ddd",
+          month: "MMM",
+          year: "YYYY",
+        }[timeframe]
+      );
+      periods.push({ [key]: 0 });
+      currentDate.add(
+        timeframe === "day" || timeframe === "week"
+          ? 1
+          : timeframe === "month"
+          ? 1
+          : 12,
+        timeframe === "day" || timeframe === "week"
+          ? "day"
+          : timeframe === "month"
+          ? "month"
+          : "year"
+      );
+    }
   }
+  
   return periods;
 };
 
@@ -343,13 +354,23 @@ export const getRevenueByTimeframe = async (req, res) => {
 
     payInData.forEach((item) => {
       const key = mapFormat(item._id);
+      if (!mergedData[key]) {
+        console.error(`Key ${key} does not exist in mergedData`);
+        return;  // Skip this iteration
+      }
       mergedData[key].payIn = item.totalPayInCommission || 0;
       mergedData[key].netPremium = item.totalNetPremium || 0;
     });
+    
     payOutData.forEach((item) => {
       const key = mapFormat(item._id);
+      if (!mergedData[key]) {
+        console.error(`Key ${key} does not exist in mergedData`);
+        return;
+      }
       mergedData[key].payOut = item.totalPayOutCommission || 0;
     });
+    
     Object.keys(mergedData).forEach((key) => {
       const { payIn, payOut, netPremium } = mergedData[key];
       const revenue = payIn - payOut;
