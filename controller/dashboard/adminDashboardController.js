@@ -12,29 +12,198 @@ import ProductType from "../../models/adminModels/productSchema.js";
 import SubProductType from "../../models/adminModels/productSubTypeSchema.js";
 import Account from "../../models/accountsModels/accountSchema.js";
 
-export const getDashboardCount = async (req, res) => {
-  const { startDate, endDate } = req.query;
-
-  const dateFilter = {
-    $gte: new Date(startDate),
-    $lte: new Date(endDate),
-  };
-
+export const getDashboardCount = async (req, res) => { 
   try {
-    // Fetch all categories
-    const categories = await Category.find().lean();
-    const categoryNames = categories.map(cat => cat.categoryName.toLowerCase());
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    let startDate = new Date(`April 1, ${currentYear}`);
+    let endDate = new Date(`March 31, ${currentYear + 1}`);
 
+    if (currentDate > endDate) {
+      startDate.setFullYear(currentYear + 1);
+      endDate.setFullYear(currentYear + 2);
+    }
+
+    const { startDate: queryStartDate, endDate: queryEndDate } = req.query;
+
+    const dateFilter = {
+      $gte: new Date(queryStartDate || startDate),
+      $lte: new Date(queryEndDate || endDate),
+    };
+
+    // Fetch category names
+    const categories = await Category.find().lean();
+    const categoryNames = categories.map((cat) => cat.categoryName.toLowerCase());
+
+    // Initialize data structure for each category
+    const totalData = {};
+    categoryNames.forEach((category) => {
+      totalData[category] = {
+        "Total Policy Count": 0,
+        "Total Net Premium": 0,
+        "Total Final Premium": 0,
+        "Total Revenue": 0,
+        "Monthly Policy Count": 0,
+        "Monthly Net Premium": 0,
+        "Monthly Final Premium": 0,
+        "Monthly Revenue": 0,
+        "Total PayIn Amount": 0,
+        "Total Received PayIn Amount": 0,
+        "Total PayIn Balance": 0,
+        "Total Left Distributed Amount": 0,
+        "Monthly PayIn Amount": 0,
+        "Monthly Received PayIn Amount": 0,
+        "Monthly PayIn Balance": 0,
+        "Monthly Left Distributed Amount": 0,
+        "Total PayOut Amount": 0,
+        "Total Paid PayOut Amount": 0,
+        "Total PayOut Balance": 0,
+        "Total PayOut Left Distributed Amount": 0,
+        "Monthly PayOut Amount": 0,
+        "Monthly Paid PayOut Amount": 0,
+        "Monthly PayOut Balance": 0,
+        "Monthly PayOut Left Distributed Amount": 0,
+      };
+    });
+
+    // Fetch total policy data
+    const totalPolicies = await MotorPolicyModel.aggregate([
+      {
+        $group: {
+          _id: { $toLower: "$category" },
+          policyCount: { $sum: 1 },
+          netPremiumTotal: { $sum: "$netPremium" },
+          finalPremiumTotal: { $sum: "$finalPremium" },
+        },
+      },
+    ]);
+
+    // Fetch total payIn and payOut data
+    const totalPayments = await MotorPolicyPaymentModel.aggregate([
+      {
+        $group: {
+          _id: { $toLower: "$category" },
+          payInTotal: { $sum: "$payInCommission" },
+          payOutTotal: { $sum: "$payOutCommission" },
+          payInPaidTotal: {
+            $sum: { $cond: [{ $in: ["$payInPaymentStatus", ["Paid", "paid"]] }, "$payInCommission", 0] },
+          },
+          payOutPaidTotal: {
+            $sum: { $cond: [{ $in: ["$payOutPaymentStatus", ["Paid", "paid"]] }, "$payOutCommission", 0] },
+          },
+          payInUnpaidTotal: {
+            $sum: { $cond: [{ $in: ["$payInPaymentStatus", ["UnPaid", "Partial", "unPaid", "partial"]] }, "$payInCommission", 0] },
+          },
+          payOutUnpaidTotal: {
+            $sum: { $cond: [{ $in: ["$payOutPaymentStatus", ["UnPaid", "Partial", "unPaid", "partial"]] }, "$payOutCommission", 0] },
+          },
+          brokerBalanceTotal: { $sum: "$brokerBalance" },
+          partnerBalanceTotal: { $sum: "$partnerBalance" },
+        },
+      },
+    ]);
+
+    // Merge total policies and payments data into totalData
+    totalPolicies.forEach((policy) => {
+      const category = policy._id || "";
+      if (totalData[category]) {
+        totalData[category]["Total Policy Count"] = policy.policyCount;
+        totalData[category]["Total Net Premium"] = policy.netPremiumTotal;
+        totalData[category]["Total Final Premium"] = policy.finalPremiumTotal;
+      }
+    });
+
+    totalPayments.forEach((payment) => {
+      const category = payment._id || "";
+      if (totalData[category]) {
+        totalData[category]["Total Revenue"] = payment.payInTotal - payment.payOutTotal;
+        totalData[category]["Total PayIn Amount"] = payment.payInTotal;
+        totalData[category]["Total Received PayIn Amount"] = payment.payInPaidTotal;
+        totalData[category]["Total PayIn Balance"] = payment.payInUnpaidTotal;
+        totalData[category]["Total Left Distributed Amount"] = payment.brokerBalanceTotal;
+        totalData[category]["Total PayOut Amount"] = payment.payOutTotal;
+        totalData[category]["Total Paid PayOut Amount"] = payment.payOutPaidTotal;
+        totalData[category]["Total PayOut Balance"] = payment.payOutUnpaidTotal;
+        totalData[category]["Total PayOut Left Distributed Amount"] = payment.partnerBalanceTotal;
+      }
+    });
+
+    // Fetch monthly policies data
+    const monthlyPolicies = await MotorPolicyModel.aggregate([
+      {
+        $match: { issueDate: dateFilter },
+      },
+      {
+        $group: {
+          _id: { $toLower: "$category" },
+          policyCount: { $sum: 1 },
+          netPremiumTotal: { $sum: "$netPremium" },
+          finalPremiumTotal: { $sum: "$finalPremium" },
+        },
+      },
+    ]);
+
+    // Fetch monthly payIn and payOut data
+    const monthlyPayments = await MotorPolicyPaymentModel.aggregate([
+      {
+        $match: { policyDate: dateFilter },
+      },
+      {
+        $group: {
+          _id: { $toLower: "$category" },
+          payInTotal: { $sum: "$payInCommission" },
+          payOutTotal: { $sum: "$payOutCommission" },
+          payInPaidTotal: {
+            $sum: { $cond: [{ $in: ["$payInPaymentStatus", ["Paid", "paid"]] }, "$payInCommission", 0] },
+          },
+          payOutPaidTotal: {
+            $sum: { $cond: [{ $in: ["$payOutPaymentStatus", ["Paid", "paid"]] }, "$payOutCommission", 0] },
+          },
+          payInUnpaidTotal: {
+            $sum: { $cond: [{ $in: ["$payInPaymentStatus", ["UnPaid", "Partial", "unPaid", "partial"]] }, "$payInCommission", 0] },
+          },
+          payOutUnpaidTotal: {
+            $sum: { $cond: [{ $in: ["$payOutPaymentStatus", ["UnPaid", "Partial", "unPaid", "partial"]] }, "$payOutCommission", 0] },
+          },
+          brokerBalanceTotal: { $sum: "$brokerBalance" },
+          partnerBalanceTotal: { $sum: "$partnerBalance" },
+        },
+      },
+    ]);
+
+    // Merge monthly policies and payments data into the totalData structure
+    monthlyPolicies.forEach((policy) => {
+      const category = policy._id || "";
+      if (totalData[category]) {
+        totalData[category]["Monthly Policy Count"] = policy.policyCount;
+        totalData[category]["Monthly Net Premium"] = policy.netPremiumTotal;
+        totalData[category]["Monthly Final Premium"] = policy.finalPremiumTotal;
+      }
+    });
+
+    monthlyPayments.forEach((payment) => {
+      const category = payment._id || "";
+      if (totalData[category]) {
+        totalData[category]["Monthly Revenue"] = payment.payInTotal - payment.payOutTotal;
+        totalData[category]["Monthly PayIn Amount"] = payment.payInTotal;
+        totalData[category]["Monthly Received PayIn Amount"] = payment.payInPaidTotal;
+        totalData[category]["Monthly PayIn Balance"] = payment.payInUnpaidTotal;
+        totalData[category]["Monthly Left Distributed Amount"] = payment.brokerBalanceTotal;
+        totalData[category]["Monthly PayOut Amount"] = payment.payOutTotal;
+        totalData[category]["Monthly Paid PayOut Amount"] = payment.payOutPaidTotal;
+        totalData[category]["Monthly PayOut Balance"] = payment.payOutUnpaidTotal;
+        totalData[category]["Monthly PayOut Left Distributed Amount"] = payment.partnerBalanceTotal;
+      }
+    });
+
+    // Aggregate role counts
     const roleCounts = await UserProfileModel.aggregate([
       {
         $project: {
           normalizedRole: {
             $switch: {
               branches: [
-                {
-                  case: { $eq: ["$role", "RM"] },
-                  then: "Relationship Manager",
-                },
+                { case: { $eq: ["$role", "RM"] }, then: "Relationship Manager" },
               ],
               default: "$role",
             },
@@ -45,154 +214,12 @@ export const getDashboardCount = async (req, res) => {
     ]);
 
     const distinctRoles = await UserProfileModel.distinct("role");
-    const formattedRoleCounts = {
-      Total: distinctRoles.length,
-    };
+    const formattedRoleCounts = { Total: distinctRoles.length };
     roleCounts.forEach((role) => {
       formattedRoleCounts[role._id] = role.count;
     });
 
-    // Initialize category data with zero values
-    const categoryData = {};
-    categoryNames.forEach(category => {
-      categoryData[category] = {
-        "Policy Count": 0,
-        "Total Net Premium": 0,
-        "Net Premium": 0,
-        "Total Final Premium": 0,
-        "Final Premium": 0,
-        "Total UnPaid Amount": 0,
-        "Total Partner Balance": 0,
-        "Total Revenue": 0,
-        Revenue: 0,
-        "Total PayIn Amount": 0,
-        "Received PayIn Amount": 0,
-        "PayIn Balance": 0,
-        "Total PayOut Amount": 0,
-        "Paid PayOut Amount": 0,
-        "UnPaid PayOut Amount": 0,
-        "Partner Balance": 0,
-        
-      };
-    });
-
-    // Aggregation with date filter
-    const policyCounts = await MotorPolicyModel.aggregate([
-      { $match: { issueDate: dateFilter } },
-      {
-        $group: {
-          _id: { $toLower: "$category" },
-          count: { $sum: 1 },
-        },
-      },
-    ]);
-
-    const netPremiums = await MotorPolicyModel.aggregate([
-      { $match: { issueDate: dateFilter } },
-      {
-        $group: {
-          _id: { $toLower: "$category" },
-          "Net Premium": { $sum: "$netPremium" },
-          "Final Premium": { $sum: "$finalPremium" },
-        },
-      },
-    ]);
-
-    const commissionSums = await MotorPolicyPaymentModel.aggregate([
-      { $match: { policyDate: dateFilter } },
-      {
-        $group: {
-          _id: { $toLower: "$category" },
-          totalPayIn: { $sum: "$payInCommission" },
-          totalPayInAmount: { $sum: "$payInAmount" },
-          totalPayInBalance: { $sum: "$payInBalance" },
-          totalPayOut: { $sum: "$payOutCommission" },
-          totalPayOutAmount: { $sum: "$payOutAmount" },
-          totalPartnerBalance: { $sum: "$partnerBalance" },
-        },
-      },
-    ]);
-
-    const totalCommissionSums = await MotorPolicyPaymentModel.aggregate([
-      {
-        $group: {
-          _id: { $toLower: "$category" },
-          totalPayIn: { $sum: "$payInCommission" },
-          totalPayInAmount: { $sum: "$payInAmount" },
-          totalPayInBalance: { $sum: "$payInBalance" },
-          totalPayOut: { $sum: "$payOutCommission" },
-          totalPayOutAmount: { $sum: "$payOutAmount" },
-          totalPartnerBalance: { $sum: "$partnerBalance" },
-        },
-      },
-    ]);
-
-    const totalCommissionMap = totalCommissionSums.reduce((map, commission) => {
-      map[commission._id] = commission;
-      return map;
-    }, {});
-
-    commissionSums.forEach((commission) => {
-      const category = commission._id || "";
-      if (categoryData[category]) {
-        const totalCommission = totalCommissionMap[category] || {
-          totalPayIn: 0,
-          totalPayInAmount: 0,
-          totalPayInBalance: 0,
-          totalPayOut: 0,
-          totalPayOutAmount: 0,
-          totalPartnerBalance: 0,
-        };
-
-        categoryData[category]["Total PayIn Amount"] = Math.round(commission.totalPayIn);
-        categoryData[category]["Received PayIn Amount"] = Math.round(commission.totalPayInAmount);
-        categoryData[category]["PayIn Balance"] = Math.round(commission.totalPayIn - commission.totalPayInAmount);
-        categoryData[category]["Total PayOut Amount"] = Math.round(commission.totalPayOut);
-        categoryData[category]["Paid PayOut Amount"] = Math.round(commission.totalPayOutAmount);
-        categoryData[category]["UnPaid PayOut Amount"] = Math.round(commission.totalPayOut - commission.totalPayOutAmount);
-        categoryData[category]["Partner Balance"] = Math.round(commission.totalPartnerBalance);
-        categoryData[category].Revenue = Math.round(commission.totalPayIn - commission.totalPayOut);
-
-        categoryData[category]["Total UnPaid Amount"] = Math.round(totalCommission.totalPayOut - totalCommission.totalPayOutAmount);
-        categoryData[category]["Total Partner Balance"] = Math.round(totalCommission.totalPartnerBalance);
-        categoryData[category]["Total Revenue"] = Math.round(totalCommission.totalPayIn - totalCommission.totalPayOut);
-      }
-    });
-
-    policyCounts.forEach((policy) => {
-      const category = policy._id || "";
-      if (categoryData[category]) {
-        categoryData[category]["Policy Count"] = policy.count;
-      }
-    });
-
-    netPremiums.forEach((premium) => {
-      const category = premium._id || "";
-      if (categoryData[category]) {
-        categoryData[category]["Net Premium"] = Math.round(premium["Net Premium"]);
-        categoryData[category]["Final Premium"] = Math.round(premium["Final Premium"]);
-      }
-    });
-
-    // Aggregation without date filter
-    const totalNetPremiumWithoutDate = await MotorPolicyModel.aggregate([
-      {
-        $group: {
-          _id: { $toLower: "$category" },
-          "Net Premium": { $sum: "$netPremium" },
-          "Final Premium": { $sum: "$finalPremium" },
-        },
-      },
-    ]);
-
-    totalNetPremiumWithoutDate.forEach(premium => {
-      const category = premium._id || "";
-      if (categoryData[category]) {
-        categoryData[category]["Total Net Premium"] = Math.round(premium["Net Premium"]);
-        categoryData[category]["Total Final Premium"] = Math.round(premium["Final Premium"]);
-      }
-    });
-
+    // Aggregate booking counts
     const bookingCounts = await BookingRequest.aggregate([
       { $match: { createdOn: dateFilter } },
       { $group: { _id: "$bookingStatus", count: { $sum: 1 } } },
@@ -221,6 +248,7 @@ export const getDashboardCount = async (req, res) => {
 
     formattedBookingCounts["Total Booking"] = totalBookingRequest;
 
+    // Aggregate lead counts
     const leadCounts = await Lead.aggregate([
       { $match: { createdOn: dateFilter } },
       { $group: { _id: "$status", count: { $sum: 1 } } },
@@ -233,6 +261,7 @@ export const getDashboardCount = async (req, res) => {
       totalLead += lead.count;
     });
 
+    // Aggregate admin counts
     const brokerCount = await Broker.countDocuments();
     const makeCount = await Make.countDocuments();
     const modelCount = await Model.countDocuments();
@@ -268,7 +297,7 @@ export const getDashboardCount = async (req, res) => {
     const data = [
       {
         roleCounts: formattedRoleCounts,
-        categories: categoryData,
+        categories: totalData,
         bookingRequests: formattedBookingCounts,
         leadCounts: {
           "Total Lead": totalLead,
