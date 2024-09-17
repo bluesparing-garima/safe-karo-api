@@ -54,7 +54,7 @@ export const getDashboardCount = async (req, res) => {
         "Monthly PayIn": 0,
         "Monthly Received PayIn": 0,
         "Monthly PayIn Balance": 0,
-        "Monthly Left Dist. ": 0,
+        "Monthly PayIn Left Dist.": 0,
         "Total PayOut Amount": 0,
         "Total Paid PayOut Amount": 0,
         "Total PayOut Balance": 0,
@@ -188,7 +188,7 @@ export const getDashboardCount = async (req, res) => {
         totalData[category]["Monthly PayIn"] = payment.payInTotal;
         totalData[category]["Monthly Received PayIn"] = payment.payInPaidTotal;
         totalData[category]["Monthly PayIn Balance"] = payment.payInUnpaidTotal;
-        totalData[category]["Monthly Left Dist."] = payment.brokerBalanceTotal;
+        totalData[category]["Monthly PayIn Left Dist."] = payment.brokerBalanceTotal;
         totalData[category]["Monthly PayOut Amount"] = payment.payOutTotal;
         totalData[category]["Monthly Paid PayOut Amount"] = payment.payOutPaidTotal;
         totalData[category]["Monthly PayOut Balance"] = payment.payOutUnpaidTotal;
