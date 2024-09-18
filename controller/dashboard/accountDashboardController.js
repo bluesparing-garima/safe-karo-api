@@ -6,44 +6,48 @@ import MotorPolicyPaymentModel from "../../models/policyModel/motorPolicyPayment
 export const getAccountDashboard = async (req, res) => {
   try {
     const totalAccounts = await account.countDocuments();
-
     const totalAmountData = await account.aggregate([
+      { $group: { _id: null, totalAmount: { $sum: "$amount" } } },
+    ]);
+    const totalAmount =
+      totalAmountData.length > 0
+        ? Math.round(totalAmountData[0].totalAmount)
+        : 0;
+
+    const accountsData = await account.aggregate([
       {
         $group: {
-          _id: null,
+          _id: "$accountCode",
           totalAmount: { $sum: "$amount" },
+          accountId: { $first: "$_id" },
         },
       },
     ]);
-    const totalAmount = totalAmountData.length > 0 ? Math.round(totalAmountData[0].totalAmount) : 0;
 
-    const accounts = await account.find({}, "accountCode amount");
-
-    const totalCreditCountData = await creditAndDebit.aggregate([
-      { $match: { type: "credit" } },
+    const creditAndDebitData = await creditAndDebit.aggregate([
       {
         $group: {
-          _id: null,
-          totalCreditCount: { $sum: 1 },
+          _id: "$accountId",
+          totalCredits: { $sum: "$credit" },
+          totalDebits: { $sum: "$debit" },
         },
       },
     ]);
-    const totalCreditCount = totalCreditCountData.length > 0
-      ? totalCreditCountData[0].totalCreditCount
-      : 0;
 
-    const totalDebitCountData = await creditAndDebit.aggregate([
-      { $match: { type: "debit" } },
-      {
-        $group: {
-          _id: null,
-          totalDebitCount: { $sum: 1 },
-        },
-      },
-    ]);
-    const totalDebitCount = totalDebitCountData.length > 0
-      ? totalDebitCountData[0].totalDebitCount
-      : 0;
+    const formattedAccounts = {};
+    accountsData.forEach((account) => {
+      const creditDebit =
+        creditAndDebitData.find(
+          (cd) => String(cd._id) === String(account.accountId)
+        ) || {};
+
+      formattedAccounts[account._id] = {
+        amount: Math.round(account.totalAmount),
+        accountId: account.accountId,
+        totalCredits: creditDebit.totalCredits || 0,
+        totalDebits: creditDebit.totalDebits || 0,
+      };
+    });
 
     const netPremiums = await motorPolicy.aggregate([
       {
@@ -61,8 +65,10 @@ export const getAccountDashboard = async (req, res) => {
         },
       },
     ]);
-    const netPremium = netPremiums.length > 0 ? Math.round(netPremiums[0].NetPremium) : 0;
-    const finalPremium = netPremiums.length > 0 ? Math.round(netPremiums[0].FinalPremium) : 0;
+    const netPremium =
+      netPremiums.length > 0 ? Math.round(netPremiums[0].NetPremium) : 0;
+    const finalPremium =
+      netPremiums.length > 0 ? Math.round(netPremiums[0].FinalPremium) : 0;
 
     const commissionSums = await MotorPolicyPaymentModel.aggregate([
       {
@@ -81,12 +87,14 @@ export const getAccountDashboard = async (req, res) => {
       },
     ]);
 
-    const totalPayInCommission = commissionSums.length > 0
-      ? Math.round(commissionSums[0].totalPayInCommission)
-      : 0;
-    const totalPayOutCommission = commissionSums.length > 0
-      ? Math.round(commissionSums[0].totalPayOutCommission)
-      : 0;
+    const totalPayInCommission =
+      commissionSums.length > 0
+        ? Math.round(commissionSums[0].totalPayInCommission)
+        : 0;
+    const totalPayOutCommission =
+      commissionSums.length > 0
+        ? Math.round(commissionSums[0].totalPayOutCommission)
+        : 0;
 
     const policyCounts = await motorPolicy.aggregate([
       {
@@ -109,15 +117,9 @@ export const getAccountDashboard = async (req, res) => {
         {
           totalAccounts,
           totalAmount,
-          accounts: accounts.map((acc) => ({
-            accountCode: acc.accountCode,
-            amount: Math.round(acc.amount),
-          })),
+          accounts: formattedAccounts,
           policyCounts: formattedPolicyCounts,
-          transactions: {
-            Credit: totalCreditCount,
-            Debit: totalDebitCount,
-          },
+
           premiums: {
             "Net Premium": netPremium,
             "Final Premium": finalPremium,
