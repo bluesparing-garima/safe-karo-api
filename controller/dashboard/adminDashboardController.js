@@ -69,6 +69,7 @@ export const getDashboardCount = async (req, res) => {
 
     // Fetch total policy data
     const totalPolicies = await MotorPolicyModel.aggregate([
+      { $match: { isActive: true } },
       {
         $group: {
           _id: { $toLower: "$category" },
@@ -81,6 +82,7 @@ export const getDashboardCount = async (req, res) => {
 
     // Fetch total payIn and payOut data
     const totalPayments = await MotorPolicyPaymentModel.aggregate([
+      { $match: { isActive: true } },
       {
         $group: {
           _id: { $toLower: "$category" },
@@ -131,6 +133,7 @@ export const getDashboardCount = async (req, res) => {
 
     // Fetch monthly policies data
     const monthlyPolicies = await MotorPolicyModel.aggregate([
+      { $match: { isActive: true } },
       {
         $match: { issueDate: dateFilter },
       },
@@ -147,7 +150,7 @@ export const getDashboardCount = async (req, res) => {
     // Fetch monthly payIn and payOut data
     const monthlyPayments = await MotorPolicyPaymentModel.aggregate([
       {
-        $match: { policyDate: dateFilter },
+        $match: { policyDate: dateFilter, isActive: true },
       },
       {
         $group: {
@@ -199,6 +202,7 @@ export const getDashboardCount = async (req, res) => {
 
     // Aggregate role counts
     const roleCounts = await UserProfileModel.aggregate([
+      { $match: { isActive: true } },
       {
         $project: {
           normalizedRole: {
@@ -222,7 +226,7 @@ export const getDashboardCount = async (req, res) => {
 
     // Aggregate booking counts
     const bookingCounts = await BookingRequest.aggregate([
-      { $match: { createdOn: dateFilter } },
+      { $match: { createdOn: dateFilter, isActive: true } },
       { $group: { _id: "$bookingStatus", count: { $sum: 1 } } },
     ]);
 
@@ -251,7 +255,7 @@ export const getDashboardCount = async (req, res) => {
 
     // Aggregate lead counts
     const leadCounts = await Lead.aggregate([
-      { $match: { createdOn: dateFilter } },
+      { $match: { createdOn: dateFilter, isActive: true } },
       { $group: { _id: "$status", count: { $sum: 1 } } },
     ]);
 
@@ -273,11 +277,13 @@ export const getDashboardCount = async (req, res) => {
 
     const totalAccounts = await Account.countDocuments();
     const totalAmountData = await Account.aggregate([
+      { $match: { isActive: true } },
       { $group: { _id: null, totalAmount: { $sum: "$amount" } } },
     ]);
     const totalAmount = totalAmountData.length > 0 ? Math.round(totalAmountData[0].totalAmount) : 0;
     
     const accountsData = await Account.aggregate([
+      { $match: { isActive: true } },
       {
         $group: {
           _id: "$accountCode",
@@ -288,6 +294,7 @@ export const getDashboardCount = async (req, res) => {
     ]);
     
     const creditAndDebitData = await CreditAndDebit.aggregate([
+      { $match: { isActive: true } },
       {
         $group: {
           _id: "$accountId",
