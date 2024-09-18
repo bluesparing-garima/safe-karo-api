@@ -10,7 +10,8 @@ import {
   getBookingRequestsByAcceptedBy,
   getBookingRequestsByBookingId,
   acceptBookingRequest,
-  getRejectedBookingRequestsByPartnerId
+  getRejectedBookingRequestsByPartnerId,
+  getAllBookingStatusAccepted
 } from "../../controller/bookingController/bookingRequestController.js";
 import logActivity from "../../middlewares/logActivity.js";
 const router = express.Router();
@@ -20,6 +21,7 @@ router.get("/", logActivity, getAllBookingRequests);
 router.get("/rejected-bookings",logActivity,getRejectedBookingRequests);
 router.get("/validatePolicyNumber", logActivity, validatePolicyNumber);
 router.get("/booking-id/:bookingId", logActivity, getBookingRequestsByBookingId);
+router.get("/accepted-bookings",logActivity,getAllBookingStatusAccepted);
 router.put("/accepted-booking/:id",logActivity, acceptBookingRequest);
 router.get(
   "/created-by/:bookingCreatedBy",

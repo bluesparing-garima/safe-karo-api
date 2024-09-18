@@ -148,6 +148,26 @@ export const getAllBookingRequests = async (req, res) => {
   }
 };
 
+export const getAllBookingStatusAccepted = async (req, res) => {
+  try {
+    const bookings = await BookingRequestModel.find({
+      isRejected: false,
+      bookingStatus: "accepted"
+    });
+    
+    res.status(200).json({
+      message: "Bookings retrieved successfully.",
+      data: bookings,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving bookings",
+      error: error.message,
+    });
+  }
+};
+
 // Get all rejected booking requests
 export const getRejectedBookingRequests = async (req, res) => {
   try {
