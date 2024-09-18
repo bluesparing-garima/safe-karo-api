@@ -204,7 +204,7 @@ app.use("/api/operation-dashboard", operationDashboardRoutes);
 
 app.use("/api/account-dashboard", accountDashboardRoutes);
 
-// app.use("/api/broker-dashboard",brokerDashboardRoutes);
+ app.use("/api/broker-dashboard",brokerDashboardRoutes);
 
 // activity logs
 app.use("/api/activityLog", activityLogRoutes);
