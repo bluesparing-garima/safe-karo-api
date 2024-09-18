@@ -11,6 +11,7 @@ import Company from "../../models/adminModels/companySchema.js";
 import ProductType from "../../models/adminModels/productSchema.js";
 import SubProductType from "../../models/adminModels/productSubTypeSchema.js";
 import Account from "../../models/accountsModels/accountSchema.js";
+import CreditAndDebit from "../../models/accountsModels/creditAndDebitSchema.js";
 
 export const getDashboardCount = async (req, res) => { 
   try {
@@ -275,7 +276,7 @@ export const getDashboardCount = async (req, res) => {
       { $group: { _id: null, totalAmount: { $sum: "$amount" } } },
     ]);
     const totalAmount = totalAmountData.length > 0 ? Math.round(totalAmountData[0].totalAmount) : 0;
-
+    
     const accountsData = await Account.aggregate([
       {
         $group: {
@@ -285,12 +286,26 @@ export const getDashboardCount = async (req, res) => {
         },
       },
     ]);
-
+    
+    const creditAndDebitData = await CreditAndDebit.aggregate([
+      {
+        $group: {
+          _id: "$accountId",
+          totalCredits: { $sum: "$credit" },
+          totalDebits: { $sum: "$debit" },
+        },
+      },
+    ]);
+    
     const formattedAccounts = {};
     accountsData.forEach((account) => {
+      const creditDebit = creditAndDebitData.find(cd => String(cd._id) === String(account.accountId)) || {};
+      
       formattedAccounts[account._id] = {
         amount: Math.round(account.totalAmount),
         accountId: account.accountId,
+        totalCredits: creditDebit.totalCredits || 0,
+        totalDebits: creditDebit.totalDebits || 0,
       };
     });
 
