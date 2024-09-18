@@ -14,6 +14,8 @@ import {
   handleInvalidRoutes,
 } from "./middlewares/requestLogger.js";
 
+import activityLogRoutes from "./routes/adminRoutes/activityLogRoutes.js";
+
 import assigneeRolesRouters from "./routes/adminRoutes/userRolesRoutes.js";
 import policyTypeRoutes from "./routes/adminRoutes/policyTypeRoutes.js";
 import caseTypeRoutes from "./routes/adminRoutes/caseTypeRoutes.js";
@@ -43,7 +45,8 @@ import operationDashboardRoutes from "./routes/dashboardRoutes/operationDashboar
 import accountDashboardRoutes from "./routes/dashboardRoutes/accountDashboardRoute.js";
 import brokerDashboardRoutes from "./routes/dashboardRoutes/brokerDashboardRoute.js";
 
-import activityLogRoutes from "./routes/adminRoutes/activityLogRoutes.js";
+// partner - admin dashboard routes
+import partnerAdminDashboarRoutes from "./routes/dashboardRoutes/partnerAdminDashboard/partnerAdminDashboardRoutes.js"
 
 // Motor policy routes
 import motorPolicyRoutes from "./routes/policy/motorPolicyRoutes.js";
@@ -205,6 +208,11 @@ app.use("/api/operation-dashboard", operationDashboardRoutes);
 app.use("/api/account-dashboard", accountDashboardRoutes);
 
 // app.use("/api/broker-dashboard",brokerDashboardRoutes);
+
+// ------------------------------------ PartnerAdmin Dashboard Routes -------------------------
+
+app.use("/api/dashboard/partner-admin", partnerAdminDashboarRoutes);
+
 
 // activity logs
 app.use("/api/activityLog", activityLogRoutes);

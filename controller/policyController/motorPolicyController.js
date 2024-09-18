@@ -231,7 +231,7 @@ export const uploadMotorPolicy = async (req, res) => {
         const newPolicy = await MotorPolicyModel.create(data);
 
         const newMotorPolicyPayment = new MotorPolicyPaymentModel({
-          category:newPolicy.category,
+          category: newPolicy.category,
           partnerId: newPolicy.partnerId,
           policyId: newPolicy._id,
           brokerId: newPolicy.brokerId,
@@ -266,10 +266,18 @@ export const uploadMotorPolicy = async (req, res) => {
     res.status(200).json({
       message: "File uploaded and data extracted successfully.",
       data: extractedData,
+      status: "success",
+      success: true,
     });
   } catch (error) {
     console.error("Error occurred while uploading file:", error);
-    res.status(500).json({ message: "Internal server error." });
+    res
+      .status(500)
+      .json({
+        message: "Internal server error.",
+        status: "error",
+        success: false,
+      });
   }
 };
 
@@ -326,28 +334,41 @@ export const updateMotorPolicyFromExcel = async (req, res) => {
       return res.status(400).json({ message: "No file was uploaded." });
     }
 
-    const workbook = XLSX.read(file.buffer, { type: 'buffer' });
-    const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { raw: true });
+    const workbook = XLSX.read(file.buffer, { type: "buffer" });
+    const worksheet = XLSX.utils.sheet_to_json(
+      workbook.Sheets[workbook.SheetNames[0]],
+      { raw: true }
+    );
     console.log(`Parsed data from sheet: ${JSON.stringify(worksheet)}`);
 
-    const updates = worksheet.map(row => ({
+    const updates = worksheet.map((row) => ({
       policyNumber: row.policyNumber || row["Policy Number"] || "",
-      currentPolicy: row.currentPolicy?.trim() || row["Current Policy"]?.trim() || "",
+      currentPolicy:
+        row.currentPolicy?.trim() || row["Current Policy"]?.trim() || "",
     }));
 
     for (const update of updates) {
-      const existingRecord = await MotorPolicyModel.findOne({ policyNumber: update.policyNumber });
+      const existingRecord = await MotorPolicyModel.findOne({
+        policyNumber: update.policyNumber,
+      });
 
       if (existingRecord) {
-        existingRecord.currentPolicy = update.currentPolicy || existingRecord.currentPolicy;
+        existingRecord.currentPolicy =
+          update.currentPolicy || existingRecord.currentPolicy;
         await existingRecord.save();
-        console.log(`Updated currentPolicy for record: ${existingRecord.policyNumber}`);
+        console.log(
+          `Updated currentPolicy for record: ${existingRecord.policyNumber}`
+        );
       } else {
-        console.log(`No record found with policy number: ${update.policyNumber}`);
+        console.log(
+          `No record found with policy number: ${update.policyNumber}`
+        );
       }
     }
 
-    return res.status(200).json({ message: "Motor policies updated successfully." });
+    return res
+      .status(200)
+      .json({ message: "Motor policies updated successfully." });
   } catch (error) {
     console.error("Error occurred while updating motor policies:", error);
     return res.status(500).json({ message: "Internal Server Error" });
@@ -484,7 +505,7 @@ export const createMotorPolicy = async (req, res) => {
     Object.keys(req.files).forEach((key) => {
       const fileArray = req.files[key];
       if (Array.isArray(fileArray)) {
-        fileDetails[key] = fileArray.map(file => file.filename).join(',');
+        fileDetails[key] = fileArray.map((file) => file.filename).join(",");
       }
     });
 
@@ -532,7 +553,7 @@ export const createMotorPolicy = async (req, res) => {
       finalPremium,
       paymentMode,
       policyCreatedBy,
-      ...fileDetails, 
+      ...fileDetails,
       productType,
       createdBy,
       isActive: isActive !== undefined ? isActive : true,
@@ -541,7 +562,9 @@ export const createMotorPolicy = async (req, res) => {
     });
 
     try {
-      const existingMotorPolicy = await MotorPolicyModel.findOne({ policyNumber });
+      const existingMotorPolicy = await MotorPolicyModel.findOne({
+        policyNumber,
+      });
       if (existingMotorPolicy) {
         return res.status(400).json({
           status: "error",
@@ -553,7 +576,7 @@ export const createMotorPolicy = async (req, res) => {
       const savedMotorPolicy = await newMotorPolicy.save();
 
       const newMotorPolicyPayment = new MotorPolicyPaymentModel({
-        category:savedMotorPolicy.category,
+        category: savedMotorPolicy.category,
         partnerId: savedMotorPolicy.partnerId,
         policyId: savedMotorPolicy._id,
         brokerId: savedMotorPolicy.brokerId,
@@ -668,28 +691,29 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
     }
 
     // Extract unique partnerIds and partnerNames from the policies
-    const partnerNames = [...new Set(policies.map(policy => policy.partnerName))];
-    const partnerIds = [...new Set(policies.map(policy => policy.partnerId))].filter(
-      id => id && id.match(/^[0-9a-fA-F]{24}$/) // Ensure valid ObjectId format
+    const partnerNames = [
+      ...new Set(policies.map((policy) => policy.partnerName)),
+    ];
+    const partnerIds = [
+      ...new Set(policies.map((policy) => policy.partnerId)),
+    ].filter(
+      (id) => id && id.match(/^[0-9a-fA-F]{24}$/) // Ensure valid ObjectId format
     );
 
     // Fetch corresponding user profiles
     const userProfiles = await UserProfile.find({
-      $or: [
-        { fullName: { $in: partnerNames } },
-        { _id: { $in: partnerIds } }
-      ]
+      $or: [{ fullName: { $in: partnerNames } }, { _id: { $in: partnerIds } }],
     }).lean();
 
     // Map userProfiles by fullName and _id
     const profileMap = {};
-    userProfiles.forEach(profile => {
+    userProfiles.forEach((profile) => {
       profileMap[profile.fullName] = profile;
       profileMap[profile._id] = profile;
     });
 
     // Fetch related payments and bookings concurrently
-    const policyNumbers = policies.map(policy => policy.policyNumber);
+    const policyNumbers = policies.map((policy) => policy.policyNumber);
 
     const payments = await MotorPolicyPaymentModel.find({
       policyNumber: { $in: policyNumbers },
@@ -700,67 +724,70 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
     }).lean();
 
     const paymentMap = {};
-    payments.forEach(payment => {
+    payments.forEach((payment) => {
       paymentMap[payment.policyNumber] = payment;
     });
 
     const bookingMap = {};
-    bookings.forEach(booking => {
+    bookings.forEach((booking) => {
       bookingMap[booking.policyNumber] = booking;
     });
 
-    const policiesWithDetails = await Promise.all(policies.map(async (policy) => {
-      const payment = paymentMap[policy.policyNumber] || {};
-      const userProfile = profileMap[policy.partnerName] || profileMap[policy.partnerId] || {};
-      const booking = bookingMap[policy.policyNumber] || {};
+    const policiesWithDetails = await Promise.all(
+      policies.map(async (policy) => {
+        const payment = paymentMap[policy.policyNumber] || {};
+        const userProfile =
+          profileMap[policy.partnerName] || profileMap[policy.partnerId] || {};
+        const booking = bookingMap[policy.policyNumber] || {};
 
-      // Initialize brokerTimer and leadTimer as empty
-      let brokerTimer = booking.timer || "";
-      let leadTimer = "";
-      let leadDate = "";
+        // Initialize brokerTimer and leadTimer as empty
+        let brokerTimer = booking.timer || "";
+        let leadTimer = "";
+        let leadDate = "";
 
-      // If there is a leadId, fetch the lead and its timer
-      if (booking.leadId) {
-        const lead = await leadModel.findById(booking.leadId).lean();
-        if (lead) {
-          leadTimer = lead.timer || "";
-          leadDate = lead.createdOn || "";
+        // If there is a leadId, fetch the lead and its timer
+        if (booking.leadId) {
+          const lead = await leadModel.findById(booking.leadId).lean();
+          if (lead) {
+            leadTimer = lead.timer || "";
+            leadDate = lead.createdOn || "";
+          }
         }
-      }
 
-      return {
-        ...policy,
-        partnerCode: userProfile.partnerId,
-        paymentId: payment._id || 0,
-        partnerId: payment.partnerId || 0,
-        bookingId: payment.bookingId || 0,
-        od: payment.od || 0,
-        tp: payment.tp || 0,
-        payInODPercentage: payment.payInODPercentage || 0,
-        payInTPPercentage: payment.payInTPPercentage || 0,
-        payInODAmount: payment.payInODAmount || 0,
-        payInTPAmount: payment.payInTPAmount || 0,
-        payOutODPercentage: payment.payOutODPercentage || 0,
-        payOutTPPercentage: payment.payOutTPPercentage || 0,
-        payOutODAmount: payment.payOutODAmount || 0,
-        payOutTPAmount: payment.payOutTPAmount || 0,
-        payInCommission: payment.payInCommission || 0,
-        payOutCommission: payment.payOutCommission || 0,
-        payInAmount: payment.payInAmount || 0,
-        payOutAmount: payment.payOutAmount || 0,
-        payInPaymentStatus: payment.payInPaymentStatus || "UnPaid",
-        payOutPaymentStatus: payment.payOutPaymentStatus || "UnPaid",
-        payInBalance: payment.payInBalance || 0,
-        payOutBalance: payment.payOutBalance || 0,
-        paymentCreatedBy: payment.createdBy || 0,
-        paymentCreatedOn: payment.createdOn || 0,
-        paymentUpdatedBy: payment.updatedBy || 0,
-        paymentUpdatedOn: payment.updatedOn || 0,
-        brokerTimer,
-        leadTimer,
-        leadDate,
-      };
-    }));
+        return {
+          ...policy,
+          partnerCode: userProfile.partnerId,
+          paymentId: payment._id || 0,
+          partnerId: payment.partnerId || 0,
+          bookingId: payment.bookingId || 0,
+          od: payment.od || 0,
+          tp: payment.tp || 0,
+          payInODPercentage: payment.payInODPercentage || 0,
+          payInTPPercentage: payment.payInTPPercentage || 0,
+          payInODAmount: payment.payInODAmount || 0,
+          payInTPAmount: payment.payInTPAmount || 0,
+          payOutODPercentage: payment.payOutODPercentage || 0,
+          payOutTPPercentage: payment.payOutTPPercentage || 0,
+          payOutODAmount: payment.payOutODAmount || 0,
+          payOutTPAmount: payment.payOutTPAmount || 0,
+          payInCommission: payment.payInCommission || 0,
+          payOutCommission: payment.payOutCommission || 0,
+          payInAmount: payment.payInAmount || 0,
+          payOutAmount: payment.payOutAmount || 0,
+          payInPaymentStatus: payment.payInPaymentStatus || "UnPaid",
+          payOutPaymentStatus: payment.payOutPaymentStatus || "UnPaid",
+          payInBalance: payment.payInBalance || 0,
+          payOutBalance: payment.payOutBalance || 0,
+          paymentCreatedBy: payment.createdBy || 0,
+          paymentCreatedOn: payment.createdOn || 0,
+          paymentUpdatedBy: payment.updatedBy || 0,
+          paymentUpdatedOn: payment.updatedOn || 0,
+          brokerTimer,
+          leadTimer,
+          leadDate,
+        };
+      })
+    );
 
     res.status(200).json({
       message: `Motor Policies from ${startDate} to ${endDate} with payment and timer details.`,
@@ -956,18 +983,18 @@ export const getMotorPolicyByPartnerId = async (req, res) => {
       });
     }
 
-    const policyNumbers = policies.map(policy => policy.policyNumber);
+    const policyNumbers = policies.map((policy) => policy.policyNumber);
 
     const payments = await MotorPolicyPaymentModel.find({
       policyNumber: { $in: policyNumbers },
     }).lean();
 
     const paymentMap = {};
-    payments.forEach(payment => {
+    payments.forEach((payment) => {
       paymentMap[payment.policyNumber] = payment;
     });
 
-    const policiesWithDetails = policies.map(policy => {
+    const policiesWithDetails = policies.map((policy) => {
       const payment = paymentMap[policy.policyNumber] || {};
 
       return {
@@ -1430,7 +1457,7 @@ export const updateMotorPolicy = async (req, res) => {
         partnerId,
         partnerName,
       };
-      
+
       if (typeof isActive !== "undefined") {
         updatedPaymentFields.isActive = isActive;
       }
