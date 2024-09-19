@@ -65,16 +65,18 @@ export const getAllPartnersWithPayOutCommissionAndDateFilter = async (
 
       const partnerCommission =
         totalCommission.length > 0 ? totalCommission[0].totalCommission : 0;
-      totalPayOutCommissionSum += partnerCommission;
 
-      partnerSummaries.push({
-        partnerId: partner._id,
-        partnerName: partner.partnerName,
-        partnerCode: userProfile?.partnerId || "N/A",
-        totalPayOutCommission: partnerCommission,
-      });
+      if (partnerCommission > 0) {
+        totalPayOutCommissionSum += partnerCommission;
+
+        partnerSummaries.push({
+          partnerId: partner._id,
+          partnerName: partner.partnerName,
+          partnerCode: userProfile?.partnerId || "N/A",
+          totalPayOutCommission: partnerCommission,
+        });
+      }
     }
-
     res.status(200).json({
       message: `Partner payout commissions between ${startDate} and ${endDate}.`,
       data: partnerSummaries,
@@ -136,16 +138,18 @@ export const getAllPartnersWithPayOutCommission = async (req, res) => {
 
       const partnerCommission =
         totalCommission.length > 0 ? totalCommission[0].totalCommission : 0;
-      totalPayOutCommissionSum += partnerCommission;
 
-      partnerSummaries.push({
-        partnerId: partner._id,
-        partnerName: partner.partnerName,
-        partnerCode: userProfile?.partnerId || "N/A",
-        totalPayOutCommission: partnerCommission,
-      });
+      if (partnerCommission > 0) {
+        totalPayOutCommissionSum += partnerCommission;
+
+        partnerSummaries.push({
+          partnerId: partner._id,
+          partnerName: partner.partnerName,
+          partnerCode: userProfile?.partnerId || "N/A",
+          totalPayOutCommission: partnerCommission,
+        });
+      }
     }
-
     res.status(200).json({
       message: "Partners with payout commissions fetched successfully.",
       data: partnerSummaries,
@@ -243,14 +247,15 @@ export const getPayOutCommissionByCompanyWithDate = async (req, res) => {
           ? totalPayOutCommission[0].totalPayOutCommission
           : 0;
 
-      totalAmount += payOutCommission;
+      if (payOutCommission > 0) {
+        totalAmount += payOutCommission;
 
-      companySummaries.push({
-        companyName: company._id,
-        totalPayOutCommission: payOutCommission,
-      });
+        companySummaries.push({
+          companyName: company._id,
+          totalPayOutCommission: payOutCommission,
+        });
+      }
     }
-
     res.status(200).json({
       message: `Payout commissions for partnerId ${partnerId} by company between ${startDate} and ${endDate} fetched successfully.`,
       partnerName: partner.fullName,
@@ -331,12 +336,14 @@ export const getPayOutCommissionByCompany = async (req, res) => {
           ? totalPayOutCommission[0].totalPayOutCommission
           : 0;
 
-      totalAmount += payOutCommission;
+      if (payOutCommission > 0) {
+        totalAmount += payOutCommission;
 
-      companySummaries.push({
-        companyName: company._id,
-        totalPayOutCommission: payOutCommission,
-      });
+        companySummaries.push({
+          companyName: company._id,
+          totalPayOutCommission: payOutCommission,
+        });
+      }
     }
 
     res.status(200).json({

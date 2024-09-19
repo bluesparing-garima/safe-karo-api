@@ -47,9 +47,9 @@ export const getAllBrokersWithPayInCommissionAndDateFilter = async (
       })
         .select("policyNumber")
         .lean();
-
+    
       const policyNumbers = policies.map((policy) => policy.policyNumber);
-
+    
       const totalPayInCommission = await MotorPolicyPaymentModel.aggregate([
         { $match: { policyNumber: { $in: policyNumbers } } },
         {
@@ -59,20 +59,23 @@ export const getAllBrokersWithPayInCommissionAndDateFilter = async (
           },
         },
       ]);
-
+    
       const payInCommission =
         totalPayInCommission.length > 0
           ? totalPayInCommission[0].totalPayInCommission
           : 0;
-      totalAmount += payInCommission;
-
-      brokerSummaries.push({
-        brokerId: broker._id,
-        brokerName: broker.brokerName,
-        totalPayInCommission: payInCommission,
-      });
+    
+      if (payInCommission > 0) {
+        totalAmount += payInCommission;
+    
+        brokerSummaries.push({
+          brokerId: broker._id,
+          brokerName: broker.brokerName,
+          totalPayInCommission: payInCommission,
+        });
+      }
     }
-
+    
     res.status(200).json({
       message: `Brokers with pay-in commissions between ${startDate} and ${endDate} fetched successfully.`,
       data: brokerSummaries,
@@ -116,9 +119,9 @@ export const getAllBrokersWithPayInCommission = async (req, res) => {
       })
         .select("policyNumber")
         .lean();
-
+    
       const policyNumbers = policies.map((policy) => policy.policyNumber);
-
+    
       const totalPayInCommission = await MotorPolicyPaymentModel.aggregate([
         { $match: { policyNumber: { $in: policyNumbers } } },
         {
@@ -128,20 +131,23 @@ export const getAllBrokersWithPayInCommission = async (req, res) => {
           },
         },
       ]);
-
+    
       const payInCommission =
         totalPayInCommission.length > 0
           ? totalPayInCommission[0].totalPayInCommission
           : 0;
-      totalAmount += payInCommission;
-
-      brokerSummaries.push({
-        brokerId: broker._id,
-        brokerName: broker.brokerName,
-        totalPayInCommission: payInCommission,
-      });
+    
+      if (payInCommission > 0) {
+        totalAmount += payInCommission;
+    
+        brokerSummaries.push({
+          brokerId: broker._id,
+          brokerName: broker.brokerName,
+          totalPayInCommission: payInCommission,
+        });
+      }
     }
-
+    
     res.status(200).json({
       message: "Brokers with total pay-in commissions fetched successfully.",
       data: brokerSummaries,
@@ -226,9 +232,9 @@ export const getPayInCommissionByBrokerAndCompanyWithDateFilter = async (
       })
         .select("policyNumber")
         .lean();
-
+    
       const policyNumbers = policies.map((policy) => policy.policyNumber);
-
+    
       const totalPayInCommission = await MotorPolicyPaymentModel.aggregate([
         { $match: { policyNumber: { $in: policyNumbers } } },
         {
@@ -238,19 +244,22 @@ export const getPayInCommissionByBrokerAndCompanyWithDateFilter = async (
           },
         },
       ]);
-
+    
       const payInCommission =
         totalPayInCommission.length > 0
           ? totalPayInCommission[0].totalPayInCommission
           : 0;
-      totalAmount += payInCommission;
-
-      companySummaries.push({
-        companyName: company._id,
-        totalPayInCommission: payInCommission,
-      });
+    
+      if (payInCommission > 0) {
+        totalAmount += payInCommission;
+    
+        companySummaries.push({
+          companyName: company._id,
+          totalPayInCommission: payInCommission,
+        });
+      }
     }
-
+    
     res.status(200).json({
       message: `Pay-out commissions for brokerId ${brokerId} by company between ${startDate} and ${endDate} fetched successfully.`,
       data: companySummaries,
@@ -323,9 +332,9 @@ export const getPayInCommissionByBrokerAndCompany = async (req, res) => {
       })
         .select("policyNumber")
         .lean();
-
+    
       const policyNumbers = policies.map((policy) => policy.policyNumber);
-
+    
       const totalPayInCommission = await MotorPolicyPaymentModel.aggregate([
         { $match: { policyNumber: { $in: policyNumbers } } },
         {
@@ -335,19 +344,22 @@ export const getPayInCommissionByBrokerAndCompany = async (req, res) => {
           },
         },
       ]);
-
+    
       const payInCommission =
         totalPayInCommission.length > 0
           ? totalPayInCommission[0].totalPayInCommission
           : 0;
-      totalAmount += payInCommission;
-
-      companySummaries.push({
-        companyName: company._id,
-        totalPayInCommission: payInCommission,
-      });
+    
+      if (payInCommission > 0) {
+        totalAmount += payInCommission;
+    
+        companySummaries.push({
+          companyName: company._id,
+          totalPayInCommission: payInCommission,
+        });
+      }
     }
-
+    
     res.status(200).json({
       message: `Pay-out commissions for brokerId ${brokerId} by company fetched successfully.`,
       data: companySummaries,
