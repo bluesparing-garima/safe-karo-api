@@ -2,7 +2,10 @@ import MotorPolicyModel from "../../../models/policyModel/motorpolicySchema.js";
 import MotorPolicyPaymentModel from "../../../models/policyModel/motorPolicyPaymentSchema.js";
 import UserProfile from "../../../models/adminModels/userProfileSchema.js";
 
-export const getAllPartnersWithPayOutCommissionAndDateFilter = async (req,res) => {
+export const getAllPartnersWithPayOutCommissionAndDateFilter = async (
+  req,
+  res
+) => {
   try {
     const { startDate, endDate } = req.query;
 
@@ -146,7 +149,7 @@ export const getAllPartnersWithPayOutCommission = async (req, res) => {
     res.status(200).json({
       message: "Partners with payout commissions fetched successfully.",
       data: partnerSummaries,
-      totalAmount: totalPayOutCommissionSum, 
+      totalAmount: totalPayOutCommissionSum,
       success: true,
       status: "success",
     });
@@ -176,6 +179,17 @@ export const getPayOutCommissionByCompanyWithDate = async (req, res) => {
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
 
+    const partner = await UserProfile.findOne({ _id: partnerId }).select(
+      "fullName partnerId"
+    );
+    if (!partner) {
+      return res.status(404).json({
+        message: `No partner found for partnerId ${partnerId}.`,
+        success: false,
+        status: "error",
+      });
+    }
+
     const companies = await MotorPolicyModel.aggregate([
       {
         $match: {
@@ -192,6 +206,8 @@ export const getPayOutCommissionByCompanyWithDate = async (req, res) => {
         message: `No policies found for partnerId ${partnerId} between ${startDate} and ${endDate}.`,
         data: [],
         totalAmount: 0,
+        partnerName: partner.fullName,
+        partnerCode: partner.partnerId,
         success: true,
         status: "success",
       });
@@ -237,6 +253,8 @@ export const getPayOutCommissionByCompanyWithDate = async (req, res) => {
 
     res.status(200).json({
       message: `Payout commissions for partnerId ${partnerId} by company between ${startDate} and ${endDate} fetched successfully.`,
+      partnerName: partner.fullName,
+      partnerCode: partner.partnerId,
       data: companySummaries,
       totalAmount,
       success: true,
@@ -256,6 +274,17 @@ export const getPayOutCommissionByCompany = async (req, res) => {
   try {
     const { partnerId } = req.query;
 
+    const partner = await UserProfile.findOne({ _id: partnerId }).select(
+      "fullName partnerId"
+    );
+    if (!partner) {
+      return res.status(404).json({
+        message: `No partner found for partnerId ${partnerId}.`,
+        success: false,
+        status: "error",
+      });
+    }
+
     const companies = await MotorPolicyModel.aggregate([
       { $match: { partnerId, isActive: true } },
       { $group: { _id: "$companyName" } },
@@ -266,6 +295,8 @@ export const getPayOutCommissionByCompany = async (req, res) => {
         message: `No policies found for partnerId ${partnerId}.`,
         data: [],
         totalAmount: 0,
+        partnerName: partner.fullName,
+        partnerCode: partner.partnerId,
         success: true,
         status: "success",
       });
@@ -310,6 +341,8 @@ export const getPayOutCommissionByCompany = async (req, res) => {
 
     res.status(200).json({
       message: `Total payout commissions for partnerId ${partnerId} by company fetched successfully.`,
+      partnerName: partner.fullName,
+      partnerCode: partner.partnerId,
       data: companySummaries,
       totalAmount,
       success: true,
