@@ -3,6 +3,7 @@ import BookingRequestModel from "../../models/bookingModel/bookingRequestSchema.
 import leadGenerateModel from "../../models/partnerModels/leadGenerateSchema.js";
 import fs from "fs";
 import path from "path";
+import UserProfile from "../../models/adminModels/userProfileSchema.js";
 
 // Function to check if the policy number already exists
 const checkPolicyNumberExist = async (policyNumber) => {
@@ -152,12 +153,26 @@ export const getAllBookingStatusAccepted = async (req, res) => {
   try {
     const bookings = await BookingRequestModel.find({
       isRejected: false,
-      bookingStatus: "accepted"
+      bookingStatus: "accepted",
     });
-    
+
+    const bookingsWithUserFullName = await Promise.all(
+      bookings.map(async (booking) => {
+
+        const userProfile = await UserProfile.findOne({
+          _id: booking.bookingAcceptedBy,
+        });
+        const fullName = userProfile ? userProfile.fullName : "Unknown";
+        return {
+          ...booking.toObject(),
+          acceptedByName: fullName,
+        };
+      })
+    );
+
     res.status(200).json({
       message: "Bookings retrieved successfully.",
-      data: bookings,
+      data: bookingsWithUserFullName,
       status: "success",
     });
   } catch (error) {
