@@ -159,7 +159,7 @@ export const getAllBrokersWithPayInCommission = async (req, res) => {
 };
 
 // Get pay-out commission by company for a specific broker with a date filter
-export const getPayOutCommissionByBrokerAndCompanyWithDateFilter = async (
+export const getPayInCommissionByBrokerAndCompanyWithDateFilter = async (
   req,
   res
 ) => {
@@ -229,25 +229,25 @@ export const getPayOutCommissionByBrokerAndCompanyWithDateFilter = async (
 
       const policyNumbers = policies.map((policy) => policy.policyNumber);
 
-      const totalPayOutCommission = await MotorPolicyPaymentModel.aggregate([
+      const totalPayInCommission = await MotorPolicyPaymentModel.aggregate([
         { $match: { policyNumber: { $in: policyNumbers } } },
         {
           $group: {
             _id: null,
-            totalPayOutCommission: { $sum: "$payOutCommission" },
+            totalPayInCommission: { $sum: "$payInCommission" },
           },
         },
       ]);
 
-      const payOutCommission =
-        totalPayOutCommission.length > 0
-          ? totalPayOutCommission[0].totalPayOutCommission
+      const payInCommission =
+        totalPayInCommission.length > 0
+          ? totalPayInCommission[0].totalPayInCommission
           : 0;
-      totalAmount += payOutCommission;
+      totalAmount += payInCommission;
 
       companySummaries.push({
         companyName: company._id,
-        totalPayOutCommission: payOutCommission,
+        totalPayInCommission: payInCommission,
       });
     }
 
@@ -269,7 +269,7 @@ export const getPayOutCommissionByBrokerAndCompanyWithDateFilter = async (
 };
 
 // Get pay-out commission by company for a specific broker without a date filter
-export const getPayOutCommissionByBrokerAndCompany = async (req, res) => {
+export const getPayInCommissionByBrokerAndCompany = async (req, res) => {
   try {
     const { brokerId } = req.query;
 
@@ -326,25 +326,25 @@ export const getPayOutCommissionByBrokerAndCompany = async (req, res) => {
 
       const policyNumbers = policies.map((policy) => policy.policyNumber);
 
-      const totalPayOutCommission = await MotorPolicyPaymentModel.aggregate([
+      const totalPayInCommission = await MotorPolicyPaymentModel.aggregate([
         { $match: { policyNumber: { $in: policyNumbers } } },
         {
           $group: {
             _id: null,
-            totalPayOutCommission: { $sum: "$payOutCommission" },
+            totalPayInCommission: { $sum: "$payInCommission" },
           },
         },
       ]);
 
-      const payOutCommission =
-        totalPayOutCommission.length > 0
-          ? totalPayOutCommission[0].totalPayOutCommission
+      const payInCommission =
+        totalPayInCommission.length > 0
+          ? totalPayInCommission[0].totalPayInCommission
           : 0;
-      totalAmount += payOutCommission;
+      totalAmount += payInCommission;
 
       companySummaries.push({
         companyName: company._id,
-        totalPayOutCommission: payOutCommission,
+        totalPayInCommission: payInCommission,
       });
     }
 
