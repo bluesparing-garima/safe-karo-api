@@ -111,26 +111,25 @@ export const getDashboardCount = async (req, res) => {
       const category = policy._id || "";
       if (totalData[category]) {
         totalData[category]["Total Policy Count"] = policy.policyCount;
-        totalData[category]["Total Net Premium"] = policy.netPremiumTotal;
-        totalData[category]["Total Final Premium"] = policy.finalPremiumTotal;
+        totalData[category]["Total Net Premium"] = Math.round(policy.netPremiumTotal);
+        totalData[category]["Total Final Premium"] = Math.round(policy.finalPremiumTotal);
       }
     });
-
+    
     totalPayments.forEach((payment) => {
       const category = payment._id || "";
       if (totalData[category]) {
-        totalData[category]["Total Revenue"] = payment.payInTotal - payment.payOutTotal;
-        totalData[category]["Total PayIn Amount"] = payment.payInTotal;
-        totalData[category]["Total Received PayIn Amount"] = payment.payInPaidTotal;
-        totalData[category]["Total PayIn Balance"] = payment.payInUnpaidTotal;
-        totalData[category]["Total Left Dist."] = payment.brokerBalanceTotal;
-        totalData[category]["Total PayOut Amount"] = payment.payOutTotal;
-        totalData[category]["Total Paid PayOut Amount"] = payment.payOutPaidTotal;
-        totalData[category]["Total PayOut Balance"] = payment.payOutUnpaidTotal;
-        totalData[category]["Total PayOut Left Dist."] = payment.partnerBalanceTotal;
+        totalData[category]["Total Revenue"] = Math.round(payment.payInTotal - payment.payOutTotal);
+        totalData[category]["Total PayIn Amount"] = Math.round(payment.payInTotal);
+        totalData[category]["Total Received PayIn Amount"] = Math.round(payment.payInPaidTotal);
+        totalData[category]["Total PayIn Balance"] = Math.round(payment.payInUnpaidTotal);
+        totalData[category]["Total Left Dist."] = Math.round(payment.brokerBalanceTotal);
+        totalData[category]["Total PayOut Amount"] = Math.round(payment.payOutTotal);
+        totalData[category]["Total Paid PayOut Amount"] = Math.round(payment.payOutPaidTotal);
+        totalData[category]["Total PayOut Balance"] = Math.round(payment.payOutUnpaidTotal);
+        totalData[category]["Total PayOut Left Dist."] = Math.round(payment.partnerBalanceTotal);
       }
     });
-
     // Fetch monthly policies data
     const monthlyPolicies = await MotorPolicyModel.aggregate([
       { $match: { isActive: true } },
@@ -180,26 +179,25 @@ export const getDashboardCount = async (req, res) => {
       const category = policy._id || "";
       if (totalData[category]) {
         totalData[category]["Monthly Policy Count"] = policy.policyCount;
-        totalData[category]["Monthly Net Premium"] = policy.netPremiumTotal;
-        totalData[category]["Monthly Final Premium"] = policy.finalPremiumTotal;
+        totalData[category]["Monthly Net Premium"] = Math.round(policy.netPremiumTotal);
+        totalData[category]["Monthly Final Premium"] = Math.round(policy.finalPremiumTotal);
       }
     });
 
     monthlyPayments.forEach((payment) => {
       const category = payment._id || "";
       if (totalData[category]) {
-        totalData[category]["Monthly Revenue"] = payment.payInTotal - payment.payOutTotal;
-        totalData[category]["Monthly PayIn"] = payment.payInTotal;
-        totalData[category]["Monthly Received PayIn"] = payment.payInPaidTotal;
-        totalData[category]["Monthly PayIn Balance"] = payment.payInUnpaidTotal;
-        totalData[category]["Monthly PayIn Left Dist."] = payment.brokerBalanceTotal;
-        totalData[category]["Monthly PayOut Amount"] = payment.payOutTotal;
-        totalData[category]["Monthly Paid PayOut Amount"] = payment.payOutPaidTotal;
-        totalData[category]["Monthly PayOut Balance"] = payment.payOutUnpaidTotal;
-        totalData[category]["Monthly PayOut Left Dist."] = payment.partnerBalanceTotal;
+        totalData[category]["Monthly Revenue"] = Math.round(payment.payInTotal - payment.payOutTotal);
+        totalData[category]["Monthly PayIn"] = Math.round(payment.payInTotal);
+        totalData[category]["Monthly Received PayIn"] = Math.round(payment.payInPaidTotal);
+        totalData[category]["Monthly PayIn Balance"] = Math.round(payment.payInUnpaidTotal);
+        totalData[category]["Monthly PayIn Left Dist."] = Math.round(payment.brokerBalanceTotal);
+        totalData[category]["Monthly PayOut Amount"] = Math.round(payment.payOutTotal);
+        totalData[category]["Monthly Paid PayOut Amount"] = Math.round(payment.payOutPaidTotal);
+        totalData[category]["Monthly PayOut Balance"] = Math.round(payment.payOutUnpaidTotal);
+        totalData[category]["Monthly PayOut Left Dist."] = Math.round(payment.partnerBalanceTotal);
       }
     });
-
     // Aggregate role counts
     const roleCounts = await UserProfileModel.aggregate([
       { $match: { isActive: true } },
