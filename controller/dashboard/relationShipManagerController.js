@@ -3,9 +3,13 @@ import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
 import MotorPolicyPaymentModel from "../../models/policyModel/motorPolicyPaymentSchema.js";
 import BookingRequest from "../../models/bookingModel/bookingRequestSchema.js";
 import Lead from "../../models/partnerModels/leadGenerateSchema.js";
+import Broker from "../../models/adminModels/brokerSchema.js";
+import Make from "../../models/adminModels/makeSchema.js";
+import Model from "../../models/adminModels/modelSchema.js";
 import Category from "../../models/adminModels/categorySchema.js";
-import Account from "../../models/accountsModels/accountSchema.js";
-import CreditAndDebit from "../../models/accountsModels/creditAndDebitSchema.js";
+import Company from "../../models/adminModels/companySchema.js";
+import ProductType from "../../models/adminModels/productSchema.js";
+import SubProductType from "../../models/adminModels/productSubTypeSchema.js";
 
 export const getRMDashboardCount = async (req, res) => {
   try {
@@ -62,7 +66,6 @@ export const getRMDashboardCount = async (req, res) => {
       };
     });
 
-    // Step 1: Fetch policies by rmId
     const policies = await MotorPolicyModel.find({
       isActive: true,
       relationshipManagerId: rmId,
@@ -195,58 +198,104 @@ export const getRMDashboardCount = async (req, res) => {
       }
     });
 
-    // Fetch counts for roles, leads, booking requests
+    // Aggregate role counts
     const roleCounts = await UserProfileModel.aggregate([
-      { $group: { _id: "$role", count: { $sum: 1 } } },
-    ]);
-
-    const bookingRequests = await BookingRequest.aggregate([
-      { $group: { _id: "$status", count: { $sum: 1 } } },
-    ]);
-
-    const leadCounts = await Lead.aggregate([
-      { $group: { _id: "$status", count: { $sum: 1 } } },
-    ]);
-
-    // Fetch admin and account data
-    const brokerCount = await UserProfileModel.countDocuments({ role: "broker" });
-    const makeCount = await MotorPolicyModel.distinct("make").length;
-    const modelCount = await MotorPolicyModel.distinct("model").length;
-    const categoryCount = await Category.countDocuments();
-    const companyCount = await MotorPolicyModel.distinct("company").length;
-    const productCount = await MotorPolicyModel.distinct("product").length;
-
-    const accountsData = await Account.aggregate([
-      { $lookup: { from: "creditanddebits", localField: "_id", foreignField: "accountId", as: "transactions" } },
+      { $match: { isActive: true } },
       {
         $project: {
-          code: 1,
-          totalCredit: { $sum: "$transactions.credit" },
-          totalDebit: { $sum: "$transactions.debit" },
-          balance: { $subtract: [{ $sum: "$transactions.credit" }, { $sum: "$transactions.debit" }] },
+          normalizedRole: {
+            $switch: {
+              branches: [
+                { case: { $eq: ["$role", "RM"] }, then: "Relationship Manager" },
+              ],
+              default: "$role",
+            },
+          },
         },
       },
+      { $group: { _id: "$normalizedRole", count: { $sum: 1 } } },
     ]);
 
-    // Prepare final data object
-    const responseData = {
-      roleCounts,
-      categories: totalData,
-      bookingRequests,
-      leadCounts,
-      adminCounts: {
-        brokerCount,
-        makeCount,
-        modelCount,
-        categoryCount,
-        companyCount,
-        productCount,
-      },
-      accounts: accountsData,
+    const distinctRoles = await UserProfileModel.distinct("role");
+    const formattedRoleCounts = { Total: distinctRoles.length };
+    roleCounts.forEach((role) => {
+      formattedRoleCounts[role._id] = role.count;
+    });
+
+    // Aggregate booking counts
+    const bookingCounts = await BookingRequest.aggregate([
+      { $match: { createdOn: dateFilter, isActive: true } },
+      { $group: { _id: "$bookingStatus", count: { $sum: 1 } } },
+    ]);
+
+    const formattedBookingCounts = {
+      "Accepted Booking": 0,
+      "Booked Booking": 0,
+      "Requested Booking": 0,
+      "Rejected Booking": 0,
     };
+    let totalBookingRequest = 0;
+
+    bookingCounts.forEach((booking) => {
+      totalBookingRequest += booking.count;
+      if (booking._id === "accepted") {
+        formattedBookingCounts["Accepted Booking"] = booking.count;
+      } else if (booking._id === "booked") {
+        formattedBookingCounts["Booked Booking"] = booking.count;
+      } else if (booking._id === "requested") {
+        formattedBookingCounts["Requested Booking"] = booking.count;
+      } else if (booking._id === "Rejected") {
+        formattedBookingCounts["Rejected Booking"] = booking.count;
+      }
+    });
+
+    formattedBookingCounts["Total Booking"] = totalBookingRequest;
+
+    // Aggregate lead counts
+    const leadCounts = await Lead.aggregate([
+      { $match: { createdOn: dateFilter, isActive: true } },
+      { $group: { _id: "$status", count: { $sum: 1 } } },
+    ]);
+
+    const formattedLeadCounts = {};
+    let totalLead = 0;
+    leadCounts.forEach((lead) => {
+      formattedLeadCounts[lead._id] = lead.count;
+      totalLead += lead.count;
+    });
+
+    // Aggregate admin counts
+    const brokerCount = await Broker.countDocuments();
+    const makeCount = await Make.countDocuments();
+    const modelCount = await Model.countDocuments();
+    const categoryCount = await Category.countDocuments();
+    const companyCount = await Company.countDocuments();
+    const productTypeCount = await ProductType.countDocuments();
+    const subProductTypeCount = await SubProductType.countDocuments();
+
+    const data = [
+      {
+        roleCounts: formattedRoleCounts,
+        categories: totalData,
+        bookingRequests: formattedBookingCounts,
+        leadCounts: {
+          "Total Lead": totalLead,
+          ...formattedLeadCounts,
+        },
+        adminCounts: {
+          Brokers: brokerCount,
+          Makes: makeCount,
+          Models: modelCount,
+          Categories: categoryCount,
+          Companies: companyCount,
+          "Products": productTypeCount,
+          "SubProducts": subProductTypeCount,
+        },
+      },
+    ];
 
     // Return the result
-    return res.status(200).json({ success: true, data: responseData });
+    return res.status(200).json({ success: true, data });
   } catch (error) {
     return res.status(500).json({ success: false, message: error.message });
   }
