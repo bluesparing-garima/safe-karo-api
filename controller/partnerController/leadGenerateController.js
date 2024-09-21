@@ -1,7 +1,7 @@
 import leadGenerateModel from "../../models/partnerModels/leadGenerateSchema.js";
 import upload from "../../middlewares/uploadMiddleware.js";
 
-const createNewLead = async (req, res) => {
+export const createNewLead = async (req, res) => {
   upload(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ message: err.message });
@@ -68,7 +68,7 @@ const createNewLead = async (req, res) => {
 };
 
 // Get all leads
-const getAllLeads = async (req, res) => {
+export const getAllLeads = async (req, res) => {
   try {
     const leads = await leadGenerateModel.find();
     res.status(200).json({
@@ -160,7 +160,7 @@ export const getLeadsByRMId = async (req, res) => {
 };
 
 // Get lead by ID
-const getLeadById = async (req, res) => {
+export const getLeadById = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -214,7 +214,7 @@ export const acceptLeadRequest = async (req, res) => {
 };
 
 // Update Lead
-const updateLead = async (req, res) => {
+export const updateLead = async (req, res) => {
   upload(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ message: err.message });
@@ -266,7 +266,7 @@ const updateLead = async (req, res) => {
 };
 
 // Delete Lead
-const deleteLead = async (req, res) => {
+export const deleteLead = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -294,4 +294,3 @@ const deleteLead = async (req, res) => {
   }
 };
 
-export { createNewLead, getAllLeads, getLeadById, updateLead, deleteLead };

@@ -2,7 +2,7 @@ import leadPaymentModel from "../../models/partnerModels/leadPaymentSchema.js";
 import leadGenerateModel from "../../models/partnerModels/leadGenerateSchema.js";
 
 // Create a new lead payment
-const createNewLeadPayment = async (req, res) => {
+export const createNewLeadPayment = async (req, res) => {
   try {
     const {
       leadId,
@@ -70,7 +70,7 @@ const createNewLeadPayment = async (req, res) => {
 };
 
 // Get all payments
-const getAllLeadPayments = async (req, res) => {
+export const getAllLeadPayments = async (req, res) => {
   try {
     const payments = await leadPaymentModel.find();
     res.status(200).json({
@@ -88,7 +88,7 @@ const getAllLeadPayments = async (req, res) => {
 };
 
 // Get payments by leadId
-const getLeadPaymentsByLeadId = async (req, res) => {
+export const getLeadPaymentsByLeadId = async (req, res) => {
   try {
     const { leadId } = req.query;
     if (!leadId) {
@@ -121,7 +121,7 @@ const getLeadPaymentsByLeadId = async (req, res) => {
 };
 
 // Get payments by Id
-const getLeadPaymentById = async (req, res) => {
+export const getLeadPaymentById = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -145,7 +145,7 @@ const getLeadPaymentById = async (req, res) => {
 };
 
 // Update lead payment
-const updateLeadPayment = async (req, res) => {
+export const updateLeadPayment = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
@@ -172,7 +172,7 @@ const updateLeadPayment = async (req, res) => {
 };
 
 // Delete lead payment
-const deleteLeadPayment = async (req, res) => {
+export const deleteLeadPayment = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -194,11 +194,3 @@ const deleteLeadPayment = async (req, res) => {
   }
 };
 
-export {
-  createNewLeadPayment,
-  getAllLeadPayments,
-  getLeadPaymentsByLeadId,
-  getLeadPaymentById,
-  updateLeadPayment,
-  deleteLeadPayment,
-};
