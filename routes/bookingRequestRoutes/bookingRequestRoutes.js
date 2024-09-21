@@ -11,7 +11,8 @@ import {
   getBookingRequestsByBookingId,
   acceptBookingRequest,
   getRejectedBookingRequestsByPartnerId,
-  getAllBookingStatusAccepted
+  getAllBookingStatusAccepted,
+  getBookingRequestsByRMId
 } from "../../controller/bookingController/bookingRequestController.js";
 import logActivity from "../../middlewares/logActivity.js";
 const router = express.Router();
@@ -34,6 +35,7 @@ router.get(
   getBookingRequestsByAcceptedBy
 );
 router.get("/partner/:partnerId", logActivity, getBookingRequestsByPartnerId);
+router.get("/relationship-manager",logActivity,getBookingRequestsByRMId);
 router.get("/rejected-partner-id",logActivity,getRejectedBookingRequestsByPartnerId);
 router.put("/:id", logActivity, updateBookingRequest);
 

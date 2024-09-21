@@ -276,6 +276,40 @@ export const getUserProfilesByRole = async (req, res) => {
   }
 };
 
+export const getAllUserProfilesByHeadRMId = async (req, res) => {
+  try {
+    const { headRMId } = req.query;
+
+    if (!headRMId) {
+      return res.status(400).json({
+        message: "Please provide headRMId in the query.",
+        status: "error",
+      });
+    }
+
+    const userProfiles = await UserProfileModel.find({ headRMId });
+
+    if (userProfiles.length === 0) {
+      return res.status(404).json({
+        message: `No user profiles found for headRMId ${headRMId}.`,
+        data: [],
+        status: "success",
+      });
+    }
+
+    res.status(200).json({
+      message: "User profiles retrieved successfully",
+      data: userProfiles,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving user profiles",
+      error: error.message,
+    });
+  }
+};
+
 // Function to get user profiles except roles Partner or Agent
 export const getUserProfilesExcludingRoles = async (req, res) => {
   try {

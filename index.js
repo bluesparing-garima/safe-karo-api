@@ -44,6 +44,7 @@ import bookingDashboardRoutes from "./routes/dashboardRoutes/bookingDashboardRou
 import operationDashboardRoutes from "./routes/dashboardRoutes/operationDashboardRoute.js";
 import accountDashboardRoutes from "./routes/dashboardRoutes/accountDashboardRoute.js";
 import brokerDashboardRoutes from "./routes/dashboardRoutes/brokerDashboardRoute.js";
+import relationShipManagerRoutes from "./routes/dashboardRoutes/relationShipManagerRoute.js";
 
 // partner - admin dashboard routes
 import partnerAdminDashboarRoutes from "./routes/dashboardRoutes/partnerAdminDashboard/partnerAdminDashboardRoutes.js"
@@ -211,6 +212,9 @@ app.use("/api/operation-dashboard", operationDashboardRoutes);
 app.use("/api/account-dashboard", accountDashboardRoutes);
 
 // app.use("/api/broker-dashboard",brokerDashboardRoutes);
+
+app.use("/api/relationship-manager-dashboard", relationShipManagerRoutes);
+
 
 // ------------------------------------ PartnerAdmin Dashboard Routes -------------------------
 

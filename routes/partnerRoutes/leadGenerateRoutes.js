@@ -7,7 +7,8 @@ import {
   deleteLead,
   getleadsByCreatedBy,
   getLeadsByPartnerId,
-  acceptLeadRequest
+  acceptLeadRequest,
+  getLeadsByRMId
 } from "../../controller/partnerController/leadGenerateController.js";
 import logActivity from "../../middlewares/logActivity.js";
 const router = express.Router();
@@ -23,6 +24,8 @@ router.get("/created-by/:leadCreatedBy",logActivity,getleadsByCreatedBy);
 
 // Get all leads by partnerID
 router.get("/partner-id/:partnerId",logActivity,getLeadsByPartnerId);
+
+router.get("/relationship-manager",logActivity,getLeadsByRMId);
 
 // Get Lead by id
 router.get("/:id",logActivity,getLeadById);

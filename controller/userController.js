@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import UserModel from "../models/userSchema.js";
 
-const userRegistration = async (req, res) => {
+export const userRegistration = async (req, res) => {
 
   const { name, email, password, phoneNumber,partnerId,partnerCode, role, isActive } = req.body; 
 
@@ -55,7 +55,7 @@ const userRegistration = async (req, res) => {
 };
 
 // login
-const userLogin = async (req, res) => {
+export const userLogin = async (req, res) => {
   const { email, password } = req.body;
   try {
     if (!email || !password) {
@@ -103,5 +103,3 @@ const userLogin = async (req, res) => {
     res.status(500).json({ status: "failed", message: "Unable to Login" });
   }
 };
-
-export { userRegistration, userLogin };

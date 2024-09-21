@@ -19,7 +19,8 @@ import {
   updateMotorPolicyDocument,
   updateMotorPolicyFromExcel,
   getMotorPolicyByPolicyNumber,
-  getMotorPolicyByVehicleNumber
+  getMotorPolicyByVehicleNumber,
+  getMotorPolicyByRelationshipManagerId 
 } from "../../controller/policyController/motorPolicyController.js";
 const router = express.Router();
 
@@ -41,6 +42,7 @@ router.get('/policy-number/:policyNumber', getMotorPolicyByPolicyNumber);
 router.get('/vehicle-number/:vehicleNumber', getMotorPolicyByVehicleNumber);
 router.get("/policyId/:policyId", logActivity, getMotorPolicyByPolicyId);
 router.get("/partner/:partnerId", logActivity, getMotorPolicyByPartnerId);
+router.get("/relationship-manager/:relationshipManagerId", logActivity, getMotorPolicyByRelationshipManagerId );
 router.get("/policy-completed-by/:policyCompletedBy", logActivity, getMotorPolicyByPolicyCompletedBy);
 
 router.put("/:id", logActivity, updateMotorPolicy);

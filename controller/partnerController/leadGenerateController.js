@@ -1,7 +1,7 @@
 import leadGenerateModel from "../../models/partnerModels/leadGenerateSchema.js";
 import upload from "../../middlewares/uploadMiddleware.js";
 
-const createNewLead = async (req, res) => {
+export const createNewLead = async (req, res) => {
   upload(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ message: err.message });
@@ -68,7 +68,7 @@ const createNewLead = async (req, res) => {
 };
 
 // Get all leads
-const getAllLeads = async (req, res) => {
+export const getAllLeads = async (req, res) => {
   try {
     const leads = await leadGenerateModel.find();
     res.status(200).json({
@@ -135,8 +135,32 @@ export const getLeadsByPartnerId = async (req, res) => {
   }
 };
 
+export const getLeadsByRMId = async (req, res) => {
+  try {
+    const { relationshipManagerId } = req.query;
+    const leads = await leadGenerateModel.find({ relationshipManagerId });
+
+    if (leads.length === 0) {
+      return res.status(404).json({
+        message: `No leads found for RelationShipManagerId: ${relationshipManagerId}`,
+        status: "success",
+      });
+    }
+    res.status(200).json({
+      message: "Leads retrieved successfully.",
+      data: leads,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving leads",
+      error: error.message,
+    });
+  }
+};
+
 // Get lead by ID
-const getLeadById = async (req, res) => {
+export const getLeadById = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -190,7 +214,7 @@ export const acceptLeadRequest = async (req, res) => {
 };
 
 // Update Lead
-const updateLead = async (req, res) => {
+export const updateLead = async (req, res) => {
   upload(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ message: err.message });
@@ -242,7 +266,7 @@ const updateLead = async (req, res) => {
 };
 
 // Delete Lead
-const deleteLead = async (req, res) => {
+export const deleteLead = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -270,4 +294,3 @@ const deleteLead = async (req, res) => {
   }
 };
 
-export { createNewLead, getAllLeads, getLeadById, updateLead, deleteLead };

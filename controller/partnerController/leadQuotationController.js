@@ -3,7 +3,7 @@ import leadGenerateModel from "../../models/partnerModels/leadGenerateSchema.js"
 import upload from "../../middlewares/uploadMiddleware.js";
 
 // Create a new quotation
-const createNewQuotation = async (req, res) => {
+export const createNewQuotation = async (req, res) => {
   upload(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ message: err.message });
@@ -80,7 +80,7 @@ const createNewQuotation = async (req, res) => {
 };
 
 // Get all quotations
-const getAllQuotation = async (req, res) => {
+export const getAllQuotation = async (req, res) => {
   try {
     const quotations = await leadQuotationModel.find();
     res.status(200).json({
@@ -98,7 +98,7 @@ const getAllQuotation = async (req, res) => {
 };
 
 // Get quotation by ID
-const getQuotationById = async (req, res) => {
+export const getQuotationById = async (req, res) => {
   try {
     const { id } = req.params;
     const quotation = await leadQuotationModel.findById(id);
@@ -122,7 +122,7 @@ const getQuotationById = async (req, res) => {
 };
 
 // Get quotations by leadId
-const getQuotationsByLeadId = async (req, res) => {
+export const getQuotationsByLeadId = async (req, res) => {
   try {
     const { leadId } = req.query;
     if (!leadId) {
@@ -154,7 +154,7 @@ const getQuotationsByLeadId = async (req, res) => {
 };
 
 // Update quotation by ID
-const updateQuotation = async (req, res) => {
+export const updateQuotation = async (req, res) => {
   upload(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ message: err.message });
@@ -227,7 +227,7 @@ const updateQuotation = async (req, res) => {
 };
 
 // Delete quotation by ID
-const deleteQuotation = async (req, res) => {
+export const deleteQuotation = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -253,11 +253,3 @@ const deleteQuotation = async (req, res) => {
   }
 };
 
-export {
-  createNewQuotation,
-  getAllQuotation,
-  getQuotationsByLeadId,
-  getQuotationById,
-  updateQuotation,
-  deleteQuotation,
-};
