@@ -44,7 +44,7 @@ import bookingDashboardRoutes from "./routes/dashboardRoutes/bookingDashboardRou
 import operationDashboardRoutes from "./routes/dashboardRoutes/operationDashboardRoute.js";
 import accountDashboardRoutes from "./routes/dashboardRoutes/accountDashboardRoute.js";
 import brokerDashboardRoutes from "./routes/dashboardRoutes/brokerDashboardRoute.js";
-import relationShipManagerRoutes from "./routes/dashboardRoutes/relationShipManagerRoute.js";
+import relationShipManagerRoutes from "./routes/dashboardRoutes/relationshipManagerRoute.js";
 
 // partner - admin dashboard routes
 import partnerAdminDashboarRoutes from "./routes/dashboardRoutes/partnerAdminDashboard/partnerAdminDashboardRoutes.js"
