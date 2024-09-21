@@ -67,7 +67,7 @@ export const getDashboardCount = async (req, res) => {
       };
     });
 
-    // Fetch total policy data
+    // Fetch total policies and payments
     const totalPolicies = await MotorPolicyModel.aggregate([
       { $match: { isActive: true } },
       {
@@ -80,7 +80,6 @@ export const getDashboardCount = async (req, res) => {
       },
     ]);
 
-    // Fetch total payIn and payOut data
     const totalPayments = await MotorPolicyPaymentModel.aggregate([
       { $match: { isActive: true } },
       {
@@ -89,16 +88,40 @@ export const getDashboardCount = async (req, res) => {
           payInTotal: { $sum: "$payInCommission" },
           payOutTotal: { $sum: "$payOutCommission" },
           payInPaidTotal: {
-            $sum: { $cond: [{ $in: ["$payInPaymentStatus", ["Paid", "paid"]] }, "$payInCommission", 0] },
+            $sum: {
+              $cond: [
+                { $in: ["$payInPaymentStatus", ["Paid", "paid"]] },
+                "$payInCommission",
+                0,
+              ],
+            },
           },
           payOutPaidTotal: {
-            $sum: { $cond: [{ $in: ["$payOutPaymentStatus", ["Paid", "paid"]] }, "$payOutCommission", 0] },
+            $sum: {
+              $cond: [
+                { $in: ["$payOutPaymentStatus", ["Paid", "paid"]] },
+                "$payOutCommission",
+                0,
+              ],
+            },
           },
-          payInUnpaidTotal: {
-            $sum: { $cond: [{ $in: ["$payInPaymentStatus", ["UnPaid", "Partial", "unPaid", "partial"]] }, "$payInCommission", 0] },
+          payInUnpaidOrPartial: {
+            $sum: {
+              $cond: [
+                { $in: ["$payInPaymentStatus", ["UnPaid", "Partial", "unPaid", "partial"]] },
+                { $cond: [{ $eq: ["$payInPaymentStatus", "UnPaid", "Partial"] }, "$payInBalance", "$payInAmount"] },
+                0,
+              ],
+            },
           },
-          payOutUnpaidTotal: {
-            $sum: { $cond: [{ $in: ["$payOutPaymentStatus", ["UnPaid", "Partial", "unPaid", "partial"]] }, "$payOutCommission", 0] },
+          payOutUnpaidOrPartial: {
+            $sum: {
+              $cond: [
+                { $in: ["$payOutPaymentStatus", ["UnPaid", "Partial", "unPaid", "partial"]] },
+                { $cond: [{ $eq: ["$payOutPaymentStatus", "UnPaid","Partial"] }, "$payOutBalance", "$payOutAmount"] },
+                0,
+              ],
+            },
           },
           brokerBalanceTotal: { $sum: "$brokerBalance" },
           partnerBalanceTotal: { $sum: "$partnerBalance" },
@@ -106,7 +129,7 @@ export const getDashboardCount = async (req, res) => {
       },
     ]);
 
-    // Merge total policies and payments data into totalData
+    // Merge total policies and payments into totalData
     totalPolicies.forEach((policy) => {
       const category = policy._id || "";
       if (totalData[category]) {
@@ -115,27 +138,25 @@ export const getDashboardCount = async (req, res) => {
         totalData[category]["Total Final Premium"] = Math.round(policy.finalPremiumTotal);
       }
     });
-    
+
     totalPayments.forEach((payment) => {
       const category = payment._id || "";
       if (totalData[category]) {
         totalData[category]["Total Revenue"] = Math.round(payment.payInTotal - payment.payOutTotal);
         totalData[category]["Total PayIn Amount"] = Math.round(payment.payInTotal);
         totalData[category]["Total Received PayIn Amount"] = Math.round(payment.payInPaidTotal);
-        totalData[category]["Total PayIn Balance"] = Math.round(payment.payInUnpaidTotal);
+        totalData[category]["Total PayIn Balance"] = Math.round(payment.payInUnpaidOrPartial);
         totalData[category]["Total Left Dist."] = Math.round(payment.brokerBalanceTotal);
         totalData[category]["Total PayOut Amount"] = Math.round(payment.payOutTotal);
         totalData[category]["Total Paid PayOut Amount"] = Math.round(payment.payOutPaidTotal);
-        totalData[category]["Total PayOut Balance"] = Math.round(payment.payOutUnpaidTotal);
+        totalData[category]["Total PayOut Balance"] = Math.round(payment.payOutUnpaidOrPartial);
         totalData[category]["Total PayOut Left Dist."] = Math.round(payment.partnerBalanceTotal);
       }
     });
-    // Fetch monthly policies data
+
+    // Fetch monthly policies and payments
     const monthlyPolicies = await MotorPolicyModel.aggregate([
-      { $match: { isActive: true } },
-      {
-        $match: { issueDate: dateFilter },
-      },
+      { $match: { isActive: true, issueDate: dateFilter } },
       {
         $group: {
           _id: { $toLower: "$category" },
@@ -146,27 +167,48 @@ export const getDashboardCount = async (req, res) => {
       },
     ]);
 
-    // Fetch monthly payIn and payOut data
     const monthlyPayments = await MotorPolicyPaymentModel.aggregate([
-      {
-        $match: { policyDate: dateFilter, isActive: true },
-      },
+      { $match: { isActive: true, policyDate: dateFilter } },
       {
         $group: {
           _id: { $toLower: "$category" },
           payInTotal: { $sum: "$payInCommission" },
           payOutTotal: { $sum: "$payOutCommission" },
           payInPaidTotal: {
-            $sum: { $cond: [{ $in: ["$payInPaymentStatus", ["Paid", "paid"]] }, "$payInCommission", 0] },
+            $sum: {
+              $cond: [
+                { $in: ["$payInPaymentStatus", ["Paid", "paid"]] },
+                "$payInCommission",
+                0,
+              ],
+            },
           },
           payOutPaidTotal: {
-            $sum: { $cond: [{ $in: ["$payOutPaymentStatus", ["Paid", "paid"]] }, "$payOutCommission", 0] },
+            $sum: {
+              $cond: [
+                { $in: ["$payOutPaymentStatus", ["Paid", "paid"]] },
+                "$payOutCommission",
+                0,
+              ],
+            },
           },
-          payInUnpaidTotal: {
-            $sum: { $cond: [{ $in: ["$payInPaymentStatus", ["UnPaid", "Partial", "unPaid", "partial"]] }, "$payInCommission", 0] },
+          payInUnpaidOrPartial: {
+            $sum: {
+              $cond: [
+                { $in: ["$payInPaymentStatus", ["UnPaid", "Partial", "unPaid", "partial"]] },
+                { $cond: [{ $in: ["$payInPaymentStatus", ["UnPaid", "Partial"]] }, "$payInBalance", "$payInAmount"]},
+                0,
+              ],
+            },
           },
-          payOutUnpaidTotal: {
-            $sum: { $cond: [{ $in: ["$payOutPaymentStatus", ["UnPaid", "Partial", "unPaid", "partial"]] }, "$payOutCommission", 0] },
+          payOutUnpaidOrPartial: {
+            $sum: {
+              $cond: [
+                { $in: ["$payOutPaymentStatus", ["UnPaid", "Partial", "unPaid", "partial"]] },
+                { $cond: [{ $in: ["$payOutPaymentStatus", ["UnPaid", "Partial"]] }, "$payOutBalance", "$payOutAmount"]},
+                0,
+              ],
+            },
           },
           brokerBalanceTotal: { $sum: "$brokerBalance" },
           partnerBalanceTotal: { $sum: "$partnerBalance" },
@@ -174,7 +216,7 @@ export const getDashboardCount = async (req, res) => {
       },
     ]);
 
-    // Merge monthly policies and payments data into the totalData structure
+    // Merge monthly policies and payments into totalData
     monthlyPolicies.forEach((policy) => {
       const category = policy._id || "";
       if (totalData[category]) {
@@ -190,14 +232,15 @@ export const getDashboardCount = async (req, res) => {
         totalData[category]["Monthly Revenue"] = Math.round(payment.payInTotal - payment.payOutTotal);
         totalData[category]["Monthly PayIn"] = Math.round(payment.payInTotal);
         totalData[category]["Monthly Received PayIn"] = Math.round(payment.payInPaidTotal);
-        totalData[category]["Monthly PayIn Balance"] = Math.round(payment.payInUnpaidTotal);
+        totalData[category]["Monthly PayIn Balance"] = Math.round(payment.payInUnpaidOrPartial);
         totalData[category]["Monthly PayIn Left Dist."] = Math.round(payment.brokerBalanceTotal);
         totalData[category]["Monthly PayOut Amount"] = Math.round(payment.payOutTotal);
         totalData[category]["Monthly Paid PayOut Amount"] = Math.round(payment.payOutPaidTotal);
-        totalData[category]["Monthly PayOut Balance"] = Math.round(payment.payOutUnpaidTotal);
+        totalData[category]["Monthly PayOut Balance"] = Math.round(payment.payOutUnpaidOrPartial);
         totalData[category]["Monthly PayOut Left Dist."] = Math.round(payment.partnerBalanceTotal);
       }
-    });
+    })
+
     // Aggregate role counts
     const roleCounts = await UserProfileModel.aggregate([
       { $match: { isActive: true } },
