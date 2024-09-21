@@ -4,6 +4,7 @@ import leadGenerateModel from "../../models/partnerModels/leadGenerateSchema.js"
 import fs from "fs";
 import path from "path";
 import UserProfile from "../../models/adminModels/userProfileSchema.js";
+import { query } from "express";
 
 // Function to check if the policy number already exists
 const checkPolicyNumberExist = async (policyNumber) => {
@@ -324,6 +325,35 @@ export const getBookingRequestsByPartnerId = async (req, res) => {
     if (bookings.length === 0) {
       return res.status(404).json({
         message: `No bookings found for partnerId: ${partnerId}`,
+        status: "success",
+      });
+    }
+
+    res.status(200).json({
+      message: "Bookings retrieved successfully.",
+      data: bookings,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving bookings",
+      error: error.message,
+    });
+  }
+};
+
+// Get booking requests by RMID
+export const getBookingRequestsByRMId = async (req, res) => {
+  try {
+    const { relationshipManagerId } = req.query;
+
+    const bookings = await BookingRequestModel.find({
+      relationshipManagerId,
+    });
+
+    if (bookings.length === 0) {
+      return res.status(404).json({
+        message: `No bookings found for relationshipManagerId: ${relationshipManagerId}`,
         status: "success",
       });
     }

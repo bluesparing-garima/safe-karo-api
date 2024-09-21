@@ -135,6 +135,30 @@ export const getLeadsByPartnerId = async (req, res) => {
   }
 };
 
+export const getLeadsByRMId = async (req, res) => {
+  try {
+    const { relationshipManagerId } = req.query;
+    const leads = await leadGenerateModel.find({ relationshipManagerId });
+
+    if (leads.length === 0) {
+      return res.status(404).json({
+        message: `No leads found for RelationShipManagerId: ${relationshipManagerId}`,
+        status: "success",
+      });
+    }
+    res.status(200).json({
+      message: "Leads retrieved successfully.",
+      data: leads,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error retrieving leads",
+      error: error.message,
+    });
+  }
+};
+
 // Get lead by ID
 const getLeadById = async (req, res) => {
   try {
