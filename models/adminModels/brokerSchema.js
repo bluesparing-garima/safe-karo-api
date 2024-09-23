@@ -2,6 +2,9 @@ import mongoose from 'mongoose';
 
 const brokerSchema = new mongoose.Schema(
   {
+    brokerCode:{
+      type:String,
+    },
     brokerName: {
       type: String,
       required: true,

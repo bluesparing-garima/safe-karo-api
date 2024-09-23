@@ -2,21 +2,17 @@ import BrokerModel from "../../models/adminModels/brokerSchema.js";
 import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
 
 // Create a new broker name
-const createBrokerName = async (req, res) => {
+export const createBrokerName = async (req, res) => {
   try {
     const { brokerName, createdBy, isActive } = req.body;
 
-    // Check if all required fields are provided
     if (!brokerName || !createdBy) {
       return res
         .status(400)
         .json({ status: "failed", message: "Required fields are missing" });
     }
-
-    // Convert brokerName to lowercase for uniqueness validation
     const lowerCaseBrokerName = brokerName.toLowerCase();
 
-    // Check if brokerName already exists (case-insensitive)
     const existingBroker = await BrokerModel.findOne({
       brokerName: new RegExp(`^${lowerCaseBrokerName}$`, 'i')
     });
@@ -27,12 +23,23 @@ const createBrokerName = async (req, res) => {
         .json({ status: "failed", message: "Broker name already exists" });
     }
 
+    const lastBroker = await BrokerModel.findOne().sort({ createdOn: -1 }).exec();
+    
+    let newBrokerCode = "BR001"; 
+    if (lastBroker && lastBroker.brokerCode) {
+      const lastBrokerCode = lastBroker.brokerCode;
+      const lastBrokerNumber = parseInt(lastBrokerCode.slice(2), 10); 
+      const newBrokerNumber = (lastBrokerNumber + 1).toString().padStart(3, '0');
+      newBrokerCode = `BR${newBrokerNumber}`;
+    }
+
     const newBrokerName = new BrokerModel({
       brokerName,
+      brokerCode: newBrokerCode,
       createdBy,
-      updatedBy: null, // Set updatedBy to null initially
-      updatedOn: null, // Set updatedOn to null initially
-      isActive: isActive !== undefined ? isActive : true, // Set default value to true if not provided
+      updatedBy: null,
+      updatedOn: null,
+      isActive: isActive !== undefined ? isActive : true,
     });
 
     await newBrokerName.save();
@@ -51,8 +58,9 @@ const createBrokerName = async (req, res) => {
   }
 };
 
+
 // Get all broker names
-const getAllBrokerNames = async (req, res) => {
+export const getAllBrokerNames = async (req, res) => {
   try {
     const brokerNames = await BrokerModel.find({ isActive: true }).sort({ brokerName: 1 });
     res.status(200).json({
@@ -69,11 +77,9 @@ const getAllBrokerNames = async (req, res) => {
 };
 
 // Get broker name by ID
-const getBrokerNameById = async (req, res) => {
+export const getBrokerNameById = async (req, res) => {
   try {
     const { id } = req.params;
-
-    // Check if broker name exists
     const existingBrokerName = await BrokerModel.findById(id);
     if (!existingBrokerName) {
       return res
@@ -94,12 +100,11 @@ const getBrokerNameById = async (req, res) => {
 };
 
 // Update broker name
-const updateBrokerName = async (req, res) => {
+export const updateBrokerName = async (req, res) => {
   try {
     const { id } = req.params;
     const { brokerName, updatedBy, isActive } = req.body;
 
-    // Check if broker name exists
     const existingBrokerName = await BrokerModel.findById(id);
     if (!existingBrokerName) {
       return res
@@ -107,13 +112,10 @@ const updateBrokerName = async (req, res) => {
         .json({ status: "failed", message: "Broker name not found" });
     }
 
-    // Get the previous name of the broker
     const previousBrokerName = existingBrokerName.brokerName;
 
-    // Convert new brokerName to lowercase for uniqueness validation
     const lowerCaseBrokerName = brokerName.toLowerCase();
 
-    // Check if brokerName already exists (case-insensitive)
     const duplicateBroker = await BrokerModel.findOne({
       brokerName: new RegExp(`^${lowerCaseBrokerName}$`, 'i')
     });
@@ -124,7 +126,6 @@ const updateBrokerName = async (req, res) => {
         .json({ status: "failed", message: "Broker name already exists" });
     }
 
-    // Update the broker name
     existingBrokerName.brokerName = brokerName;
     existingBrokerName.updatedBy = updatedBy;
     existingBrokerName.updatedOn = new Date();
@@ -134,12 +135,10 @@ const updateBrokerName = async (req, res) => {
 
     const updatedBrokerName = await existingBrokerName.save();
 
-    // Find all motor policies that reference the previous broker name
     const motorPoliciesWithBroker = await MotorPolicyModel.find({
       broker: previousBrokerName,
     });
 
-    // Update the broker reference in each motor policy if it's not already updated
     for (let motorPolicy of motorPoliciesWithBroker) {
       if (motorPolicy.broker !== brokerName) {
         motorPolicy.broker = brokerName;
@@ -162,11 +161,10 @@ const updateBrokerName = async (req, res) => {
 };
 
 // Delete broker name
-const deleteBrokerName = async (req, res) => {
+export const deleteBrokerName = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Check if broker name exists
     const existingBrokerName = await BrokerModel.findById(id);
     if (!existingBrokerName) {
       return res
@@ -174,7 +172,6 @@ const deleteBrokerName = async (req, res) => {
         .json({ status: "failed", message: "Broker name not found" });
     }
 
-    // Delete the broker name
     await BrokerModel.findByIdAndDelete(id);
     res.status(200).json({
       status: "success",
@@ -186,12 +183,4 @@ const deleteBrokerName = async (req, res) => {
       .status(500)
       .json({ status: "failed", message: "Unable to delete broker name" });
   }
-};
-
-export {
-  createBrokerName,
-  getAllBrokerNames,
-  getBrokerNameById,
-  updateBrokerName,
-  deleteBrokerName,
 };
