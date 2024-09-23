@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmation Mail</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+        .logo {
+            margin: 20px 0;
+        }
+        .details {
+            font-size: 1.2em;
+            margin: 10px 0;
+        }
+        .footer {
+            margin-top: 30px;
+        }
+        .footer-number {
+            font-size: 1.2em;
+            color: #333;
+        }
+        .support-box {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 20px;
+            margin-top: 30px;
+            display: inline-block;
+            text-align: left;
+            width: 300px;
+            background-color: #f9f9f9;
+        }
+        .support-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <p><strong>Dear {{PARTNER_NAME}}</strong>,</p>
+    <p>Congratulations! Your offline policy of <strong>{{MAKE}} {{MODEL}} ({{VEHICLE_NUMBER}})</strong> has been marked booked in our system.</p>
+    <p>The following are the details for the same:</p>
+    <ul>
+        <li class="details"><strong>Policy Number:</strong> {{POLICY_NUMBER}}</li>
+        <li class="details"><strong>Insurer:</strong> {{COMPANY_NAME}}</li>
+        <li class="details"><strong>Customer Name:</strong> {{FULL_NAME}}</li>
+    </ul>
+    <p><strong>Feel free to reach out for any inquiries!</strong></p>
+    <p class="footer">Warm Regards,</p>
+    
+    <div class="logo">
+        <img src="cid:logo" alt="Insurance Safekaro Logo" width="150"/>
+    </div>
+
+    <div class="support-box" style="margin: auto;">
+        <p class="support-title">We're happy to help</p>
+        <p>Contact Number: <strong>+91 96490 09500</strong></p>
+        <p>Monday to Saturday 10 am to 7 pm<br>Except public holidays</p>
+        <p>Email: <strong>Support@safekaro.com</strong></p>
+    </div>
+</body>
+</html>
