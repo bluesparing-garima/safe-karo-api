@@ -10,6 +10,7 @@ import BookingRequestModel from "../../models/bookingModel/bookingRequestSchema.
 import leadModel from "../../models/partnerModels/leadGenerateSchema.js";
 import UserProfile from "../../models/adminModels/userProfileSchema.js";
 import sendEmail from "../../utils/sendEmails.js";
+import BrokerModel from "../../models/adminModels/brokerSchema.js";
 
 const dataFilePath = path.join(process.cwd(), "data", "motorpolicy_data.json");
 const hashFilePath = path.join(
@@ -639,7 +640,6 @@ export const createMotorPolicy = async (req, res) => {
           policyNumber: policyNumber,
           companyName: companyName,
           fullName: fullName,
-          logoPath:"https://safekaro.com/static/media/logo2.ee203cab19aa9fd3445def886efc140b.svg"
         });
       }
       return res.status(200).json({
@@ -719,7 +719,7 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
       });
     }
 
-    // Extract unique partnerIds and partnerNames from the policies
+    // Extract unique partnerIds, partnerNames, and brokerIds from the policies
     const partnerNames = [
       ...new Set(policies.map((policy) => policy.partnerName)),
     ];
@@ -728,20 +728,28 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
     ].filter(
       (id) => id && id.match(/^[0-9a-fA-F]{24}$/) // Ensure valid ObjectId format
     );
-
-    // Fetch corresponding user profiles
+    const brokerIds = [
+      ...new Set(policies.map((policy) => policy.brokerId)),
+    ].filter(
+      (id) => id && id.match(/^[0-9a-fA-F]{24}$/) // Ensure valid ObjectId format
+    );
+    
     const userProfiles = await UserProfile.find({
       $or: [{ fullName: { $in: partnerNames } }, { _id: { $in: partnerIds } }],
     }).lean();
 
-    // Map userProfiles by fullName and _id
+    const brokers = await BrokerModel.find({ _id: { $in: brokerIds } }).lean();
+    const brokerMap = {};
+    brokers.forEach((broker) => {
+      brokerMap[broker._id] = broker.brokerCode;
+    });
+
     const profileMap = {};
     userProfiles.forEach((profile) => {
       profileMap[profile.fullName] = profile;
       profileMap[profile._id] = profile;
     });
 
-    // Fetch related payments and bookings concurrently
     const policyNumbers = policies.map((policy) => policy.policyNumber);
 
     const payments = await MotorPolicyPaymentModel.find({
@@ -769,12 +777,10 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
           profileMap[policy.partnerName] || profileMap[policy.partnerId] || {};
         const booking = bookingMap[policy.policyNumber] || {};
 
-        // Initialize brokerTimer and leadTimer as empty
         let brokerTimer = booking.timer || "";
         let leadTimer = "";
         let leadDate = "";
 
-        // If there is a leadId, fetch the lead and its timer
         if (booking.leadId) {
           const lead = await leadModel.findById(booking.leadId).lean();
           if (lead) {
@@ -783,9 +789,12 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
           }
         }
 
+        const brokerCode = brokerMap[policy.brokerId] || "";
+
         return {
           ...policy,
           partnerCode: userProfile.partnerId,
+          brokerCode,
           paymentId: payment._id || 0,
           partnerId: payment.partnerId || 0,
           bookingId: payment.bookingId || 0,
@@ -819,7 +828,7 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
     );
 
     res.status(200).json({
-      message: `Motor Policies from ${startDate} to ${endDate} with payment and timer details.`,
+      message: `Motor Policies from ${startDate} to ${endDate} with payment and broker details.`,
       data: policiesWithDetails,
       success: true,
       status: "success",
