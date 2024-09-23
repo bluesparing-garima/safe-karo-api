@@ -103,11 +103,35 @@ export const getRMDashboardCount = async (req, res) => {
           payOutPaidTotal: {
             $sum: { $cond: [{ $in: ["$payOutPaymentStatus", ["Paid", "paid"]] }, "$payOutCommission", 0] },
           },
-          payInUnpaidTotal: {
-            $sum: { $cond: [{ $in: ["$payInPaymentStatus", ["UnPaid", "Partial", "unPaid", "partial"]] }, "$payInCommission", 0] },
+          payInUnpaidOrPartial: {
+            $sum: {
+              $cond: [
+                { $in: ["$payInPaymentStatus", ["UnPaid", "Partial", "unPaid", "partial"]] },
+                { 
+                  $cond: [
+                    { $eq: ["$payInPaymentStatus", "UnPaid"] }, 
+                    "$payInCommission", 
+                    "$payInBalance"
+                  ]
+                },
+                0,
+              ],
+            },
           },
-          payOutUnpaidTotal: {
-            $sum: { $cond: [{ $in: ["$payOutPaymentStatus", ["UnPaid", "Partial", "unPaid", "partial"]] }, "$payOutCommission", 0] },
+          payOutUnpaidOrPartial: {
+            $sum: {
+              $cond: [
+                { $in: ["$payOutPaymentStatus", ["UnPaid", "Partial", "unPaid", "partial"]] },
+                { 
+                  $cond: [
+                    { $eq: ["$payOutPaymentStatus", "UnPaid"] }, 
+                    "$payOutCommission", 
+                    "$payOutBalance"
+                  ]
+                },
+                0,
+              ],
+            },
           },
           brokerBalanceTotal: { $sum: "$brokerBalance" },
           partnerBalanceTotal: { $sum: "$partnerBalance" },
@@ -122,11 +146,11 @@ export const getRMDashboardCount = async (req, res) => {
         totalData[category]["Total Revenue"] = Math.round(payment.payInTotal - payment.payOutTotal);
         totalData[category]["Total PayIn Amount"] = Math.round(payment.payInTotal);
         totalData[category]["Total Received PayIn Amount"] = Math.round(payment.payInPaidTotal);
-        totalData[category]["Total PayIn Balance"] = Math.round(payment.payInUnpaidTotal);
+        totalData[category]["Total PayIn Balance"] = Math.round(payment.payInUnpaidOrPartial);
         totalData[category]["Total Left Dist."] = Math.round(payment.brokerBalanceTotal);
         totalData[category]["Total PayOut Amount"] = Math.round(payment.payOutTotal);
         totalData[category]["Total Paid PayOut Amount"] = Math.round(payment.payOutPaidTotal);
-        totalData[category]["Total PayOut Balance"] = Math.round(payment.payOutUnpaidTotal);
+        totalData[category]["Total PayOut Balance"] = Math.round(payment.payOutUnpaidOrPartial);
         totalData[category]["Total PayOut Left Dist."] = Math.round(payment.partnerBalanceTotal);
       }
     });
@@ -170,11 +194,35 @@ export const getRMDashboardCount = async (req, res) => {
           payOutPaidTotal: {
             $sum: { $cond: [{ $in: ["$payOutPaymentStatus", ["Paid", "paid"]] }, "$payOutCommission", 0] },
           },
-          payInUnpaidTotal: {
-            $sum: { $cond: [{ $in: ["$payInPaymentStatus", ["UnPaid", "Partial", "unPaid", "partial"]] }, "$payInCommission", 0] },
+          payInUnpaidOrPartial: {
+            $sum: {
+              $cond: [
+                { $in: ["$payInPaymentStatus", ["UnPaid", "Partial", "unPaid", "partial"]] },
+                { 
+                  $cond: [
+                    { $eq: ["$payInPaymentStatus", "UnPaid"] }, 
+                    "$payInCommission", 
+                    "$payInBalance"
+                  ]
+                },
+                0,
+              ],
+            },
           },
-          payOutUnpaidTotal: {
-            $sum: { $cond: [{ $in: ["$payOutPaymentStatus", ["UnPaid", "Partial", "unPaid", "partial"]] }, "$payOutCommission", 0] },
+          payOutUnpaidOrPartial: {
+            $sum: {
+              $cond: [
+                { $in: ["$payOutPaymentStatus", ["UnPaid", "Partial", "unPaid", "partial"]] },
+                { 
+                  $cond: [
+                    { $eq: ["$payOutPaymentStatus", "UnPaid"] }, 
+                    "$payOutCommission", 
+                    "$payOutBalance"
+                  ]
+                },
+                0,
+              ],
+            },
           },
           brokerBalanceTotal: { $sum: "$brokerBalance" },
           partnerBalanceTotal: { $sum: "$partnerBalance" },
@@ -189,11 +237,11 @@ export const getRMDashboardCount = async (req, res) => {
         totalData[category]["Monthly Revenue"] = Math.round(payment.payInTotal - payment.payOutTotal);
         totalData[category]["Monthly PayIn"] = Math.round(payment.payInTotal);
         totalData[category]["Monthly Received PayIn"] = Math.round(payment.payInPaidTotal);
-        totalData[category]["Monthly PayIn Balance"] = Math.round(payment.payInUnpaidTotal);
+        totalData[category]["Monthly PayIn Balance"] = Math.round(payment.payInUnpaidOrPartial);
         totalData[category]["Monthly PayIn Left Dist."] = Math.round(payment.brokerBalanceTotal);
         totalData[category]["Monthly PayOut Amount"] = Math.round(payment.payOutTotal);
         totalData[category]["Monthly Paid PayOut Amount"] = Math.round(payment.payOutPaidTotal);
-        totalData[category]["Monthly PayOut Balance"] = Math.round(payment.payOutUnpaidTotal);
+        totalData[category]["Monthly PayOut Balance"] = Math.round(payment.payOutUnpaidOrPartial);
         totalData[category]["Monthly PayOut Left Dist."] = Math.round(payment.partnerBalanceTotal);
       }
     });
