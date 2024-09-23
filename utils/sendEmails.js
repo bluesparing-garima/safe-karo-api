@@ -2,7 +2,6 @@ import nodeMailer from "nodemailer";
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
-
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const sendEmail = async (options) => {
@@ -17,24 +16,39 @@ const sendEmail = async (options) => {
             }
         });
 
-        const templatePath = path.resolve(__dirname, '../templates/otpTemplate.html');
-       
-        
+        const templatePath = path.resolve(__dirname, '../templates/bookedPolicy.html');
         let htmlTemplate = fs.readFileSync(templatePath, 'utf-8');
 
-        htmlTemplate = htmlTemplate.replace(`{{OTP_CODE}}`, options.otp);
+        htmlTemplate = htmlTemplate
+            .replace(`{{PARTNER_NAME}}`, options.partnerName || '')
+            .replace(`{{MAKE}}`, options.make || '')
+            .replace(`{{MODEL}}`, options.model || '')
+            .replace(`{{VEHICLE_NUMBER}}`, options.vehicleNumber || '')
+            .replace(`{{POLICY_NUMBER}}`, options.policyNumber || '')
+            .replace(`{{COMPANY_NAME}}`, options.companyName || '')
+            .replace(`{{FULL_NAME}}`, options.fullName || '');
+
+        const logoPath = path.resolve(__dirname, '../assets/safekaroLogo.png');
 
         const mailOptions = {
             from: process.env.SMPT_MAIL,
             to: options.to,
             subject: options.subject,
             html: htmlTemplate,
+            attachments: [
+                {
+                    filename: 'safekaroLogo.png',
+                    path: logoPath,
+                    cid: 'logo'
+                }
+            ]
         };
 
-        const info = await transporter.sendMail(mailOptions);
+        await transporter.sendMail(mailOptions);
     } catch (error) {
         console.error("Error sending email:", error);
     }
 };
+
 
 export default sendEmail;

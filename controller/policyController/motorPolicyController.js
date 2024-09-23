@@ -9,6 +9,7 @@ import MotorPolicyPaymentModel from "../../models/policyModel/motorPolicyPayment
 import BookingRequestModel from "../../models/bookingModel/bookingRequestSchema.js";
 import leadModel from "../../models/partnerModels/leadGenerateSchema.js";
 import UserProfile from "../../models/adminModels/userProfileSchema.js";
+import sendEmail from "../../utils/sendEmails.js";
 
 const dataFilePath = path.join(process.cwd(), "data", "motorpolicy_data.json");
 const hashFilePath = path.join(
@@ -271,13 +272,11 @@ export const uploadMotorPolicy = async (req, res) => {
     });
   } catch (error) {
     console.error("Error occurred while uploading file:", error);
-    res
-      .status(500)
-      .json({
-        message: "Internal server error.",
-        status: "error",
-        success: false,
-      });
+    res.status(500).json({
+      message: "Internal server error.",
+      status: "error",
+      success: false,
+    });
   }
 };
 
@@ -613,10 +612,40 @@ export const createMotorPolicy = async (req, res) => {
         await existingBookingRequest.save();
       }
 
+      // Fetch partner email
+      const partner = await UserProfile.findOne({ _id: partnerId });
+      if (partner && partner.email) {
+        // Prepare email content
+        const emailContent = `
+        Dear ${partnerName}, 
+        Congratulations! Your offline policy of ${make} ${model} (${vehicleNumber}) has been marked booked in our system. 
+        The following are the details for the same:
+        policyNumber: ${policyNumber}
+        Insurer: ${companyName}
+        Customer Name: ${fullName}
+        Feel free to reach us out in case of any enquiry!
+        Click here to know more about e-Insurance Account
+        Warm Regards,
+        Team Insurance safekaro Pvt Ltd.
+        `;
+
+        await sendEmail({
+          to: partner.email,
+          subject: `Policy Booked: ${policyNumber}`,
+          partnerName: partnerName,
+          make: make,
+          model: model,
+          vehicleNumber: vehicleNumber,
+          policyNumber: policyNumber,
+          companyName: companyName,
+          fullName: fullName,
+          logoPath:"https://safekaro.com/static/media/logo2.ee203cab19aa9fd3445def886efc140b.svg"
+        });
+      }
       return res.status(200).json({
         status: "success",
         success: true,
-        message: `Policy Number ${policyNumber} created successfully`,
+        message: `Policy Number ${policyNumber} created successfully and email sent to the partner.`,
         data: savedMotorPolicy,
       });
     } catch (err) {
