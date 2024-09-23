@@ -28,11 +28,11 @@ const sendEmail = async (options) => {
             .replace(`{{COMPANY_NAME}}`, options.companyName || '')
             .replace(`{{FULL_NAME}}`, options.fullName || '');
 
-        const logoPath = path.resolve(__dirname, '../safekaroLogo.png');
+        const logoPath = path.resolve(__dirname, '../assets/safekaroLogo.png');
 
         const mailOptions = {
             from: process.env.SMPT_MAIL,
-            to: `${options.to}, mahendragodara1997@gmail.com`,
+            to: options.to,
             subject: options.subject,
             html: htmlTemplate,
             attachments: [
