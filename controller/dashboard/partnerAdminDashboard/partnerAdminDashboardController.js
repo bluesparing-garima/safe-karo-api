@@ -364,7 +364,7 @@ export const getPayOutCommissionByCompany = async (req, res) => {
   }
 };
 
-// payInAmount paid
+// payOutAmount paid
 
 export const getAllPartnersWithPayOutAmountAndDateFilter = async (req, res) => {
   try {
@@ -743,7 +743,7 @@ export const getPayOutAmountByCompany = async (req, res) => {
   }
 };
 
-// payInAmount partial or unpaid
+// payOutAmount partial or unpaid
 
 export const getAllPartnersWithUnpaidAndPartialPayOutAmount = async (req, res) => {
   try {
