@@ -1,6 +1,6 @@
 import leadGenerateModel from "../../models/partnerModels/leadGenerateSchema.js";
 import upload from "../../middlewares/uploadMiddleware.js";
-import NotificationModel from '../../models/notificationModel.js';
+import NotificationModel from "../../models/notificationModel.js";
 
 export const createNewLead = async (req, res) => {
   upload(req, res, async (err) => {
@@ -56,24 +56,28 @@ export const createNewLead = async (req, res) => {
 
       let notificationFor;
       let notificationBy;
-
-      if (partnerId) {
-        notificationFor = 'operation';
+      let role;
+      
+      if (status === 'Requested') {
         notificationBy = partnerId;
-      } else {
-        notificationFor = partnerId;  
+        notificationFor = 'operation';
+        role = 'partner';
+      } 
+      else if (status === 'Accepted') {
         notificationBy = leadCreatedBy;
+        notificationFor = partnerId;
+        role = 'operation';
       }
-
+      
       const notification = new NotificationModel({
         title: 'Lead Generated',
         type: 'success',
-        role: partnerId ? 'partner' : 'operation',
+        role: role,
         notificationFor,
         notificationBy,
         createdBy,
       });
-
+      
       await notification.save();
 
       res.status(200).json({
@@ -226,8 +230,8 @@ export const acceptLeadRequest = async (req, res) => {
 
     if (req.body.status === "accepted") {
       const newNotification = new NotificationModel({
-        title: 'Lead Accepted',
-        type: 'success',
+        title: "Lead Accepted",
+        type: "success",
         role: "operation",
         notificationFor: existingLead.partnerId,
         notificationBy: req.body.leadCreatedBy,
@@ -298,8 +302,8 @@ export const updateLead = async (req, res) => {
 
         const newNotification = new NotificationModel({
           title: `Lead Status changed to ${status}`,
-          type: 'success',
-          role:'operation',
+          type: "success",
+          role: "operation",
           isView: false,
           isActive: true,
           notificationFor,
@@ -311,11 +315,14 @@ export const updateLead = async (req, res) => {
         console.log("Notification Data:", newNotification);
 
         // Save the notification
-        await newNotification.save().then(() => {
-          console.log("Notification saved successfully");
-        }).catch((saveError) => {
-          console.error("Error saving notification:", saveError.message);
-        });
+        await newNotification
+          .save()
+          .then(() => {
+            console.log("Notification saved successfully");
+          })
+          .catch((saveError) => {
+            console.error("Error saving notification:", saveError.message);
+          });
       }
 
       res.status(200).json({
@@ -362,4 +369,3 @@ export const deleteLead = async (req, res) => {
     });
   }
 };
-

@@ -12,6 +12,7 @@ export const createNewQuotation = async (req, res) => {
     if (!req.files) {
       return res.status(400).json({ message: "No file selected!" });
     }
+
     try {
       const {
         leadId,
@@ -35,8 +36,6 @@ export const createNewQuotation = async (req, res) => {
       const missingFields = [];
       if (!leadId) missingFields.push("leadId");
       if (!status) missingFields.push("status");
-
-      // Either partnerId or operationId should be present
       if (!partnerId && !operationId) missingFields.push("partnerId or operationId");
 
       if (missingFields.length > 0) {
@@ -59,27 +58,54 @@ export const createNewQuotation = async (req, res) => {
       });
 
       await newQuotation.save();
-      
+
+      // Log the saved quotation
+      console.log('New Quotation Saved:', newQuotation);
+
       if (newQuotation) {
-        const updatedLead = await leadGenerateModel.findByIdAndUpdate(
+        // Fetch lead by leadId
+        const leadData = await leadGenerateModel.findById(leadId);
+
+        // Log fetched lead data
+        console.log('Lead Data Fetched:', leadData);
+
+        if (!leadData) {
+          return res.status(404).json({
+            status: "failed",
+            message: "Lead not found with the provided leadId",
+          });
+        }
+
+        await leadGenerateModel.findByIdAndUpdate(
           leadId,
           { status },
           { new: true }
         );
-        if (!updatedLead) {
-          return res.status(404).json({
+
+        const { leadCreatedBy, partnerId: leadPartnerId } = leadData;
+
+        let notificationFor;
+        let notificationBy;
+
+        if (partnerId === leadCreatedBy) {
+          notificationFor = leadPartnerId;
+          notificationBy = partnerId;
+        } else if (partnerId === leadPartnerId) {
+          notificationFor = leadCreatedBy;
+          notificationBy = partnerId;
+        } else {
+          return res.status(400).json({
             status: "failed",
-            message: "Related lead not found",
+            message: "Partner ID doesn't match with leadCreatedBy or partnerId in the lead",
           });
         }
 
-        const notificationBy = operationId ? operationId : partnerId ? partnerId : createdBy;
-        const notificationFor = operationId ? "operation" : partnerId ? "partner" : createdBy;
+        const title = `Lead quotation generated:- ${status}`;
 
         const newNotification = new NotificationModel({
-          title: 'New Quotation Created',
+          title,
           type: 'success',
-          role: operationId ? 'operation' : 'partner',
+          role: partnerId === leadCreatedBy ? 'operation' : 'partner',
           notificationFor,
           notificationBy,
           createdBy,
