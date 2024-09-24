@@ -1,7 +1,7 @@
 import MotorPolicyModel from "../../../models/policyModel/motorpolicySchema.js";
 import MotorPolicyPaymentModel from "../../../models/policyModel/motorPolicyPaymentSchema.js";
+import BrokerModel from "../../../models/adminModels/brokerSchema.js";
 
-// Get pay-in commission by broker with a date filter
 export const getAllBrokersWithPayInCommissionAndDateFilter = async (
   req,
   res
@@ -40,6 +40,13 @@ export const getAllBrokersWithPayInCommissionAndDateFilter = async (
     let totalAmount = 0;
 
     for (const broker of brokers) {
+      const brokerDetails = await BrokerModel.findOne({
+        _id: broker._id,
+      }).lean();
+      if (!brokerDetails) {
+        continue;
+      }
+
       const policies = await MotorPolicyModel.find({
         brokerId: broker._id,
         isActive: true,
@@ -47,9 +54,9 @@ export const getAllBrokersWithPayInCommissionAndDateFilter = async (
       })
         .select("policyNumber")
         .lean();
-    
+
       const policyNumbers = policies.map((policy) => policy.policyNumber);
-    
+
       const totalPayInCommission = await MotorPolicyPaymentModel.aggregate([
         { $match: { policyNumber: { $in: policyNumbers } } },
         {
@@ -59,23 +66,24 @@ export const getAllBrokersWithPayInCommissionAndDateFilter = async (
           },
         },
       ]);
-    
+
       const payInCommission =
         totalPayInCommission.length > 0
           ? totalPayInCommission[0].totalPayInCommission
           : 0;
-    
+
       if (payInCommission > 0) {
         totalAmount += payInCommission;
-    
+
         brokerSummaries.push({
           brokerId: broker._id,
           brokerName: broker.brokerName,
+          brokerCode: brokerDetails.brokerCode,
           totalPayInCommission: payInCommission,
         });
       }
     }
-    
+
     res.status(200).json({
       message: `Brokers with pay-in commissions between ${startDate} and ${endDate} fetched successfully.`,
       data: brokerSummaries,
@@ -92,7 +100,6 @@ export const getAllBrokersWithPayInCommissionAndDateFilter = async (
   }
 };
 
-// Get pay-in commission by broker without a date filter
 export const getAllBrokersWithPayInCommission = async (req, res) => {
   try {
     const brokers = await MotorPolicyModel.aggregate([
@@ -113,15 +120,21 @@ export const getAllBrokersWithPayInCommission = async (req, res) => {
     let totalAmount = 0;
 
     for (const broker of brokers) {
+      const brokerDetails = await BrokerModel.findOne({
+        _id: broker._id,
+      }).lean();
+      if (!brokerDetails) {
+        continue;
+      }
       const policies = await MotorPolicyModel.find({
         brokerId: broker._id,
         isActive: true,
       })
         .select("policyNumber")
         .lean();
-    
+
       const policyNumbers = policies.map((policy) => policy.policyNumber);
-    
+
       const totalPayInCommission = await MotorPolicyPaymentModel.aggregate([
         { $match: { policyNumber: { $in: policyNumbers } } },
         {
@@ -131,23 +144,24 @@ export const getAllBrokersWithPayInCommission = async (req, res) => {
           },
         },
       ]);
-    
+
       const payInCommission =
         totalPayInCommission.length > 0
           ? totalPayInCommission[0].totalPayInCommission
           : 0;
-    
+
       if (payInCommission > 0) {
         totalAmount += payInCommission;
-    
+
         brokerSummaries.push({
           brokerId: broker._id,
           brokerName: broker.brokerName,
+          brokerCode: brokerDetails.brokerCode,
           totalPayInCommission: payInCommission,
         });
       }
     }
-    
+
     res.status(200).json({
       message: "Brokers with total pay-in commissions fetched successfully.",
       data: brokerSummaries,
@@ -164,7 +178,6 @@ export const getAllBrokersWithPayInCommission = async (req, res) => {
   }
 };
 
-// Get pay-out commission by company for a specific broker with a date filter
 export const getPayInCommissionByBrokerAndCompanyWithDateFilter = async (
   req,
   res
@@ -184,11 +197,8 @@ export const getPayInCommissionByBrokerAndCompanyWithDateFilter = async (
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
 
-    const broker = await MotorPolicyModel.findOne({ brokerId, isActive: true })
-      .select("broker")
-      .lean();
-
-    if (!broker) {
+    const brokerDetails = await BrokerModel.findOne({ _id: brokerId }).lean();
+    if (!brokerDetails) {
       return res.status(200).json({
         message: `No broker found for brokerId ${brokerId}.`,
         data: [],
@@ -213,7 +223,8 @@ export const getPayInCommissionByBrokerAndCompanyWithDateFilter = async (
       return res.status(200).json({
         message: `No companies found for brokerId ${brokerId} between ${startDate} and ${endDate}.`,
         data: [],
-        brokerName: broker.broker,
+        brokerName: brokerDetails.brokerName,
+        brokerCode: brokerDetails.brokerCode,
         totalAmount: 0,
         success: true,
         status: "success",
@@ -232,9 +243,9 @@ export const getPayInCommissionByBrokerAndCompanyWithDateFilter = async (
       })
         .select("policyNumber")
         .lean();
-    
+
       const policyNumbers = policies.map((policy) => policy.policyNumber);
-    
+
       const totalPayInCommission = await MotorPolicyPaymentModel.aggregate([
         { $match: { policyNumber: { $in: policyNumbers } } },
         {
@@ -244,27 +255,28 @@ export const getPayInCommissionByBrokerAndCompanyWithDateFilter = async (
           },
         },
       ]);
-    
+
       const payInCommission =
         totalPayInCommission.length > 0
           ? totalPayInCommission[0].totalPayInCommission
           : 0;
-    
+
       if (payInCommission > 0) {
         totalAmount += payInCommission;
-    
+
         companySummaries.push({
           companyName: company._id,
           totalPayInCommission: payInCommission,
         });
       }
     }
-    
+
     res.status(200).json({
       message: `Pay-out commissions for brokerId ${brokerId} by company between ${startDate} and ${endDate} fetched successfully.`,
       data: companySummaries,
       totalAmount,
-      brokerName: broker.broker,
+      brokerName: brokerDetails.brokerName,
+      brokerCode: brokerDetails.brokerCode,
       success: true,
       status: "success",
     });
@@ -277,7 +289,6 @@ export const getPayInCommissionByBrokerAndCompanyWithDateFilter = async (
   }
 };
 
-// Get pay-out commission by company for a specific broker without a date filter
 export const getPayInCommissionByBrokerAndCompany = async (req, res) => {
   try {
     const { brokerId } = req.query;
@@ -290,12 +301,8 @@ export const getPayInCommissionByBrokerAndCompany = async (req, res) => {
       });
     }
 
-    // Fetch the broker details including brokerName
-    const broker = await MotorPolicyModel.findOne({ brokerId, isActive: true })
-      .select("broker")
-      .lean();
-
-    if (!broker) {
+    const brokerDetails = await BrokerModel.findOne({ _id: brokerId }).lean();
+    if (!brokerDetails) {
       return res.status(200).json({
         message: `No broker found for brokerId ${brokerId}.`,
         data: [],
@@ -314,7 +321,8 @@ export const getPayInCommissionByBrokerAndCompany = async (req, res) => {
       return res.status(200).json({
         message: `No companies found for brokerId ${brokerId}.`,
         data: [],
-        brokerName: broker.broker,
+        brokerName: brokerDetails.brokerName,
+        brokerCode: brokerDetails.brokerCode,
         totalAmount: 0,
         success: true,
         status: "success",
@@ -332,9 +340,9 @@ export const getPayInCommissionByBrokerAndCompany = async (req, res) => {
       })
         .select("policyNumber")
         .lean();
-    
+
       const policyNumbers = policies.map((policy) => policy.policyNumber);
-    
+
       const totalPayInCommission = await MotorPolicyPaymentModel.aggregate([
         { $match: { policyNumber: { $in: policyNumbers } } },
         {
@@ -344,27 +352,28 @@ export const getPayInCommissionByBrokerAndCompany = async (req, res) => {
           },
         },
       ]);
-    
+
       const payInCommission =
         totalPayInCommission.length > 0
           ? totalPayInCommission[0].totalPayInCommission
           : 0;
-    
+
       if (payInCommission > 0) {
         totalAmount += payInCommission;
-    
+
         companySummaries.push({
           companyName: company._id,
           totalPayInCommission: payInCommission,
         });
       }
     }
-    
+
     res.status(200).json({
       message: `Pay-out commissions for brokerId ${brokerId} by company fetched successfully.`,
       data: companySummaries,
       totalAmount,
-      brokerName: broker.broker,
+      brokerName: brokerDetails.brokerName,
+      brokerCode: brokerDetails.brokerCode,
       success: true,
       status: "success",
     });
@@ -399,6 +408,13 @@ export const getAllBrokersWithPayInAmount = async (req, res) => {
     let totalAmount = 0;
 
     for (const broker of brokers) {
+      const brokerDetails = await BrokerModel.findOne({
+        _id: broker._id,
+      }).lean();
+      if (!brokerDetails) {
+        continue;
+      }
+
       const policies = await MotorPolicyModel.find({
         brokerId: broker._id,
         isActive: true,
@@ -409,7 +425,12 @@ export const getAllBrokersWithPayInAmount = async (req, res) => {
       const policyNumbers = policies.map((policy) => policy.policyNumber);
 
       const totalPayInAmount = await MotorPolicyPaymentModel.aggregate([
-        { $match: { policyNumber: { $in: policyNumbers }, payInPaymentStatus: "Paid" } },
+        {
+          $match: {
+            policyNumber: { $in: policyNumbers },
+            payInPaymentStatus: "Paid",
+          },
+        },
         {
           $group: {
             _id: null,
@@ -419,9 +440,7 @@ export const getAllBrokersWithPayInAmount = async (req, res) => {
       ]);
 
       const payInAmount =
-      totalPayInAmount.length > 0
-          ? totalPayInAmount[0].totalPayInAmount
-          : 0;
+        totalPayInAmount.length > 0 ? totalPayInAmount[0].totalPayInAmount : 0;
 
       if (payInAmount > 0) {
         totalAmount += payInAmount;
@@ -429,6 +448,7 @@ export const getAllBrokersWithPayInAmount = async (req, res) => {
         brokerSummaries.push({
           brokerId: broker._id,
           brokerName: broker.brokerName,
+          brokerCode: brokerDetails.brokerCode,
           totalPayInAmount: payInAmount,
         });
       }
@@ -466,7 +486,9 @@ export const getAllBrokersWithPayInAmountAndDateFilter = async (req, res) => {
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
 
-    const brokerMatch = brokerId ? { brokerId, isActive: true } : { isActive: true };
+    const brokerMatch = brokerId
+      ? { brokerId, isActive: true }
+      : { isActive: true };
 
     const brokers = await MotorPolicyModel.aggregate([
       { $match: { ...brokerMatch, issueDate: { $gte: start, $lte: end } } },
@@ -487,6 +509,13 @@ export const getAllBrokersWithPayInAmountAndDateFilter = async (req, res) => {
     let totalAmount = 0;
 
     for (const broker of brokers) {
+      const brokerDetails = await BrokerModel.findOne({
+        _id: broker._id,
+      }).lean();
+      if (!brokerDetails) {
+        continue;
+      }
+
       const policies = await MotorPolicyModel.find({
         brokerId: broker._id,
         isActive: true,
@@ -498,7 +527,12 @@ export const getAllBrokersWithPayInAmountAndDateFilter = async (req, res) => {
       const policyNumbers = policies.map((policy) => policy.policyNumber);
 
       const totalPayInAmount = await MotorPolicyPaymentModel.aggregate([
-        { $match: { policyNumber: { $in: policyNumbers }, payInPaymentStatus: "Paid" } },
+        {
+          $match: {
+            policyNumber: { $in: policyNumbers },
+            payInPaymentStatus: "Paid",
+          },
+        },
         {
           $group: {
             _id: null,
@@ -508,9 +542,7 @@ export const getAllBrokersWithPayInAmountAndDateFilter = async (req, res) => {
       ]);
 
       const payInAmount =
-      totalPayInAmount.length > 0
-          ? totalPayInAmount[0].totalPayInAmount
-          : 0;
+        totalPayInAmount.length > 0 ? totalPayInAmount[0].totalPayInAmount : 0;
 
       if (payInAmount > 0) {
         totalAmount += payInAmount;
@@ -518,6 +550,7 @@ export const getAllBrokersWithPayInAmountAndDateFilter = async (req, res) => {
         brokerSummaries.push({
           brokerId: broker._id,
           brokerName: broker.brokerName,
+          brokerCode: brokerDetails.brokerCode,
           totalPayInAmount: payInAmount,
         });
       }
@@ -550,11 +583,10 @@ export const getPayInAmountByBrokerAndCompany = async (req, res) => {
         status: "error",
       });
     }
-    const broker = await MotorPolicyModel.findOne({ brokerId, isActive: true })
-      .select("broker")
-      .lean();
 
-    if (!broker) {
+    const brokerDetails = await BrokerModel.findOne({ _id: brokerId }).lean();
+
+    if (!brokerDetails) {
       return res.status(200).json({
         message: `No broker found for brokerId ${brokerId}.`,
         data: [],
@@ -573,7 +605,8 @@ export const getPayInAmountByBrokerAndCompany = async (req, res) => {
       return res.status(200).json({
         message: `No companies found for brokerId ${brokerId}.`,
         data: [],
-        brokerName: broker.broker,
+        brokerName: brokerDetails.brokerName,
+        brokerCode: brokerDetails.brokerCode,
         totalAmount: 0,
         success: true,
         status: "success",
@@ -595,7 +628,12 @@ export const getPayInAmountByBrokerAndCompany = async (req, res) => {
       const policyNumbers = policies.map((policy) => policy.policyNumber);
 
       const totalPayInAmount = await MotorPolicyPaymentModel.aggregate([
-        { $match: { policyNumber: { $in: policyNumbers }, payInPaymentStatus: "Paid" } },
+        {
+          $match: {
+            policyNumber: { $in: policyNumbers },
+            payInPaymentStatus: "Paid",
+          },
+        },
         {
           $group: {
             _id: null,
@@ -605,9 +643,7 @@ export const getPayInAmountByBrokerAndCompany = async (req, res) => {
       ]);
 
       const payInAmount =
-      totalPayInAmount.length > 0
-          ? totalPayInAmount[0].totalPayInAmount
-          : 0;
+        totalPayInAmount.length > 0 ? totalPayInAmount[0].totalPayInAmount : 0;
 
       if (payInAmount > 0) {
         totalAmount += payInAmount;
@@ -623,7 +659,8 @@ export const getPayInAmountByBrokerAndCompany = async (req, res) => {
       message: `Pay-in Amount for brokerId ${brokerId} by company fetched successfully.`,
       data: companySummaries,
       totalAmount,
-      brokerName: broker.broker,
+      brokerName: brokerDetails.brokerName,
+      brokerCode: brokerDetails.brokerCode,
       success: true,
       status: "success",
     });
@@ -636,7 +673,10 @@ export const getPayInAmountByBrokerAndCompany = async (req, res) => {
   }
 };
 
-export const getPayInAmountByBrokerAndCompanyWithDateFilter = async (req, res) => {
+export const getPayInAmountByBrokerAndCompanyWithDateFilter = async (
+  req,
+  res
+) => {
   try {
     const { brokerId, startDate, endDate } = req.query;
 
@@ -652,11 +692,9 @@ export const getPayInAmountByBrokerAndCompanyWithDateFilter = async (req, res) =
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
 
-    const broker = await MotorPolicyModel.findOne({ brokerId, isActive: true })
-      .select("broker")
-      .lean();
+    const brokerDetails = await BrokerModel.findOne({ _id: brokerId }).lean();
 
-    if (!broker) {
+    if (!brokerDetails) {
       return res.status(200).json({
         message: `No broker found for brokerId ${brokerId}.`,
         data: [],
@@ -681,7 +719,8 @@ export const getPayInAmountByBrokerAndCompanyWithDateFilter = async (req, res) =
       return res.status(200).json({
         message: `No companies found for brokerId ${brokerId} between ${startDate} and ${endDate}.`,
         data: [],
-        brokerName: broker.broker,
+        brokerName: brokerDetails.brokerName,
+        brokerCode: brokerDetails.brokerCode,
         totalAmount: 0,
         success: true,
         status: "success",
@@ -704,7 +743,12 @@ export const getPayInAmountByBrokerAndCompanyWithDateFilter = async (req, res) =
       const policyNumbers = policies.map((policy) => policy.policyNumber);
 
       const totalPayInAmount = await MotorPolicyPaymentModel.aggregate([
-        { $match: { policyNumber: { $in: policyNumbers }, payInPaymentStatus: "Paid" } },
+        {
+          $match: {
+            policyNumber: { $in: policyNumbers },
+            payInPaymentStatus: "Paid",
+          },
+        },
         {
           $group: {
             _id: null,
@@ -714,9 +758,7 @@ export const getPayInAmountByBrokerAndCompanyWithDateFilter = async (req, res) =
       ]);
 
       const payInAmount =
-      totalPayInAmount.length > 0
-          ? totalPayInAmount[0].totalPayInAmount
-          : 0;
+        totalPayInAmount.length > 0 ? totalPayInAmount[0].totalPayInAmount : 0;
 
       if (payInAmount > 0) {
         totalAmount += payInAmount;
@@ -732,7 +774,8 @@ export const getPayInAmountByBrokerAndCompanyWithDateFilter = async (req, res) =
       message: `Pay-in Amount for brokerId ${brokerId} by company between ${startDate} and ${endDate} fetched successfully.`,
       data: companySummaries,
       totalAmount,
-      brokerName: broker.broker,
+      brokerName: brokerDetails.brokerName,
+      brokerCode: brokerDetails.brokerCode,
       success: true,
       status: "success",
     });
@@ -767,10 +810,18 @@ export const getBrokersWithUnpaidOrPartialPayInAmount = async (req, res) => {
     let totalPayInAmountSum = 0;
 
     for (const broker of brokers) {
+      const brokerDetails = await BrokerModel.findOne({
+        _id: broker._id,
+      }).lean();
+      if (!brokerDetails) {
+        continue;
+      }
       const policies = await MotorPolicyModel.find({
         brokerId: broker._id,
         isActive: true,
-      }).select("policyNumber").lean();
+      })
+        .select("policyNumber")
+        .lean();
 
       const policyNumbers = policies.map((policy) => policy.policyNumber);
 
@@ -778,29 +829,38 @@ export const getBrokersWithUnpaidOrPartialPayInAmount = async (req, res) => {
         {
           $match: {
             policyNumber: { $in: policyNumbers },
-            payInPaymentStatus: { $in: ["UnPaid", "Partial"] }
-          }
+            payInPaymentStatus: { $in: ["UnPaid", "Partial"] },
+          },
         },
         {
           $group: {
             _id: null,
             totalUnpaidAmount: {
               $sum: {
-                $cond: [{ $eq: ["$payInPaymentStatus", "UnPaid"] }, "$payInCommission", 0]
-              }
+                $cond: [
+                  { $eq: ["$payInPaymentStatus", "UnPaid"] },
+                  "$payInCommission",
+                  0,
+                ],
+              },
             },
             totalPartialBalance: {
               $sum: {
-                $cond: [{ $eq: ["$payInPaymentStatus", "Partial"] }, "$payInBalance", 0]
-              }
-            }
-          }
-        }
+                $cond: [
+                  { $eq: ["$payInPaymentStatus", "Partial"] },
+                  "$payInBalance",
+                  0,
+                ],
+              },
+            },
+          },
+        },
       ]);
 
       const brokerPayInAmount =
         totalAmount.length > 0
-          ? totalAmount[0].totalUnpaidAmount + totalAmount[0].totalPartialBalance
+          ? totalAmount[0].totalUnpaidAmount +
+            totalAmount[0].totalPartialBalance
           : 0;
 
       if (brokerPayInAmount > 0) {
@@ -809,12 +869,14 @@ export const getBrokersWithUnpaidOrPartialPayInAmount = async (req, res) => {
         brokerSummaries.push({
           brokerId: broker._id,
           brokerName: broker.brokerName,
+          brokerCode: brokerDetails.brokerCode,
           totalPayInAmount: brokerPayInAmount,
         });
       }
     }
     res.status(200).json({
-      message: "Brokers with unpaid or partial pay-in amounts fetched successfully.",
+      message:
+        "Brokers with unpaid or partial pay-in amounts fetched successfully.",
       data: brokerSummaries,
       totalAmount: totalPayInAmountSum,
       success: true,
@@ -829,7 +891,10 @@ export const getBrokersWithUnpaidOrPartialPayInAmount = async (req, res) => {
   }
 };
 
-export const getBrokersWithUnpaidOrPartialPayInAmountAndDateFilter = async (req, res) => {
+export const getBrokersWithUnpaidOrPartialPayInAmountAndDateFilter = async (
+  req,
+  res
+) => {
   try {
     const { startDate, endDate } = req.query;
 
@@ -864,11 +929,19 @@ export const getBrokersWithUnpaidOrPartialPayInAmountAndDateFilter = async (req,
     let totalPayInAmountSum = 0;
 
     for (const broker of brokers) {
+      const brokerDetails = await BrokerModel.findOne({
+        _id: broker._id,
+      }).lean();
+      if (!brokerDetails) {
+        continue;
+      }
       const policies = await MotorPolicyModel.find({
         brokerId: broker._id,
         isActive: true,
         issueDate: { $gte: start, $lte: end },
-      }).select("policyNumber").lean();
+      })
+        .select("policyNumber")
+        .lean();
 
       const policyNumbers = policies.map((policy) => policy.policyNumber);
 
@@ -876,29 +949,38 @@ export const getBrokersWithUnpaidOrPartialPayInAmountAndDateFilter = async (req,
         {
           $match: {
             policyNumber: { $in: policyNumbers },
-            payInPaymentStatus: { $in: ["UnPaid", "Partial"] }
-          }
+            payInPaymentStatus: { $in: ["UnPaid", "Partial"] },
+          },
         },
         {
           $group: {
             _id: null,
             totalUnpaidAmount: {
               $sum: {
-                $cond: [{ $eq: ["$payInPaymentStatus", "UnPaid"] }, "$payInCommission", 0]
-              }
+                $cond: [
+                  { $eq: ["$payInPaymentStatus", "UnPaid"] },
+                  "$payInCommission",
+                  0,
+                ],
+              },
             },
             totalPartialBalance: {
               $sum: {
-                $cond: [{ $eq: ["$payInPaymentStatus", "Partial"] }, "$payInBalance", 0]
-              }
-            }
-          }
-        }
+                $cond: [
+                  { $eq: ["$payInPaymentStatus", "Partial"] },
+                  "$payInBalance",
+                  0,
+                ],
+              },
+            },
+          },
+        },
       ]);
 
       const brokerPayInAmount =
         totalAmount.length > 0
-          ? totalAmount[0].totalUnpaidAmount + totalAmount[0].totalPartialBalance
+          ? totalAmount[0].totalUnpaidAmount +
+            totalAmount[0].totalPartialBalance
           : 0;
 
       if (brokerPayInAmount > 0) {
@@ -907,6 +989,7 @@ export const getBrokersWithUnpaidOrPartialPayInAmountAndDateFilter = async (req,
         brokerSummaries.push({
           brokerId: broker._id,
           brokerName: broker.brokerName,
+          brokerCode: brokerDetails.brokerCode,
           totalPayInAmount: brokerPayInAmount,
         });
       }
@@ -927,7 +1010,10 @@ export const getBrokersWithUnpaidOrPartialPayInAmountAndDateFilter = async (req,
   }
 };
 
-export const getUnpaidAndPartialPayInAmountByCompanyWithDate = async (req, res) => {
+export const getUnpaidAndPartialPayInAmountByCompanyWithDate = async (
+  req,
+  res
+) => {
   try {
     const { brokerId, startDate, endDate } = req.query;
 
@@ -943,8 +1029,9 @@ export const getUnpaidAndPartialPayInAmountByCompanyWithDate = async (req, res) 
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
 
-    const broker = await MotorPolicyModel.findOne({ brokerId, isActive: true }).select("broker").lean();
-    if (!broker) {
+    const brokerDetails = await BrokerModel.findOne({ _id: brokerId }).lean();
+
+    if (!brokerDetails) {
       return res.status(404).json({
         message: `No broker found for brokerId ${brokerId}.`,
         success: false,
@@ -968,7 +1055,8 @@ export const getUnpaidAndPartialPayInAmountByCompanyWithDate = async (req, res) 
         message: `No companies found for brokerId ${brokerId} between ${startDate} and ${endDate}.`,
         data: [],
         totalAmount: 0,
-        brokerName: broker.broker,
+        brokerName: brokerDetails.brokerName,
+        brokerCode: brokerDetails.brokerCode,
         success: true,
         status: "success",
       });
@@ -983,7 +1071,9 @@ export const getUnpaidAndPartialPayInAmountByCompanyWithDate = async (req, res) 
         companyName: company._id,
         isActive: true,
         issueDate: { $gte: start, $lte: end },
-      }).select("policyNumber").lean();
+      })
+        .select("policyNumber")
+        .lean();
 
       const policyNumbers = policies.map((policy) => policy.policyNumber);
 
@@ -999,12 +1089,20 @@ export const getUnpaidAndPartialPayInAmountByCompanyWithDate = async (req, res) 
             _id: null,
             totalUnpaidCommission: {
               $sum: {
-                $cond: [{ $eq: ["$payInPaymentStatus", "UnPaid"] }, "$payInCommission", 0],
+                $cond: [
+                  { $eq: ["$payInPaymentStatus", "UnPaid"] },
+                  "$payInCommission",
+                  0,
+                ],
               },
             },
             totalPartialBalance: {
               $sum: {
-                $cond: [{ $eq: ["$payInPaymentStatus", "Partial"] }, "$payInBalance", 0],
+                $cond: [
+                  { $eq: ["$payInPaymentStatus", "Partial"] },
+                  "$payInBalance",
+                  0,
+                ],
               },
             },
           },
@@ -1013,7 +1111,8 @@ export const getUnpaidAndPartialPayInAmountByCompanyWithDate = async (req, res) 
 
       const payInAmount =
         payInData.length > 0
-          ? payInData[0].totalUnpaidCommission + payInData[0].totalPartialBalance
+          ? payInData[0].totalUnpaidCommission +
+            payInData[0].totalPartialBalance
           : 0;
 
       if (payInAmount > 0) {
@@ -1027,7 +1126,8 @@ export const getUnpaidAndPartialPayInAmountByCompanyWithDate = async (req, res) 
 
     res.status(200).json({
       message: `Pay-in Amount for brokerId ${brokerId} by company between ${startDate} and ${endDate} fetched successfully.`,
-      brokerName: broker.broker,
+      brokerName: brokerDetails.brokerName,
+      brokerCode: brokerDetails.brokerCode,
       data: companySummaries,
       totalAmount,
       success: true,
@@ -1046,8 +1146,9 @@ export const getUnpaidAndPartialPayInAmountByCompany = async (req, res) => {
   try {
     const { brokerId } = req.query;
 
-    const broker = await MotorPolicyModel.findOne({ brokerId, isActive: true }).select("broker").lean();
-    if (!broker) {
+    const brokerDetails = await BrokerModel.findOne({ _id: brokerId }).lean();
+
+    if (!brokerDetails) {
       return res.status(404).json({
         message: `No broker found for brokerId ${brokerId}.`,
         success: false,
@@ -1065,7 +1166,8 @@ export const getUnpaidAndPartialPayInAmountByCompany = async (req, res) => {
         message: `No companies found for brokerId ${brokerId}.`,
         data: [],
         totalAmount: 0,
-        brokerName: broker.broker,
+        brokerName: brokerDetails.brokerName,
+        brokerCode: brokerDetails.brokerCode,
         success: true,
         status: "success",
       });
@@ -1079,7 +1181,9 @@ export const getUnpaidAndPartialPayInAmountByCompany = async (req, res) => {
         brokerId,
         companyName: company._id,
         isActive: true,
-      }).select("policyNumber").lean();
+      })
+        .select("policyNumber")
+        .lean();
 
       const policyNumbers = policies.map((policy) => policy.policyNumber);
 
@@ -1095,12 +1199,20 @@ export const getUnpaidAndPartialPayInAmountByCompany = async (req, res) => {
             _id: null,
             totalUnpaidCommission: {
               $sum: {
-                $cond: [{ $eq: ["$payInPaymentStatus", "UnPaid"] }, "$payInCommission", 0],
+                $cond: [
+                  { $eq: ["$payInPaymentStatus", "UnPaid"] },
+                  "$payInCommission",
+                  0,
+                ],
               },
             },
             totalPartialBalance: {
               $sum: {
-                $cond: [{ $eq: ["$payInPaymentStatus", "Partial"] }, "$payInBalance", 0],
+                $cond: [
+                  { $eq: ["$payInPaymentStatus", "Partial"] },
+                  "$payInBalance",
+                  0,
+                ],
               },
             },
           },
@@ -1109,7 +1221,8 @@ export const getUnpaidAndPartialPayInAmountByCompany = async (req, res) => {
 
       const payInAmount =
         payInData.length > 0
-          ? payInData[0].totalUnpaidCommission + payInData[0].totalPartialBalance
+          ? payInData[0].totalUnpaidCommission +
+            payInData[0].totalPartialBalance
           : 0;
 
       if (payInAmount > 0) {
@@ -1123,7 +1236,8 @@ export const getUnpaidAndPartialPayInAmountByCompany = async (req, res) => {
 
     res.status(200).json({
       message: `Pay-in Amount for brokerId ${brokerId} by company fetched successfully.`,
-      brokerName: broker.broker,
+      brokerName: brokerDetails.brokerName,
+      brokerCode: brokerDetails.brokerCode,
       data: companySummaries,
       totalAmount,
       success: true,
@@ -1137,7 +1251,6 @@ export const getUnpaidAndPartialPayInAmountByCompany = async (req, res) => {
     });
   }
 };
-
 
 // brokerBalance
 
@@ -1161,10 +1274,18 @@ export const getBrokerBalanceForAllBrokers = async (req, res) => {
     let totalBalance = 0;
 
     for (const broker of brokers) {
+      const brokerDetails = await BrokerModel.findOne({
+        _id: broker._id,
+      }).lean();
+      if (!brokerDetails) {
+        continue;
+      }
       const policies = await MotorPolicyModel.find({
         brokerId: broker._id,
         isActive: true,
-      }).select("policyNumber").lean();
+      })
+        .select("policyNumber")
+        .lean();
 
       const policyNumbers = policies.map((policy) => policy.policyNumber);
 
@@ -1178,13 +1299,15 @@ export const getBrokerBalanceForAllBrokers = async (req, res) => {
         },
       ]);
 
-      const brokerBalance = balanceData.length > 0 ? balanceData[0].totalBalance : 0;
+      const brokerBalance =
+        balanceData.length > 0 ? balanceData[0].totalBalance : 0;
 
       if (brokerBalance > 0) {
         totalBalance += brokerBalance;
         brokerSummaries.push({
           brokerId: broker._id,
           brokerName: broker.brokerName,
+          brokerCode: brokerDetails.brokerCode,
           brokerBalance,
         });
       }
@@ -1222,7 +1345,9 @@ export const getBrokerBalanceWithDateFilter = async (req, res) => {
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
 
-    const brokerMatch = brokerId ? { brokerId, isActive: true } : { isActive: true };
+    const brokerMatch = brokerId
+      ? { brokerId, isActive: true }
+      : { isActive: true };
 
     const brokers = await MotorPolicyModel.aggregate([
       { $match: { ...brokerMatch, issueDate: { $gte: start, $lte: end } } },
@@ -1243,11 +1368,19 @@ export const getBrokerBalanceWithDateFilter = async (req, res) => {
     let totalBalance = 0;
 
     for (const broker of brokers) {
+      const brokerDetails = await BrokerModel.findOne({
+        _id: broker._id,
+      }).lean();
+      if (!brokerDetails) {
+        continue;
+      }
       const policies = await MotorPolicyModel.find({
         brokerId: broker._id,
         isActive: true,
         issueDate: { $gte: start, $lte: end },
-      }).select("policyNumber").lean();
+      })
+        .select("policyNumber")
+        .lean();
 
       const policyNumbers = policies.map((policy) => policy.policyNumber);
 
@@ -1261,13 +1394,15 @@ export const getBrokerBalanceWithDateFilter = async (req, res) => {
         },
       ]);
 
-      const brokerBalance = balanceData.length > 0 ? balanceData[0].totalBalance : 0;
+      const brokerBalance =
+        balanceData.length > 0 ? balanceData[0].totalBalance : 0;
 
       if (brokerBalance > 0) {
         totalBalance += brokerBalance;
         brokerSummaries.push({
           brokerId: broker._id,
           brokerName: broker.brokerName,
+          brokerCode: brokerDetails.brokerCode,
           brokerBalance,
         });
       }
@@ -1301,9 +1436,9 @@ export const getBrokerBalanceByBrokerAndCompany = async (req, res) => {
       });
     }
 
-    const broker = await MotorPolicyModel.findOne({ brokerId, isActive: true }).select("broker").lean();
+    const brokerDetails = await BrokerModel.findOne({ _id: brokerId }).lean();
 
-    if (!broker) {
+    if (!brokerDetails) {
       return res.status(200).json({
         message: `No broker found for brokerId ${brokerId}.`,
         data: [],
@@ -1323,6 +1458,8 @@ export const getBrokerBalanceByBrokerAndCompany = async (req, res) => {
         message: `No companies found for brokerId ${brokerId}.`,
         data: [],
         totalBalance: 0,
+        brokerName: brokerDetails.brokerName,
+        brokerCode: brokerDetails.brokerCode,
         success: true,
         status: "success",
       });
@@ -1336,7 +1473,9 @@ export const getBrokerBalanceByBrokerAndCompany = async (req, res) => {
         brokerId,
         companyName: company._id,
         isActive: true,
-      }).select("policyNumber").lean();
+      })
+        .select("policyNumber")
+        .lean();
 
       const policyNumbers = policies.map((policy) => policy.policyNumber);
 
@@ -1350,7 +1489,8 @@ export const getBrokerBalanceByBrokerAndCompany = async (req, res) => {
         },
       ]);
 
-      const brokerBalance = balanceData.length > 0 ? balanceData[0].totalBalance : 0;
+      const brokerBalance =
+        balanceData.length > 0 ? balanceData[0].totalBalance : 0;
 
       if (brokerBalance > 0) {
         totalBalance += brokerBalance;
@@ -1365,7 +1505,8 @@ export const getBrokerBalanceByBrokerAndCompany = async (req, res) => {
       message: `Broker balances for brokerId ${brokerId} by company fetched successfully.`,
       data: companySummaries,
       totalBalance,
-      brokerName: broker.broker,
+      brokerName: brokerDetails.brokerName,
+      brokerCode: brokerDetails.brokerCode,
       success: true,
       status: "success",
     });
@@ -1378,7 +1519,10 @@ export const getBrokerBalanceByBrokerAndCompany = async (req, res) => {
   }
 };
 
-export const getBrokerBalanceByBrokerAndCompanyWithDateFilter = async (req, res) => {
+export const getBrokerBalanceByBrokerAndCompanyWithDateFilter = async (
+  req,
+  res
+) => {
   try {
     const { brokerId, startDate, endDate } = req.query;
 
@@ -1394,9 +1538,9 @@ export const getBrokerBalanceByBrokerAndCompanyWithDateFilter = async (req, res)
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
 
-    const broker = await MotorPolicyModel.findOne({ brokerId, isActive: true }).select("broker").lean();
+    const brokerDetails = await BrokerModel.findOne({ _id: brokerId }).lean();
 
-    if (!broker) {
+    if (!brokerDetails) {
       return res.status(200).json({
         message: `No broker found for brokerId ${brokerId}.`,
         data: [],
@@ -1421,7 +1565,8 @@ export const getBrokerBalanceByBrokerAndCompanyWithDateFilter = async (req, res)
       return res.status(200).json({
         message: `No companies found for brokerId ${brokerId} between ${startDate} and ${endDate}.`,
         data: [],
-        brokerName: broker.broker,
+        brokerName: brokerDetails.brokerName,
+        brokerCode: brokerDetails.brokerCode,
         totalBalance: 0,
         success: true,
         status: "success",
@@ -1437,7 +1582,9 @@ export const getBrokerBalanceByBrokerAndCompanyWithDateFilter = async (req, res)
         companyName: company._id,
         isActive: true,
         issueDate: { $gte: start, $lte: end },
-      }).select("policyNumber").lean();
+      })
+        .select("policyNumber")
+        .lean();
 
       const policyNumbers = policies.map((policy) => policy.policyNumber);
 
@@ -1451,7 +1598,8 @@ export const getBrokerBalanceByBrokerAndCompanyWithDateFilter = async (req, res)
         },
       ]);
 
-      const brokerBalance = balanceData.length > 0 ? balanceData[0].totalBalance : 0;
+      const brokerBalance =
+        balanceData.length > 0 ? balanceData[0].totalBalance : 0;
 
       if (brokerBalance > 0) {
         totalBalance += brokerBalance;
@@ -1466,7 +1614,8 @@ export const getBrokerBalanceByBrokerAndCompanyWithDateFilter = async (req, res)
       message: `Broker balances for brokerId ${brokerId} by company between ${startDate} and ${endDate} fetched successfully.`,
       data: companySummaries,
       totalBalance,
-      brokerName: broker.broker,
+      brokerName: brokerDetails.brokerName,
+      brokerCode: brokerDetails.brokerCode,
       success: true,
       status: "success",
     });
