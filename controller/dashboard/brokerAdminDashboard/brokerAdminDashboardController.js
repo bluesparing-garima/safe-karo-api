@@ -7,7 +7,7 @@ export const getAllBrokersWithPayInCommissionAndDateFilter = async (
   res
 ) => {
   try {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, category } = req.query;
 
     if (!startDate || !endDate) {
       return res.status(400).json({
@@ -21,8 +21,17 @@ export const getAllBrokersWithPayInCommissionAndDateFilter = async (
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
 
+    const matchConditions = {
+      issueDate: { $gte: start, $lte: end },
+      isActive: true,
+    };
+
+    if (category) {
+      matchConditions.category = category;
+    }
+
     const brokers = await MotorPolicyModel.aggregate([
-      { $match: { issueDate: { $gte: start, $lte: end }, isActive: true } },
+      { $match: matchConditions },
       { $group: { _id: "$brokerId", brokerName: { $first: "$broker" } } },
     ]);
 
@@ -47,18 +56,30 @@ export const getAllBrokersWithPayInCommissionAndDateFilter = async (
         continue;
       }
 
-      const policies = await MotorPolicyModel.find({
+      const policyMatchConditions = {
         brokerId: broker._id,
         isActive: true,
         issueDate: { $gte: start, $lte: end },
-      })
+      };
+
+      if (category) {
+        policyMatchConditions.category = category;
+      }
+
+      const policies = await MotorPolicyModel.find(policyMatchConditions)
         .select("policyNumber")
         .lean();
 
       const policyNumbers = policies.map((policy) => policy.policyNumber);
 
+      const paymentMatchConditions = { policyNumber: { $in: policyNumbers } };
+
+      if (category) {
+        paymentMatchConditions.category = category;
+      }
+
       const totalPayInCommission = await MotorPolicyPaymentModel.aggregate([
-        { $match: { policyNumber: { $in: policyNumbers } } },
+        { $match: paymentMatchConditions },
         {
           $group: {
             _id: null,
@@ -102,7 +123,12 @@ export const getAllBrokersWithPayInCommissionAndDateFilter = async (
 
 export const getAllBrokersWithPayInCommission = async (req, res) => {
   try {
+    const { category } = req.query;
+
     const brokers = await MotorPolicyModel.aggregate([
+      {
+        $match: category ? { category } : {},
+      },
       { $group: { _id: "$brokerId", brokerName: { $first: "$broker" } } },
     ]);
 
@@ -126,9 +152,11 @@ export const getAllBrokersWithPayInCommission = async (req, res) => {
       if (!brokerDetails) {
         continue;
       }
+
       const policies = await MotorPolicyModel.find({
         brokerId: broker._id,
         isActive: true,
+        ...(category && { category }),
       })
         .select("policyNumber")
         .lean();
@@ -136,7 +164,12 @@ export const getAllBrokersWithPayInCommission = async (req, res) => {
       const policyNumbers = policies.map((policy) => policy.policyNumber);
 
       const totalPayInCommission = await MotorPolicyPaymentModel.aggregate([
-        { $match: { policyNumber: { $in: policyNumbers } } },
+        {
+          $match: {
+            policyNumber: { $in: policyNumbers },
+            ...(category && { category }),
+          },
+        },
         {
           $group: {
             _id: null,
@@ -183,7 +216,7 @@ export const getPayInCommissionByBrokerAndCompanyWithDateFilter = async (
   res
 ) => {
   try {
-    const { brokerId, startDate, endDate } = req.query;
+    const { brokerId, startDate, endDate, category } = req.query;
 
     if (!brokerId || !startDate || !endDate) {
       return res.status(400).json({
@@ -214,6 +247,7 @@ export const getPayInCommissionByBrokerAndCompanyWithDateFilter = async (
           brokerId,
           issueDate: { $gte: start, $lte: end },
           isActive: true,
+          ...(category && { category }),
         },
       },
       { $group: { _id: "$companyName" } },
@@ -240,6 +274,7 @@ export const getPayInCommissionByBrokerAndCompanyWithDateFilter = async (
         companyName: company._id,
         isActive: true,
         issueDate: { $gte: start, $lte: end },
+        ...(category && { category }),
       })
         .select("policyNumber")
         .lean();
@@ -247,7 +282,12 @@ export const getPayInCommissionByBrokerAndCompanyWithDateFilter = async (
       const policyNumbers = policies.map((policy) => policy.policyNumber);
 
       const totalPayInCommission = await MotorPolicyPaymentModel.aggregate([
-        { $match: { policyNumber: { $in: policyNumbers } } },
+        {
+          $match: {
+            policyNumber: { $in: policyNumbers },
+            ...(category && { category }),
+          },
+        },
         {
           $group: {
             _id: null,
@@ -291,7 +331,7 @@ export const getPayInCommissionByBrokerAndCompanyWithDateFilter = async (
 
 export const getPayInCommissionByBrokerAndCompany = async (req, res) => {
   try {
-    const { brokerId } = req.query;
+    const { brokerId, category } = req.query;
 
     if (!brokerId) {
       return res.status(400).json({
@@ -313,7 +353,13 @@ export const getPayInCommissionByBrokerAndCompany = async (req, res) => {
     }
 
     const companies = await MotorPolicyModel.aggregate([
-      { $match: { brokerId, isActive: true } },
+      {
+        $match: {
+          brokerId,
+          isActive: true,
+          ...(category && { category }),
+        },
+      },
       { $group: { _id: "$companyName" } },
     ]);
 
@@ -337,6 +383,7 @@ export const getPayInCommissionByBrokerAndCompany = async (req, res) => {
         brokerId,
         companyName: company._id,
         isActive: true,
+        ...(category && { category }),
       })
         .select("policyNumber")
         .lean();
@@ -344,7 +391,12 @@ export const getPayInCommissionByBrokerAndCompany = async (req, res) => {
       const policyNumbers = policies.map((policy) => policy.policyNumber);
 
       const totalPayInCommission = await MotorPolicyPaymentModel.aggregate([
-        { $match: { policyNumber: { $in: policyNumbers } } },
+        {
+          $match: {
+            policyNumber: { $in: policyNumbers },
+            ...(category && { category }),
+          },
+        },
         {
           $group: {
             _id: null,
@@ -390,7 +442,12 @@ export const getPayInCommissionByBrokerAndCompany = async (req, res) => {
 
 export const getAllBrokersWithPayInAmount = async (req, res) => {
   try {
+    const { category } = req.query;
+
     const brokers = await MotorPolicyModel.aggregate([
+      {
+        $match: category ? { category } : {},
+      },
       { $group: { _id: "$brokerId", brokerName: { $first: "$broker" } } },
     ]);
 
@@ -418,6 +475,7 @@ export const getAllBrokersWithPayInAmount = async (req, res) => {
       const policies = await MotorPolicyModel.find({
         brokerId: broker._id,
         isActive: true,
+        ...(category && { category }),
       })
         .select("policyNumber")
         .lean();
@@ -429,6 +487,7 @@ export const getAllBrokersWithPayInAmount = async (req, res) => {
           $match: {
             policyNumber: { $in: policyNumbers },
             payInPaymentStatus: "Paid",
+            ...(category && { category }),
           },
         },
         {
@@ -472,7 +531,7 @@ export const getAllBrokersWithPayInAmount = async (req, res) => {
 
 export const getAllBrokersWithPayInAmountAndDateFilter = async (req, res) => {
   try {
-    const { startDate, endDate, brokerId } = req.query;
+    const { startDate, endDate, brokerId, category } = req.query;
 
     if (!startDate || !endDate) {
       return res.status(400).json({
@@ -491,7 +550,13 @@ export const getAllBrokersWithPayInAmountAndDateFilter = async (req, res) => {
       : { isActive: true };
 
     const brokers = await MotorPolicyModel.aggregate([
-      { $match: { ...brokerMatch, issueDate: { $gte: start, $lte: end } } },
+      {
+        $match: {
+          ...brokerMatch,
+          issueDate: { $gte: start, $lte: end },
+          ...(category && { category }),
+        },
+      },
       { $group: { _id: "$brokerId", brokerName: { $first: "$broker" } } },
     ]);
 
@@ -520,6 +585,7 @@ export const getAllBrokersWithPayInAmountAndDateFilter = async (req, res) => {
         brokerId: broker._id,
         isActive: true,
         issueDate: { $gte: start, $lte: end },
+        ...(category && { category }),
       })
         .select("policyNumber")
         .lean();
@@ -531,6 +597,7 @@ export const getAllBrokersWithPayInAmountAndDateFilter = async (req, res) => {
           $match: {
             policyNumber: { $in: policyNumbers },
             payInPaymentStatus: "Paid",
+            ...(category && { category }),
           },
         },
         {
@@ -574,7 +641,7 @@ export const getAllBrokersWithPayInAmountAndDateFilter = async (req, res) => {
 
 export const getPayInAmountByBrokerAndCompany = async (req, res) => {
   try {
-    const { brokerId } = req.query;
+    const { brokerId, category } = req.query;
 
     if (!brokerId) {
       return res.status(400).json({
@@ -597,7 +664,13 @@ export const getPayInAmountByBrokerAndCompany = async (req, res) => {
     }
 
     const companies = await MotorPolicyModel.aggregate([
-      { $match: { brokerId, isActive: true } },
+      {
+        $match: {
+          brokerId,
+          isActive: true,
+          ...(category && { category }),
+        },
+      },
       { $group: { _id: "$companyName" } },
     ]);
 
@@ -621,6 +694,7 @@ export const getPayInAmountByBrokerAndCompany = async (req, res) => {
         brokerId,
         companyName: company._id,
         isActive: true,
+        ...(category && { category }),
       })
         .select("policyNumber")
         .lean();
@@ -632,6 +706,7 @@ export const getPayInAmountByBrokerAndCompany = async (req, res) => {
           $match: {
             policyNumber: { $in: policyNumbers },
             payInPaymentStatus: "Paid",
+            ...(category && { category }),
           },
         },
         {
@@ -678,7 +753,7 @@ export const getPayInAmountByBrokerAndCompanyWithDateFilter = async (
   res
 ) => {
   try {
-    const { brokerId, startDate, endDate } = req.query;
+    const { brokerId, startDate, endDate, category } = req.query;
 
     if (!brokerId || !startDate || !endDate) {
       return res.status(400).json({
@@ -710,6 +785,7 @@ export const getPayInAmountByBrokerAndCompanyWithDateFilter = async (
           brokerId,
           issueDate: { $gte: start, $lte: end },
           isActive: true,
+          ...(category && { category }),
         },
       },
       { $group: { _id: "$companyName" } },
@@ -736,6 +812,7 @@ export const getPayInAmountByBrokerAndCompanyWithDateFilter = async (
         companyName: company._id,
         isActive: true,
         issueDate: { $gte: start, $lte: end },
+        ...(category && { category }),
       })
         .select("policyNumber")
         .lean();
@@ -747,6 +824,7 @@ export const getPayInAmountByBrokerAndCompanyWithDateFilter = async (
           $match: {
             policyNumber: { $in: policyNumbers },
             payInPaymentStatus: "Paid",
+            ...(category && { category }),
           },
         },
         {
@@ -792,7 +870,15 @@ export const getPayInAmountByBrokerAndCompanyWithDateFilter = async (
 
 export const getBrokersWithUnpaidOrPartialPayInAmount = async (req, res) => {
   try {
+    const { category } = req.query;
+
     const brokers = await MotorPolicyModel.aggregate([
+      {
+        $match: {
+          isActive: true,
+          ...(category && { category }),
+        },
+      },
       { $group: { _id: "$brokerId", brokerName: { $first: "$broker" } } },
     ]);
 
@@ -819,6 +905,7 @@ export const getBrokersWithUnpaidOrPartialPayInAmount = async (req, res) => {
       const policies = await MotorPolicyModel.find({
         brokerId: broker._id,
         isActive: true,
+        ...(category && { category }),
       })
         .select("policyNumber")
         .lean();
@@ -830,6 +917,7 @@ export const getBrokersWithUnpaidOrPartialPayInAmount = async (req, res) => {
           $match: {
             policyNumber: { $in: policyNumbers },
             payInPaymentStatus: { $in: ["UnPaid", "Partial"] },
+            ...(category && { category }),
           },
         },
         {
@@ -896,7 +984,7 @@ export const getBrokersWithUnpaidOrPartialPayInAmountAndDateFilter = async (
   res
 ) => {
   try {
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, category } = req.query;
 
     if (!startDate || !endDate) {
       return res.status(400).json({
@@ -911,7 +999,13 @@ export const getBrokersWithUnpaidOrPartialPayInAmountAndDateFilter = async (
     end.setHours(23, 59, 59, 999);
 
     const brokers = await MotorPolicyModel.aggregate([
-      { $match: { issueDate: { $gte: start, $lte: end }, isActive: true } },
+      {
+        $match: {
+          issueDate: { $gte: start, $lte: end },
+          isActive: true,
+          ...(category && { category }),
+        },
+      },
       { $group: { _id: "$brokerId", brokerName: { $first: "$broker" } } },
     ]);
 
@@ -939,6 +1033,7 @@ export const getBrokersWithUnpaidOrPartialPayInAmountAndDateFilter = async (
         brokerId: broker._id,
         isActive: true,
         issueDate: { $gte: start, $lte: end },
+        ...(category && { category }),
       })
         .select("policyNumber")
         .lean();
@@ -950,6 +1045,7 @@ export const getBrokersWithUnpaidOrPartialPayInAmountAndDateFilter = async (
           $match: {
             policyNumber: { $in: policyNumbers },
             payInPaymentStatus: { $in: ["UnPaid", "Partial"] },
+            ...(category && { category }),
           },
         },
         {
@@ -1015,7 +1111,7 @@ export const getUnpaidAndPartialPayInAmountByCompanyWithDate = async (
   res
 ) => {
   try {
-    const { brokerId, startDate, endDate } = req.query;
+    const { brokerId, startDate, endDate, category } = req.query;
 
     if (!startDate || !endDate) {
       return res.status(400).json({
@@ -1045,6 +1141,7 @@ export const getUnpaidAndPartialPayInAmountByCompanyWithDate = async (
           brokerId,
           issueDate: { $gte: start, $lte: end },
           isActive: true,
+          ...(category && { category }),
         },
       },
       { $group: { _id: "$companyName" } },
@@ -1071,23 +1168,25 @@ export const getUnpaidAndPartialPayInAmountByCompanyWithDate = async (
         companyName: company._id,
         isActive: true,
         issueDate: { $gte: start, $lte: end },
+        ...(category && { category }),
       })
         .select("policyNumber")
         .lean();
 
       const policyNumbers = policies.map((policy) => policy.policyNumber);
 
-      const payInData = await MotorPolicyPaymentModel.aggregate([
+      const payInAmount = await MotorPolicyPaymentModel.aggregate([
         {
           $match: {
             policyNumber: { $in: policyNumbers },
             payInPaymentStatus: { $in: ["UnPaid", "Partial"] },
+            ...(category && { category }),
           },
         },
         {
           $group: {
             _id: null,
-            totalUnpaidCommission: {
+            totalUnpaidAmount: {
               $sum: {
                 $cond: [
                   { $eq: ["$payInPaymentStatus", "UnPaid"] },
@@ -1109,27 +1208,28 @@ export const getUnpaidAndPartialPayInAmountByCompanyWithDate = async (
         },
       ]);
 
-      const payInAmount =
-        payInData.length > 0
-          ? payInData[0].totalUnpaidCommission +
-            payInData[0].totalPartialBalance
+      const companyPayInAmount =
+        payInAmount.length > 0
+          ? payInAmount[0].totalUnpaidAmount +
+            payInAmount[0].totalPartialBalance
           : 0;
 
-      if (payInAmount > 0) {
-        totalAmount += payInAmount;
+      if (companyPayInAmount > 0) {
+        totalAmount += companyPayInAmount;
+
         companySummaries.push({
           companyName: company._id,
-          totalPayInAmount: payInAmount,
+          payInAmount: companyPayInAmount,
         });
       }
     }
 
     res.status(200).json({
-      message: `Pay-in Amount for brokerId ${brokerId} by company between ${startDate} and ${endDate} fetched successfully.`,
-      brokerName: brokerDetails.brokerName,
-      brokerCode: brokerDetails.brokerCode,
+      message: `Unpaid and partial pay-in amounts for brokerId ${brokerId} between ${startDate} and ${endDate} fetched successfully.`,
       data: companySummaries,
       totalAmount,
+      brokerName: brokerDetails.brokerName,
+      brokerCode: brokerDetails.brokerCode,
       success: true,
       status: "success",
     });
@@ -1144,7 +1244,7 @@ export const getUnpaidAndPartialPayInAmountByCompanyWithDate = async (
 
 export const getUnpaidAndPartialPayInAmountByCompany = async (req, res) => {
   try {
-    const { brokerId } = req.query;
+    const { brokerId, category } = req.query;
 
     const brokerDetails = await BrokerModel.findOne({ _id: brokerId }).lean();
 
@@ -1157,7 +1257,13 @@ export const getUnpaidAndPartialPayInAmountByCompany = async (req, res) => {
     }
 
     const companies = await MotorPolicyModel.aggregate([
-      { $match: { brokerId, isActive: true } },
+      {
+        $match: {
+          brokerId,
+          isActive: true,
+          ...(category && { category }),
+        },
+      },
       { $group: { _id: "$companyName" } },
     ]);
 
@@ -1181,6 +1287,7 @@ export const getUnpaidAndPartialPayInAmountByCompany = async (req, res) => {
         brokerId,
         companyName: company._id,
         isActive: true,
+        ...(category && { category }),
       })
         .select("policyNumber")
         .lean();
@@ -1192,6 +1299,7 @@ export const getUnpaidAndPartialPayInAmountByCompany = async (req, res) => {
           $match: {
             policyNumber: { $in: policyNumbers },
             payInPaymentStatus: { $in: ["UnPaid", "Partial"] },
+            ...(category && { category }),
           },
         },
         {
@@ -1256,7 +1364,14 @@ export const getUnpaidAndPartialPayInAmountByCompany = async (req, res) => {
 
 export const getBrokerBalanceForAllBrokers = async (req, res) => {
   try {
+    const { category } = req.query;
+
     const brokers = await MotorPolicyModel.aggregate([
+      {
+        $match: {
+          ...(category && { category }),
+        },
+      },
       { $group: { _id: "$brokerId", brokerName: { $first: "$broker" } } },
     ]);
 
@@ -1277,12 +1392,12 @@ export const getBrokerBalanceForAllBrokers = async (req, res) => {
       const brokerDetails = await BrokerModel.findOne({
         _id: broker._id,
       }).lean();
-      if (!brokerDetails) {
-        continue;
-      }
+      if (!brokerDetails) continue;
+
       const policies = await MotorPolicyModel.find({
         brokerId: broker._id,
         isActive: true,
+        ...(category && { category }),
       })
         .select("policyNumber")
         .lean();
@@ -1331,7 +1446,7 @@ export const getBrokerBalanceForAllBrokers = async (req, res) => {
 
 export const getBrokerBalanceWithDateFilter = async (req, res) => {
   try {
-    const { startDate, endDate, brokerId } = req.query;
+    const { startDate, endDate, brokerId, category } = req.query;
 
     if (!startDate || !endDate) {
       return res.status(400).json({
@@ -1350,7 +1465,13 @@ export const getBrokerBalanceWithDateFilter = async (req, res) => {
       : { isActive: true };
 
     const brokers = await MotorPolicyModel.aggregate([
-      { $match: { ...brokerMatch, issueDate: { $gte: start, $lte: end } } },
+      {
+        $match: {
+          ...brokerMatch,
+          issueDate: { $gte: start, $lte: end },
+          ...(category && { category }),
+        },
+      }, // Add category filter
       { $group: { _id: "$brokerId", brokerName: { $first: "$broker" } } },
     ]);
 
@@ -1371,13 +1492,13 @@ export const getBrokerBalanceWithDateFilter = async (req, res) => {
       const brokerDetails = await BrokerModel.findOne({
         _id: broker._id,
       }).lean();
-      if (!brokerDetails) {
-        continue;
-      }
+      if (!brokerDetails) continue;
+
       const policies = await MotorPolicyModel.find({
         brokerId: broker._id,
         isActive: true,
         issueDate: { $gte: start, $lte: end },
+        ...(category && { category }),
       })
         .select("policyNumber")
         .lean();
@@ -1426,7 +1547,7 @@ export const getBrokerBalanceWithDateFilter = async (req, res) => {
 
 export const getBrokerBalanceByBrokerAndCompany = async (req, res) => {
   try {
-    const { brokerId } = req.query;
+    const { brokerId, category } = req.query;
 
     if (!brokerId) {
       return res.status(400).json({
@@ -1449,7 +1570,7 @@ export const getBrokerBalanceByBrokerAndCompany = async (req, res) => {
     }
 
     const companies = await MotorPolicyModel.aggregate([
-      { $match: { brokerId, isActive: true } },
+      { $match: { brokerId, isActive: true, ...(category && { category }) } },
       { $group: { _id: "$companyName" } },
     ]);
 
@@ -1473,6 +1594,7 @@ export const getBrokerBalanceByBrokerAndCompany = async (req, res) => {
         brokerId,
         companyName: company._id,
         isActive: true,
+        ...(category && { category }),
       })
         .select("policyNumber")
         .lean();
@@ -1524,7 +1646,7 @@ export const getBrokerBalanceByBrokerAndCompanyWithDateFilter = async (
   res
 ) => {
   try {
-    const { brokerId, startDate, endDate } = req.query;
+    const { brokerId, startDate, endDate, category } = req.query;
 
     if (!brokerId || !startDate || !endDate) {
       return res.status(400).json({
@@ -1556,6 +1678,7 @@ export const getBrokerBalanceByBrokerAndCompanyWithDateFilter = async (
           brokerId,
           issueDate: { $gte: start, $lte: end },
           isActive: true,
+          ...(category && { category }),
         },
       },
       { $group: { _id: "$companyName" } },
@@ -1582,6 +1705,7 @@ export const getBrokerBalanceByBrokerAndCompanyWithDateFilter = async (
         companyName: company._id,
         isActive: true,
         issueDate: { $gte: start, $lte: end },
+        ...(category && { category }),
       })
         .select("policyNumber")
         .lean();
