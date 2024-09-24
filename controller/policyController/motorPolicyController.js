@@ -1392,7 +1392,7 @@ export const updateMotorPolicy = async (req, res) => {
     }
 
     try {
-      const {
+      const { 
         policyStatus,
         partnerName,
         relationshipManagerId,
@@ -1438,7 +1438,7 @@ export const updateMotorPolicy = async (req, res) => {
 
       let partnerId = req.body.partnerId;
 
-      // If partnerName is provided and partnerId is not, fetch the partnerId based on partnerName
+      // Fetch partnerId based on partnerName if needed
       if (partnerName && !partnerId) {
         const partner = await PartnerModel.findOne({ name: partnerName });
         if (partner) {
@@ -1453,6 +1453,7 @@ export const updateMotorPolicy = async (req, res) => {
 
       const formData = {
         policyStatus,
+        brokerId, 
         partnerId,
         partnerName,
         policyType,
@@ -1496,7 +1497,7 @@ export const updateMotorPolicy = async (req, res) => {
         updatedBy: updatedBy || "system",
         updatedOn: new Date(),
       };
-
+      
       const fileDetails = {};
 
       if (req.files && Object.keys(req.files).length > 0) {
@@ -1524,6 +1525,9 @@ export const updateMotorPolicy = async (req, res) => {
         od: updatedOD,
         tp: updatedTP,
         issueDate: updatedIssueDate,
+        brokerId: updatedBrokerId, // Extract updated brokerId
+        partnerId: updatedPartnerId, // Update partnerId
+        partnerName: updatedPartnerName,
       } = updatedForm;
 
       const existingPayment = await MotorPolicyPaymentModel.findOne({
@@ -1576,8 +1580,9 @@ export const updateMotorPolicy = async (req, res) => {
         payOutTPAmount: calculatedPayOutTPAmount,
         payOutCommission,
         policyDate: updatedIssueDate,
-        partnerId,
-        partnerName,
+        partnerId: updatedPartnerId, // Update partnerId
+        partnerName: updatedPartnerName, // Update partnerName
+        brokerId: updatedBrokerId, // Update brokerId
       };
 
       if (typeof isActive !== "undefined") {
