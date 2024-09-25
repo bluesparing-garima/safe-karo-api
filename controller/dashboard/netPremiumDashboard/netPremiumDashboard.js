@@ -1,5 +1,4 @@
 import MotorPolicyModel from "../../../models/policyModel/motorpolicySchema.js";
-import MotorPolicyPaymentModel from "../../../models/policyModel/motorPolicyPaymentSchema.js";
 import UserProfile from "../../../models/adminModels/userProfileSchema.js";
 import BrokerModel from "../../../models/adminModels/brokerSchema.js";
 
@@ -41,7 +40,7 @@ export const getAllPartnersWithNetPremium = async (req, res) => {
 
       const policyNumbers = policies.map((policy) => policy.policyNumber);
 
-      const totalPremium = await MotorPolicyPaymentModel.aggregate([
+      const totalPremium = await MotorPolicyModel.aggregate([
         { $match: { policyNumber: { $in: policyNumbers } } },
         {
           $group: {
@@ -139,7 +138,7 @@ export const getAllPartnersWithNetPremiumAndDateFilter = async (req, res) => {
 
       const policyNumbers = policies.map((policy) => policy.policyNumber);
 
-      const totalPremium = await MotorPolicyPaymentModel.aggregate([
+      const totalPremium = await MotorPolicyModel.aggregate([
         { $match: { policyNumber: { $in: policyNumbers } } },
         {
           $group: {
@@ -180,6 +179,171 @@ export const getAllPartnersWithNetPremiumAndDateFilter = async (req, res) => {
   }
 };
 
+export const getCompaniesByPartnerIdAndCategory = async (req, res) => {
+  try {
+    const { partnerId, category } = req.query;
+
+    if (!partnerId || !category) {
+      return res.status(400).json({
+        message: "Please provide both partnerId and category.",
+        success: false,
+        status: "error",
+      });
+    }
+
+    const userProfile = await UserProfile.findOne({ _id: partnerId }).lean();
+
+    if (!userProfile) {
+      return res.status(404).json({
+        message: "Partner not found.",
+        success: false,
+        status: "error",
+      });
+    }
+
+    const { partnerId: partnerCode, fullName: partnerName } = userProfile;
+
+    const result = await MotorPolicyModel.aggregate([
+      {
+        $match: {
+          partnerId,
+          category,
+          isActive: true,
+        },
+      },
+      {
+        $group: {
+          _id: "$companyName",
+          totalNetPremium: { $sum: "$netPremium" },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          companyName: "$_id",
+          totalNetPremium: 1,
+        },
+      },
+    ]);
+
+    if (result.length === 0) {
+      return res.status(200).json({
+        message: `No companies found for partnerId: ${partnerId} and category: ${category}.`,
+        partnerCode,
+        partnerName,
+        data: [],
+        totalAmount: 0,
+        success: true,
+        status: "success",
+      });
+    }
+
+    const totalNetPremiumSum = result.reduce((sum, company) => sum + company.totalNetPremium, 0);
+
+    res.status(200).json({
+      message: "Companies with net premiums fetched successfully.",
+      partnerCode,
+      partnerName,
+      data: result,
+      totalAmount: totalNetPremiumSum,
+      success: true,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const getCompaniesByPartnerIdCategoryAndDateFilter = async (req, res) => {
+  try {
+    const { partnerId, category, startDate, endDate } = req.query;
+
+    if (!partnerId || !category || !startDate || !endDate) {
+      return res.status(400).json({
+        message: "Please provide partnerId, category, startDate, and endDate.",
+        success: false,
+        status: "error",
+      });
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999); 
+
+    const userProfile = await UserProfile.findOne({ _id: partnerId }).lean();
+
+    if (!userProfile) {
+      return res.status(404).json({
+        message: "Partner not found.",
+        success: false,
+        status: "error",
+      });
+    }
+
+    const { partnerId: partnerCode, fullName: partnerName } = userProfile;
+
+    const result = await MotorPolicyModel.aggregate([
+      {
+        $match: {
+          partnerId,
+          category,
+          issueDate: { $gte: start, $lte: end },
+          isActive: true,
+        },
+      },
+      {
+        $group: {
+          _id: "$companyName",
+          totalNetPremium: { $sum: "$netPremium" },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          companyName: "$_id",
+          totalNetPremium: 1,
+        },
+      },
+    ]);
+
+    if (result.length === 0) {
+      return res.status(200).json({
+        message: `No companies found for partnerId: ${partnerId}, category: ${category} between ${startDate} and ${endDate}.`,
+        partnerCode,
+        partnerName,
+        data: [],
+        totalAmount: 0,
+        success: true,
+        status: "success",
+      });
+    }
+
+    const totalNetPremiumSum = result.reduce((sum, company) => sum + company.totalNetPremium, 0);
+
+    res.status(200).json({
+      message: `Companies with net premiums between ${startDate} and ${endDate} fetched successfully.`,
+      partnerCode,
+      partnerName,
+      data: result,
+      totalAmount: totalNetPremiumSum,
+      success: true,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+/* ---------------- broker netPremium ------------------------  */
+
 export const getAllBrokersWithNetPremium = async (req, res) => {
   try {
     const { category } = req.query;
@@ -203,6 +367,8 @@ export const getAllBrokersWithNetPremium = async (req, res) => {
     let totalNetPremiumSum = 0;
 
     for (const broker of brokers) {
+      const brokerProfile = await BrokerModel.findOne({ _id: broker._id }).lean();
+      
       const policies = await MotorPolicyModel.find({
         brokerId: broker._id,
         isActive: true,
@@ -213,7 +379,7 @@ export const getAllBrokersWithNetPremium = async (req, res) => {
 
       const policyNumbers = policies.map((policy) => policy.policyNumber);
 
-      const totalPremium = await MotorPolicyPaymentModel.aggregate([
+      const totalPremium = await MotorPolicyModel.aggregate([
         { $match: { policyNumber: { $in: policyNumbers } } },
         {
           $group: {
@@ -232,6 +398,7 @@ export const getAllBrokersWithNetPremium = async (req, res) => {
         brokerSummaries.push({
           brokerId: broker._id,
           brokerName: broker.brokerName,
+          brokerCode: brokerProfile?.brokerCode || "N/A",
           netPremium: brokerNetPremium,
         });
       }
@@ -292,10 +459,10 @@ export const getAllBrokersWithNetPremiumAndDateFilter = async (req, res) => {
 
     const brokerSummaries = [];
     let totalNetPremiumSum = 0;
+
     for (const broker of brokers) {
-      const userProfile = await BrokerModel.findOne({ _id: broker._id }).select(
-        "brokerId"
-      );
+      const brokerProfile = await BrokerModel.findOne({ _id: broker._id }).lean();
+
       const policies = await MotorPolicyModel.find({
         brokerId: broker._id,
         isActive: true,
@@ -307,7 +474,7 @@ export const getAllBrokersWithNetPremiumAndDateFilter = async (req, res) => {
 
       const policyNumbers = policies.map((policy) => policy.policyNumber);
 
-      const totalPremium = await MotorPolicyPaymentModel.aggregate([
+      const totalPremium = await MotorPolicyModel.aggregate([
         { $match: { policyNumber: { $in: policyNumbers } } },
         {
           $group: {
@@ -326,7 +493,7 @@ export const getAllBrokersWithNetPremiumAndDateFilter = async (req, res) => {
         brokerSummaries.push({
           brokerId: broker._id,
           brokerName: broker.brokerName,
-          brokerCode: userProfile?.brokerId || "N/A",
+          brokerCode: brokerProfile?.brokerCode || "N/A",
           netPremium: brokerNetPremium,
         });
       }
@@ -340,329 +507,144 @@ export const getAllBrokersWithNetPremiumAndDateFilter = async (req, res) => {
       status: "success",
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ status: "error", success: false, message: error.message });
+    res.status(500).json({
+      status: "error",
+      success: false,
+      message: error.message,
+    });
   }
 };
 
-export const getCompaniesByPartnerIdAndCategory = async (req, res) => {
-    try {
-      const { partnerId, category } = req.query;
-  
-      if (!partnerId || !category) {
-        return res.status(400).json({
-          message: "Please provide both partnerId and category.",
-          success: false,
-          status: "error",
-        });
-      }
-  
-      const companies = await MotorPolicyModel.find({
-        partnerId,
-        category,
-        isActive: true,
-      }).select("companyName").lean();
-  
-      if (companies.length === 0) {
-        return res.status(200).json({
-          message: `No companies found for partnerId: ${partnerId} and category: ${category}.`,
-          data: [],
-          totalAmount: 0,
-          success: true,
-          status: "success",
-        });
-      }
-  
-      const companySummaries = [];
-      let totalNetPremiumSum = 0;
-  
-      for (const company of companies) {
-        const policies = await MotorPolicyModel.find({
-          partnerId,
-          category,
-          companyName: company.companyName,
-          isActive: true,
-        }).select("policyNumber").lean();
-  
-        const policyNumbers = policies.map((policy) => policy.policyNumber);
-  
-        const totalPremium = await MotorPolicyPaymentModel.aggregate([
-          { $match: { policyNumber: { $in: policyNumbers } } },
-          {
-            $group: {
-              _id: null,
-              totalNetPremium: { $sum: "$netPremium" }
-            }
-          }
-        ]);
-  
-        const netPremium = totalPremium.length > 0 ? totalPremium[0].totalNetPremium : 0;
-  
-        companySummaries.push({
-          companyName: company.companyName,
-          netPremium,
-        });
-  
-        totalNetPremiumSum += netPremium;
-      }
-  
-      res.status(200).json({
-        message: "Companies with net premiums fetched successfully.",
-        data: companySummaries,
-        totalAmount: totalNetPremiumSum,
-        success: true,
-        status: "success",
-      });
-    } catch (error) {
-      res.status(500).json({
-        status: "error",
+export const getCompaniesByBrokerIdAndCategory = async (req, res) => {
+  try {
+    const { brokerId, category } = req.query;
+
+    if (!brokerId || !category) {
+      return res.status(400).json({
+        message: "Please provide both brokerId and category.",
         success: false,
-        message: error.message,
+        status: "error",
       });
     }
-  };
 
-  export const getCompaniesByBrokerIdAndCategory = async (req, res) => {
-    try {
-      const { brokerId, category } = req.query;
-  
-      if (!brokerId || !category) {
-        return res.status(400).json({
-          message: "Please provide both brokerId and category.",
-          success: false,
-          status: "error",
-        });
-      }
-  
-      const companies = await MotorPolicyModel.find({
-        brokerId,
-        category,
-        isActive: true,
-      }).select("companyName").lean();
-  
-      if (companies.length === 0) {
-        return res.status(200).json({
-          message: `No companies found for brokerId: ${brokerId} and category: ${category}.`,
-          data: [],
-          totalAmount: 0,
-          success: true,
-          status: "success",
-        });
-      }
-  
-      const companySummaries = [];
-      let totalNetPremiumSum = 0;
-  
-      for (const company of companies) {
-        const policies = await MotorPolicyModel.find({
+    const brokerProfile = await BrokerModel.findOne({ _id: brokerId }).lean();
+
+    if (!brokerProfile) {
+      return res.status(404).json({
+        message: "Broker not found.",
+        success: false,
+        status: "error",
+      });
+    }
+
+    const { brokerCode, brokerName } = brokerProfile;
+
+    const companySummaries = await MotorPolicyModel.aggregate([
+      {
+        $match: {
           brokerId,
           category,
-          companyName: company.companyName,
           isActive: true,
-        }).select("policyNumber").lean();
-  
-        const policyNumbers = policies.map((policy) => policy.policyNumber);
-  
-        const totalPremium = await MotorPolicyPaymentModel.aggregate([
-          { $match: { policyNumber: { $in: policyNumbers } } },
-          {
-            $group: {
-              _id: null,
-              totalNetPremium: { $sum: "$netPremium" }
-            }
-          }
-        ]);
-  
-        const netPremium = totalPremium.length > 0 ? totalPremium[0].totalNetPremium : 0;
-  
-        companySummaries.push({
-          companyName: company.companyName,
-          netPremium,
-        });
-  
-        totalNetPremiumSum += netPremium;
-      }
-  
-      res.status(200).json({
-        message: "Companies with net premiums fetched successfully.",
-        data: companySummaries,
-        totalAmount: totalNetPremiumSum,
-        success: true,
-        status: "success",
-      });
-    } catch (error) {
-      res.status(500).json({
-        status: "error",
+        },
+      },
+      {
+        $group: {
+          _id: "$companyName",
+          totalNetPremium: { $sum: "$netPremium" },
+        },
+      },
+    ]);
+
+    const totalNetPremiumSum = companySummaries.reduce((sum, company) => sum + company.totalNetPremium, 0);
+
+    res.status(200).json({
+      message: "Companies with net premiums fetched successfully.",
+      brokerCode,
+      brokerName,
+      data: companySummaries.map(company => ({
+        companyName: company._id,
+        netPremium: company.totalNetPremium,
+      })),
+      totalAmount: totalNetPremiumSum,
+      success: true,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const getCompaniesByBrokerIdCategoryAndDateFilter = async (req, res) => {
+  try {
+    const { brokerId, category, startDate, endDate } = req.query;
+
+    if (!brokerId || !category || !startDate || !endDate) {
+      return res.status(400).json({
+        message: "Please provide brokerId, category, startDate, and endDate.",
         success: false,
-        message: error.message,
+        status: "error",
       });
     }
-  };
 
-  export const getCompaniesByPartnerIdCategoryAndDateFilter = async (req, res) => {
-    try {
-      const { partnerId, category, startDate, endDate } = req.query;
-  
-      if (!partnerId || !category || !startDate || !endDate) {
-        return res.status(400).json({
-          message: "Please provide partnerId, category, startDate, and endDate.",
-          success: false,
-          status: "error",
-        });
-      }
-  
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999);
-  
-      const companies = await MotorPolicyModel.find({
-        partnerId,
-        category,
-        issueDate: { $gte: start, $lte: end },
-        isActive: true,
-      }).select("companyName").lean();
-  
-      if (companies.length === 0) {
-        return res.status(200).json({
-          message: `No companies found for partnerId: ${partnerId}, category: ${category} between ${startDate} and ${endDate}.`,
-          data: [],
-          totalAmount: 0,
-          success: true,
-          status: "success",
-        });
-      }
-  
-      const companySummaries = [];
-      let totalNetPremiumSum = 0;
-  
-      for (const company of companies) {
-        const policies = await MotorPolicyModel.find({
-          partnerId,
-          category,
-          companyName: company.companyName,
-          issueDate: { $gte: start, $lte: end },
-          isActive: true,
-        }).select("policyNumber").lean();
-  
-        const policyNumbers = policies.map((policy) => policy.policyNumber);
-  
-        const totalPremium = await MotorPolicyPaymentModel.aggregate([
-          { $match: { policyNumber: { $in: policyNumbers } } },
-          {
-            $group: {
-              _id: null,
-              totalNetPremium: { $sum: "$netPremium" }
-            }
-          }
-        ]);
-  
-        const netPremium = totalPremium.length > 0 ? totalPremium[0].totalNetPremium : 0;
-  
-        companySummaries.push({
-          companyName: company.companyName,
-          netPremium,
-        });
-  
-        totalNetPremiumSum += netPremium;
-      }
-  
-      res.status(200).json({
-        message: `Companies with net premiums between ${startDate} and ${endDate} fetched successfully.`,
-        data: companySummaries,
-        totalAmount: totalNetPremiumSum,
-        success: true,
-        status: "success",
-      });
-    } catch (error) {
-      res.status(500).json({
-        status: "error",
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+
+    const brokerProfile = await BrokerModel.findOne({ _id: brokerId }).lean();
+
+    if (!brokerProfile) {
+      return res.status(404).json({
+        message: "Broker not found.",
         success: false,
-        message: error.message,
+        status: "error",
       });
     }
-  };
 
-  export const getCompaniesByBrokerIdCategoryAndDateFilter = async (req, res) => {
-    try {
-      const { brokerId, category, startDate, endDate } = req.query;
-  
-      if (!brokerId || !category || !startDate || !endDate) {
-        return res.status(400).json({
-          message: "Please provide brokerId, category, startDate, and endDate.",
-          success: false,
-          status: "error",
-        });
-      }
-  
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999);
-  
-      const companies = await MotorPolicyModel.find({
-        brokerId,
-        category,
-        issueDate: { $gte: start, $lte: end },
-        isActive: true,
-      }).select("companyName").lean();
-  
-      if (companies.length === 0) {
-        return res.status(200).json({
-          message: `No companies found for brokerId: ${brokerId}, category: ${category} between ${startDate} and ${endDate}.`,
-          data: [],
-          totalAmount: 0,
-          success: true,
-          status: "success",
-        });
-      }
-  
-      const companySummaries = [];
-      let totalNetPremiumSum = 0;
-  
-      for (const company of companies) {
-        const policies = await MotorPolicyModel.find({
+    const { brokerCode, brokerName } = brokerProfile;
+
+    const companySummaries = await MotorPolicyModel.aggregate([
+      {
+        $match: {
           brokerId,
           category,
-          companyName: company.companyName,
           issueDate: { $gte: start, $lte: end },
           isActive: true,
-        }).select("policyNumber").lean();
-  
-        const policyNumbers = policies.map((policy) => policy.policyNumber);
-  
-        const totalPremium = await MotorPolicyPaymentModel.aggregate([
-          { $match: { policyNumber: { $in: policyNumbers } } },
-          {
-            $group: {
-              _id: null,
-              totalNetPremium: { $sum: "$netPremium" }
-            }
-          }
-        ]);
-  
-        const netPremium = totalPremium.length > 0 ? totalPremium[0].totalNetPremium : 0;
-  
-        companySummaries.push({
-          companyName: company.companyName,
-          netPremium,
-        });
-  
-        totalNetPremiumSum += netPremium;
-      }
-  
-      res.status(200).json({
-        message: `Companies with net premiums between ${startDate} and ${endDate} fetched successfully.`,
-        data: companySummaries,
-        totalAmount: totalNetPremiumSum,
-        success: true,
-        status: "success",
-      });
-    } catch (error) {
-      res.status(500).json({
-        status: "error",
-        success: false,
-        message: error.message,
-      });
-    }
-  };
+        },
+      },
+      {
+        $group: {
+          _id: "$companyName",
+          totalNetPremium: { $sum: "$netPremium" },
+        },
+      },
+    ]);
+
+    const totalNetPremiumSum = companySummaries.reduce((sum, company) => sum + company.totalNetPremium, 0);
+
+    res.status(200).json({
+      message: `Companies with net premiums between ${startDate} and ${endDate} fetched successfully.`,
+      brokerCode,
+      brokerName,
+      data: companySummaries.map(company => ({
+        companyName: company._id,
+        netPremium: company.totalNetPremium,
+      })),
+      totalAmount: totalNetPremiumSum,
+      success: true,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
   
