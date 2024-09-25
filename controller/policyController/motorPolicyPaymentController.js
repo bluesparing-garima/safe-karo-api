@@ -661,6 +661,35 @@ export const updateMotorPolicyPayment = async (req, res) => {
   }
 };
 
+// Controller method to update brokerId in MotorPolicyPayment
+export const updateAllBrokerIds = async (req, res) => {
+  try {
+    const motorPolicies = await MotorPolicyModel.find();
+
+    if (!motorPolicies || motorPolicies.length === 0) {
+      return res.status(404).json({ message: 'No policies found in MotorPolicy table' });
+    }
+
+    for (const policy of motorPolicies) {
+      const { policyNumber, brokerId } = policy;
+
+      const updated = await motorPolicyPayment.updateOne(
+        { policyNumber },
+        { $set: { brokerId } }
+      );
+
+      if (updated.nModified === 0) {
+        console.warn(`PolicyNumber ${policyNumber} not found or unchanged in MotorPolicyPayment`);
+      }
+    }
+
+    return res.json({ message: 'Broker IDs updated successfully in MotorPolicyPayment' });
+  } catch (error) {
+    console.error('Error updating brokerId in MotorPolicyPayment:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
 // Delete motor policy payment by policyId
 export const deleteMotorPolicyPayment = async (req, res) => {
   try {
