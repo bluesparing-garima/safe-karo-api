@@ -1219,7 +1219,7 @@ export const getUnpaidAndPartialPayInAmountByCompanyWithDate = async (
 
         companySummaries.push({
           companyName: company._id,
-          payInAmount: companyPayInAmount,
+          totalPayInAmount: companyPayInAmount,
         });
       }
     }
