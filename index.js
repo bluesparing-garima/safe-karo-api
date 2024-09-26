@@ -90,7 +90,7 @@ import brokerChart from "./routes/barAndLineChartRoutes/brokerChartRoutes.js";
 
 // pdf reader
 import pdfRoutes from './routes/pdfReaderRoute.js';
-
+import pdfCompress from './routes/pdfCompress.js';
 import testRoutes from "./routes/testRoutes.js";
 
 // ranks
@@ -120,7 +120,7 @@ const __dirname = path.dirname(__filename);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')), serveIndex(path.join(__dirname, 'uploads'), { icons: true }));
 
 app.use('/api/policy/pdf', pdfRoutes);
-
+app.use('/api/pdf',pdfCompress);
 // JSON
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
