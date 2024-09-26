@@ -214,14 +214,14 @@ export const getCompaniesByPartnerIdAndCategory = async (req, res) => {
       {
         $group: {
           _id: "$companyName",
-          totalNetPremium: { $sum: "$netPremium" },
+          netPremium: { $sum: "$netPremium" },
         },
       },
       {
         $project: {
           _id: 0,
           companyName: "$_id",
-          totalNetPremium: 1,
+          netPremium: 1,
         },
       },
     ]);
@@ -238,7 +238,7 @@ export const getCompaniesByPartnerIdAndCategory = async (req, res) => {
       });
     }
 
-    const totalNetPremiumSum = result.reduce((sum, company) => sum + company.totalNetPremium, 0);
+    const totalNetPremiumSum = result.reduce((sum, company) => sum + company.netPremium, 0);
 
     res.status(200).json({
       message: "Companies with net premiums fetched successfully.",
@@ -298,14 +298,14 @@ export const getCompaniesByPartnerIdCategoryAndDateFilter = async (req, res) => 
       {
         $group: {
           _id: "$companyName",
-          totalNetPremium: { $sum: "$netPremium" },
+          netPremium: { $sum: "$netPremium" },
         },
       },
       {
         $project: {
           _id: 0,
           companyName: "$_id",
-          totalNetPremium: 1,
+          netPremium: 1,
         },
       },
     ]);
@@ -322,7 +322,7 @@ export const getCompaniesByPartnerIdCategoryAndDateFilter = async (req, res) => 
       });
     }
 
-    const totalNetPremiumSum = result.reduce((sum, company) => sum + company.totalNetPremium, 0);
+    const totalNetPremiumSum = result.reduce((sum, company) => sum + company.netPremium, 0);
 
     res.status(200).json({
       message: `Companies with net premiums between ${startDate} and ${endDate} fetched successfully.`,

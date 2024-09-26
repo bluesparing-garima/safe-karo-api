@@ -214,14 +214,14 @@ export const getCompaniesByPartnerIdAndCategory = async (req, res) => {
       {
         $group: {
           _id: "$companyName",
-          totalFinalPremium: { $sum: "$finalPremium" },
+          finalPremium: { $sum: "$finalPremium" },
         },
       },
       {
         $project: {
           _id: 0,
           companyName: "$_id",
-          totalFinalPremium: 1,
+          finalPremium: 1,
         },
       },
     ]);
@@ -239,7 +239,7 @@ export const getCompaniesByPartnerIdAndCategory = async (req, res) => {
     }
 
     const totalFinalPremiumSum = result.reduce(
-      (sum, company) => sum + company.totalFinalPremium,
+      (sum, company) => sum + company.finalPremium,
       0
     );
 
@@ -304,14 +304,14 @@ export const getCompaniesByPartnerIdCategoryAndDateFilter = async (
       {
         $group: {
           _id: "$companyName",
-          totalFinalPremium: { $sum: "$finalPremium" },
+          finalPremium: { $sum: "$finalPremium" },
         },
       },
       {
         $project: {
           _id: 0,
           companyName: "$_id",
-          totalFinalPremium: 1,
+          finalPremium: 1,
         },
       },
     ]);
@@ -329,7 +329,7 @@ export const getCompaniesByPartnerIdCategoryAndDateFilter = async (
     }
 
     const totalFinalPremiumSum = result.reduce(
-      (sum, company) => sum + company.totalFinalPremium,
+      (sum, company) => sum + company.finalPremium,
       0
     );
 
