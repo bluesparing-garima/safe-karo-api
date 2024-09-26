@@ -52,8 +52,11 @@ import partnerAdminDashboarRoutes from "./routes/dashboardRoutes/partnerAdminDas
 // broker - admin dashboard routes
 import brokerAdminDashboarRoutes from "./routes/dashboardRoutes/brokerAdminDashboard/brokerAdminDashboardRoutes.js"
 
-//net- premium dashboard routes
+
+// premiums dashboard routes
 import netPremiumDashboardRoutes from "./routes/dashboardRoutes/netPremiumDashboard/netPremiumDashboardRoute.js"
+import finalPremiumDashboardRoutes from "./routes/dashboardRoutes/finalPremiumDashboard/finalPremiumDashboardRoute.js"
+
 
 // Motor policy routes
 import motorPolicyRoutes from "./routes/policy/motorPolicyRoutes.js";
@@ -227,9 +230,12 @@ app.use("/api/dashboard/partner-admin", partnerAdminDashboarRoutes);
 
 app.use("/api/dashboard/broker-admin", brokerAdminDashboarRoutes);
 
-// ------------------------------------ net Premium Dashboard Routes -------------------------
+
+// ------------------------------------Premiums Dashboard Routes -------------------------
 
 app.use("/api/dashboard/net-premium", netPremiumDashboardRoutes);
+
+app.use("/api/dashboard/final-premium", finalPremiumDashboardRoutes);
 
 
 // activity logs
