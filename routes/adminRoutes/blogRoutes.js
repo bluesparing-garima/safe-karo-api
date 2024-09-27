@@ -1,7 +1,7 @@
 import express from "express";
 import {
   createBlogPost,
-  getAllBlogPosts,
+  getAllBlogs,
   getBlogsByCategory,
   getBlogsByWebsite,
   getBlogPostById,
@@ -15,7 +15,7 @@ const router = express.Router();
 router.post("/", createBlogPost);
 
 // Route for fetching all blog posts (optionally filtered by website)
-router.get("/all", getAllBlogPosts);
+router.get("/", getAllBlogs);
 
 // Route for fetching blogs by category
 router.get("/category", getBlogsByCategory);

@@ -4,7 +4,7 @@ import MotorPolicy from "../../models/policyModel/motorpolicySchema.js";
 // Create a new rank with specified rank and count
 export const createRank = async (req, res) => {
     try {
-        const { rank, count } = req.body; 
+        const { rank, count, isActive = true } = req.body; // Allow isActive to be set from the request body, default to true
         const userId = req.user ? req.user.id : 'admin';
 
         const newRank = new Rank({
@@ -12,7 +12,7 @@ export const createRank = async (req, res) => {
             count,
             createdBy: userId,
             updatedBy: userId,
-            isActive: true,
+            isActive,
         });
 
         const savedRank = await newRank.save();
@@ -45,7 +45,7 @@ export const updateRank = async (req, res) => {
             { new: true }
         );
 
-        if (!updatedRank) {
+        if (!updatedRank || !updatedRank.isActive) {
             return res.status(404).json({
                 message: 'Rank not found for this ID',
                 data: null,
@@ -75,7 +75,7 @@ export const getAllRanks = async (req, res) => {
     try {
         const ranks = await Rank.find({ isActive: true });
         res.status(200).json({
-            message: 'Ranks retrieved successfully',
+            message: 'Active ranks retrieved successfully',
             data: ranks,
             success: true,
             status: "success",
@@ -140,6 +140,7 @@ export const deleteRank = async (req, res) => {
             { isActive: false, updatedBy: userId },
             { new: true }
         );
+
         if (!deletedRank) {
             return res.status(404).json({
                 message: 'Rank not found for this ID',
