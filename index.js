@@ -17,8 +17,8 @@ import {
 import activityLogRoutes from "./routes/adminRoutes/activityLogRoutes.js";
 
 // blogs
-import blogs from "./routes/blogRoutes/blogRoutes.js";
-import blogcategories from "./routes/blogRoutes/blogCategoryRoutes.js";
+import blogs from "./routes/websiteRoutes/blogRoutes.js";
+import blogcategories from "./routes/websiteRoutes/blogCategoryRoutes.js";
 
 import assigneeRolesRouters from "./routes/adminRoutes/userRolesRoutes.js";
 import policyTypeRoutes from "./routes/adminRoutes/policyTypeRoutes.js";

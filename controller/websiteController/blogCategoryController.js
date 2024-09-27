@@ -1,4 +1,4 @@
-import BlogCategory from "../../models/blogModels/blogCategorySchema.js";
+import BlogCategory from "../../models/websiteModels/blogCategorySchema.js";
 
 // CREATE: Add a new category
 export const createBlogCategory = async (req, res) => {
