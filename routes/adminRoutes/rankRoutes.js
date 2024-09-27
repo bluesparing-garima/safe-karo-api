@@ -14,7 +14,7 @@ router.post("/", createRank, logActivity);
 router.put("/:rankId", updateRank, logActivity);
 router.get("/", getAllRanks, logActivity);
 router.get("/:rankId", getRankById, logActivity);
-router.get("/badge", getPartnerCategory, logActivity);
+router.get("/badge/:partnerId", getPartnerCategory, logActivity);
 router.delete("/:rankId", deleteRank, logActivity);
 
 export default router;
