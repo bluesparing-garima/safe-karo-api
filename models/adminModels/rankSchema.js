@@ -3,7 +3,6 @@ import mongoose from 'mongoose';
 const RankSchema = new mongoose.Schema({
     rank: {
         type: String,
-        enum: ['Bronze', 'Silver', 'Gold', 'Diamond', 'Platinum', 'None'],
         required: true
     },
     count: {

@@ -22,6 +22,29 @@ export const createRank = async (req, res) => {
     }
 };
 
+// Update existing rank by ObjectId
+export const updateRank = async (req, res) => {
+    try {
+        const { rankId } = req.params;
+        const { rank, count } = req.body;
+        const userId = req.user ? req.user.id : 'admin';
+
+        const updatedRank = await Rank.findByIdAndUpdate(
+            rankId,
+            { rank, count, updatedBy: userId },
+            { new: true }
+        );
+
+        if (!updatedRank) {
+            return res.status(404).json({ message: 'Rank not found for this ID' });
+        }
+
+        res.status(200).json(updatedRank);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
 // Get all ranks
 export const getAllRanks = async (req, res) => {
     try {
@@ -40,7 +63,6 @@ export const getPartnerCategory = async (req, res) => {
         const policyCount = await MotorPolicy.countDocuments({ partnerId });
 
         const ranks = await Rank.find({ isActive: true });
-        console.log("Active Ranks: ", ranks);
 
         const partnerRank = ranks
             .filter(rank => policyCount >= rank.count)
