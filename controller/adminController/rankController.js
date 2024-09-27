@@ -1,4 +1,4 @@
-import Rank from "../../models/adminModels/rankSchema.js";
+import Rank from "../../models/adminModels/rankSchema.js"; 
 import MotorPolicy from "../../models/policyModel/motorpolicySchema.js";
 
 // Create a new rank with specified rank and count
@@ -16,9 +16,19 @@ export const createRank = async (req, res) => {
         });
 
         const savedRank = await newRank.save();
-        res.status(201).json(savedRank);
+        res.status(201).json({
+            message: 'Rank created successfully',
+            data: savedRank,
+            success: true,
+            status: "success",
+        });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({
+            message: error.message,
+            data: null,
+            success: false,
+            status: "error",
+        });
     }
 };
 
@@ -36,12 +46,27 @@ export const updateRank = async (req, res) => {
         );
 
         if (!updatedRank) {
-            return res.status(404).json({ message: 'Rank not found for this ID' });
+            return res.status(404).json({
+                message: 'Rank not found for this ID',
+                data: null,
+                success: false,
+                status: "error",
+            });
         }
 
-        res.status(200).json(updatedRank);
+        res.status(200).json({
+            message: 'Rank updated successfully',
+            data: updatedRank,
+            success: true,
+            status: "success",
+        });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({
+            message: error.message,
+            data: null,
+            success: false,
+            status: "error",
+        });
     }
 };
 
@@ -49,9 +74,19 @@ export const updateRank = async (req, res) => {
 export const getAllRanks = async (req, res) => {
     try {
         const ranks = await Rank.find({ isActive: true });
-        res.status(200).json(ranks);
+        res.status(200).json({
+            message: 'Ranks retrieved successfully',
+            data: ranks,
+            success: true,
+            status: "success",
+        });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({
+            message: error.message,
+            data: null,
+            success: false,
+            status: "error",
+        });
     }
 };
 
@@ -70,12 +105,27 @@ export const getPartnerCategory = async (req, res) => {
             .shift();
 
         if (!partnerRank) {
-            return res.status(404).json({ message: 'No rank found for this partner based on policy count' });
+            return res.status(404).json({
+                message: 'No rank found for this partner based on policy count',
+                data: null,
+                success: false,
+                status: "error",
+            });
         }
 
-        res.status(200).json({ partnerId, rank: partnerRank.rank, policyCount });
+        res.status(200).json({
+            message: 'Partner category retrieved successfully',
+            data: { partnerId, rank: partnerRank.rank, policyCount },
+            success: true,
+            status: "success",
+        });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({
+            message: error.message,
+            data: null,
+            success: false,
+            status: "error",
+        });
     }
 };
 
@@ -91,11 +141,26 @@ export const deleteRank = async (req, res) => {
             { new: true }
         );
         if (!deletedRank) {
-            return res.status(404).json({ message: 'Rank not found for this ID' });
+            return res.status(404).json({
+                message: 'Rank not found for this ID',
+                data: null,
+                success: false,
+                status: "error",
+            });
         }
 
-        res.status(200).json({ message: 'Rank deactivated successfully' });
+        res.status(200).json({
+            message: 'Rank deactivated successfully',
+            data: null,
+            success: true,
+            status: "success",
+        });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({
+            message: error.message,
+            data: null,
+            success: false,
+            status: "error",
+        });
     }
 };
