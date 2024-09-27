@@ -126,7 +126,7 @@ export const getRankById = async (req, res) => {
 // Get partner category based on their policy count
 export const getPartnerCategory = async (req, res) => {
     try {
-        const { partnerId } = req.query;
+        const { partnerId } = req.params;
 
         const policyCount = await MotorPolicy.countDocuments({ partnerId });
 
