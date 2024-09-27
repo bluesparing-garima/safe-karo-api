@@ -91,6 +91,9 @@ import testRoutes from "./routes/testRoutes.js";
 // ranks
 import ranks from "./routes/adminRoutes/rankRoutes.js";
 
+// blogs
+import blogs from "./routes/adminRoutes/blogRoutes.js";
+
 const app = express();
 const port = process.env.PORT;
 const DATABASE_URL = process.env.DATEBASE_URL;
@@ -271,6 +274,8 @@ app.use("/api/broker-dashboard", brokerChart);
 
 // ---------------------------------------- ranks ------------------------------
 app.use("/api/ranks",ranks);
+// ---------------------------------------- blogs ------------------------------
+app.use("/api/blogs",blogs);
 
 // Test Routes
 app.use("/api", testRoutes);
