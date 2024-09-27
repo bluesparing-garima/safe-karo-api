@@ -1,8 +1,9 @@
-import BlogPost from "../../models/adminModels/blogSchema.js";
+import BlogPost from "../../models/blogModels/blogSchema.js";
 import { handleFileUpload } from "../../middlewares/uploadMiddleware.js";
+import Category from "../../models/blogModels/blogCategorySchema.js";
 
 // CREATE: Add a new blog post with file upload handling
-export const createBlogPost = async (req, res) => {
+export const createBlogPost = async (req, res) => { 
   handleFileUpload(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ message: err.message });
@@ -24,11 +25,12 @@ export const createBlogPost = async (req, res) => {
         isActive,
       } = req.body;
 
-      const image = req.files.image ? req.files.image[0].path : "";
+      const existingCategory = await Category.findOne({ _id: category, isActive: true });
+      if (!existingCategory) {
+        return res.status(400).json({ message: "Invalid or inactive category." });
+      }
 
-      const formattedDate = date
-        ? new Date(date).toISOString().slice(0, 10)
-        : new Date().toISOString().slice(0, 10);
+      const image = req.files.image ? req.files.image[0].path : "";
 
       const newPost = new BlogPost({
         title,
@@ -38,16 +40,21 @@ export const createBlogPost = async (req, res) => {
         website,
         createdBy,
         image,
-        date: formattedDate, // Use the formatted date here
+        date,
         isActive: isActive !== undefined ? isActive : true,
         createdOn: new Date(),
       });
 
       const savedPost = await newPost.save();
 
+      const responsePost = {
+        ...savedPost.toObject(),
+        category: existingCategory.category 
+      };
+
       res.status(201).json({
         message: "Blog post created successfully.",
-        data: savedPost,
+        data: responsePost,
         success: true,
         status: "success",
       });
@@ -56,6 +63,7 @@ export const createBlogPost = async (req, res) => {
     }
   });
 };
+
 
 // READ: Get all blog posts without any filters
 export const getAllBlogs = async (req, res) => {

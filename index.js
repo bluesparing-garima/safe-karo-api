@@ -16,6 +16,10 @@ import {
 
 import activityLogRoutes from "./routes/adminRoutes/activityLogRoutes.js";
 
+// blogs
+import blogs from "./routes/blogRoutes/blogRoutes.js";
+import blogcategories from "./routes/blogRoutes/blogCategoryRoutes.js";
+
 import assigneeRolesRouters from "./routes/adminRoutes/userRolesRoutes.js";
 import policyTypeRoutes from "./routes/adminRoutes/policyTypeRoutes.js";
 import caseTypeRoutes from "./routes/adminRoutes/caseTypeRoutes.js";
@@ -91,8 +95,6 @@ import testRoutes from "./routes/testRoutes.js";
 // ranks
 import ranks from "./routes/adminRoutes/rankRoutes.js";
 
-// blogs
-import blogs from "./routes/adminRoutes/blogRoutes.js";
 
 const app = express();
 const port = process.env.PORT;
@@ -260,6 +262,7 @@ app.use("/api", debitRoute);
 
 // Credit details
 app.use("/api/credits",creditRoute);
+
 // excel compare
 app.use("/api", excelCompare);
 
@@ -275,6 +278,7 @@ app.use("/api/broker-dashboard", brokerChart);
 // ---------------------------------------- ranks ------------------------------
 app.use("/api/ranks",ranks);
 // ---------------------------------------- blogs ------------------------------
+app.use("/api/blog-category", blogcategories);
 app.use("/api/blogs",blogs);
 
 // Test Routes
