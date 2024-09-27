@@ -1,18 +1,20 @@
-import express from 'express';
+import express from "express";
 import {
-    createRank,
-    updateRank,
-    getAllRanks,
-    getPartnerCategory,
-    deleteRank
-} from '../../controller/adminController/rankController.js';
-
+  createRank,
+  updateRank,
+  getAllRanks,
+  getPartnerCategory,
+  deleteRank,
+  getRankById,
+} from "../../controller/adminController/rankController.js";
+import logActivity from "../../middlewares/logActivity.js";
 const router = express.Router();
 
-router.post('/', createRank);
-router.put('/:rankId', updateRank);
-router.get('/', getAllRanks);
-router.get('/badge', getPartnerCategory);
-router.delete('/:rankId', deleteRank);
+router.post("/", createRank, logActivity);
+router.put("/:rankId", updateRank, logActivity);
+router.get("/", getAllRanks, logActivity);
+router.get("/:rankId", getRankById, logActivity);
+router.get("/badge", getPartnerCategory, logActivity);
+router.delete("/:rankId", deleteRank, logActivity);
 
 export default router;

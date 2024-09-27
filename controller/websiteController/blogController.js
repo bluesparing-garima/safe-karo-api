@@ -1,6 +1,6 @@
-import BlogPost from "../../models/blogModels/blogSchema.js";
+import BlogPost from "../../models/websiteModels/blogSchema.js";
 import { handleFileUpload } from "../../middlewares/uploadMiddleware.js";
-import Category from "../../models/blogModels/blogCategorySchema.js";
+import Category from "../../models/websiteModels/blogCategorySchema.js";
 
 // CREATE: Add a new blog post with file upload handling
 export const createBlogPost = async (req, res) => { 

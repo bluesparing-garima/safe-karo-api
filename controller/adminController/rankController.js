@@ -90,6 +90,39 @@ export const getAllRanks = async (req, res) => {
     }
 };
 
+// Get a rank by ObjectId (only if isActive is true)
+export const getRankById = async (req, res) => {
+    try {
+        const { rankId } = req.params;
+
+        // Find the rank by ID and check if it is active
+        const rank = await Rank.findOne({ _id: rankId, isActive: true });
+
+        if (!rank) {
+            return res.status(404).json({
+                message: 'Rank not found or inactive for this ID',
+                data: null,
+                success: false,
+                status: "error",
+            });
+        }
+
+        res.status(200).json({
+            message: 'Rank retrieved successfully',
+            data: rank,
+            success: true,
+            status: "success",
+        });
+    } catch (error) {
+        res.status(500).json({
+            message: error.message,
+            data: null,
+            success: false,
+            status: "error",
+        });
+    }
+};
+
 // Get partner category based on their policy count
 export const getPartnerCategory = async (req, res) => {
     try {
