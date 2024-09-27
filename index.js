@@ -88,6 +88,9 @@ import pdfRoutes from './routes/pdfReaderRoute.js';
 
 import testRoutes from "./routes/testRoutes.js";
 
+// ranks
+import ranks from "./routes/adminRoutes/rankRoutes.js";
+
 const app = express();
 const port = process.env.PORT;
 const DATABASE_URL = process.env.DATEBASE_URL;
@@ -265,6 +268,9 @@ app.use("/api/partner-dashboard", partnerChart);
 app.use("/api/admin-dashboard", adminChart);
 app.use("/api/booking-dashboard", bookingChart);
 app.use("/api/broker-dashboard", brokerChart);
+
+// ---------------------------------------- ranks ------------------------------
+app.use("/api/ranks",ranks);
 
 // Test Routes
 app.use("/api", testRoutes);
