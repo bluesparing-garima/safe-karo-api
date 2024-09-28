@@ -3,7 +3,7 @@ import { handleFileUpload } from "../../middlewares/uploadMiddleware.js";
 import Category from "../../models/websiteModels/blogCategorySchema.js";
 
 // CREATE: Add a new blog post with file upload handling
-export const createBlogPost = async (req, res) => { 
+export const createBlogPost = async (req, res) => {
   handleFileUpload(req, res, async (err) => {
     if (err) {
       return res.status(400).json({ message: err.message });
@@ -25,17 +25,19 @@ export const createBlogPost = async (req, res) => {
         isActive,
       } = req.body;
 
-      const existingCategory = await Category.findOne({ _id: category, isActive: true });
+      const existingCategory = await Category.findOne({ category, isActive: true });
       if (!existingCategory) {
         return res.status(400).json({ message: "Invalid or inactive category." });
       }
+
+      const categoryId = existingCategory._id;
 
       const image = req.files.image ? req.files.image[0].path : "";
 
       const newPost = new BlogPost({
         title,
         description,
-        category,
+        category: categoryId,
         author,
         website,
         createdBy,
@@ -49,7 +51,8 @@ export const createBlogPost = async (req, res) => {
 
       const responsePost = {
         ...savedPost.toObject(),
-        category: existingCategory.category 
+        categoryId: existingCategory._id,
+        category: existingCategory.category,
       };
 
       res.status(201).json({
@@ -63,7 +66,6 @@ export const createBlogPost = async (req, res) => {
     }
   });
 };
-
 
 // READ: Get all blog posts without any filters
 export const getAllBlogs = async (req, res) => {
