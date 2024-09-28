@@ -68,15 +68,23 @@ export const createBlogPost = async (req, res) => {
   });
 };
 
-// READ: Get all blog posts without any filters
+// READ: Get all blog posts with
 export const getAllBlogs = async (req, res) => {
   try {
-    const posts = await BlogPost.find();
-    const totalCount = posts.length;
+    const posts = await BlogPost.find()
+      .populate({ path: 'category', select: 'category _id', match: { isActive: true } });
+
+    const formattedPosts = posts.map(post => ({
+      ...post.toObject(),
+      categoryId: post.category?._id,
+      category: post.category?.category || post.category,
+    }));
+
+    const totalCount = formattedPosts.length;
 
     res.status(200).json({
       message: "All blog posts retrieved successfully.",
-      data: posts,
+      data: formattedPosts,
       success: true,
       status: "success",
       totalCount,
@@ -94,12 +102,20 @@ export const getBlogsByCategory = async (req, res) => {
   }
 
   try {
-    const posts = await BlogPost.find({ category });
-    const totalCount = posts.length;
+    const posts = await BlogPost.find({ category })
+      .populate({ path: 'category', select: 'category _id', match: { isActive: true } });
+
+    const formattedPosts = posts.map(post => ({
+      ...post.toObject(),
+      categoryId: post.category?._id,
+      category: post.category?.category || post.category,
+    }));
+
+    const totalCount = formattedPosts.length;
 
     res.status(200).json({
       message: `Blogs in the category "${category}".`,
-      data: posts,
+      data: formattedPosts,
       success: true,
       status: "success",
       totalCount,
@@ -117,12 +133,20 @@ export const getBlogsByWebsite = async (req, res) => {
   }
 
   try {
-    const posts = await BlogPost.find({ website });
-    const totalCount = posts.length;
+    const posts = await BlogPost.find({ website })
+      .populate({ path: 'category', select: 'category _id', match: { isActive: true } });
+
+    const formattedPosts = posts.map(post => ({
+      ...post.toObject(),
+      categoryId: post.category?._id,
+      category: post.category?.category || post.category,
+    }));
+
+    const totalCount = formattedPosts.length;
 
     res.status(200).json({
       message: `Blogs for the website "${website}".`,
-      data: posts,
+      data: formattedPosts,
       success: true,
       status: "success",
       totalCount,
@@ -154,18 +178,18 @@ export const updateBlogPostById = async (req, res) => {
   try {
     const { title, description, category, author, website, updatedBy } = req.body;
 
-    let updatedData = {
-      title,
-      description,
-      author,
-      website,
-      updatedBy,
-      updatedOn: new Date(),
-    };
+    let updatedData = {};
+
+    if (title) updatedData.title = title;
+    if (description) updatedData.description = description;
+    if (author) updatedData.author = author;
+    if (website) updatedData.website = website;
+    if (updatedBy) updatedData.updatedBy = updatedBy;
+    updatedData.updatedOn = new Date();
 
     if (category) {
       const existingCategory = await Category.findOne({ category: category });
-      
+
       if (!existingCategory) {
         return res.status(400).json({ message: "Invalid category." });
       }
@@ -177,12 +201,12 @@ export const updateBlogPostById = async (req, res) => {
     if (req.files?.image) {
       updatedData.image = req.files.image[0].path;
     }
+
     const updatedPost = await BlogPost.findByIdAndUpdate(
       req.params.id,
-      updatedData,
+      { $set: updatedData },
       { new: true }
     );
-
     if (!updatedPost) {
       return res.status(404).json({ message: "Post not found" });
     }
