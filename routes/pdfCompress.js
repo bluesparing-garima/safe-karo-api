@@ -16,8 +16,7 @@ const storage = multer.diskStorage({
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = `${Date.now()}_${file.originalname}`;
-    cb(null, uniqueSuffix);
+    cb(null, file.originalname);
   },
 });
 
@@ -50,26 +49,19 @@ const compressPDF = async (inputPath, outputPath, targetSize) => {
     return { compressed: false, originalFileRemoved: false };
   }
 
-  const compressionSettings = [
-    '/screen',
-    '/ebook',
-    '/printer',
-    '/prepress'
-  ];
+  const compressionSettings = ['/screen', '/ebook', '/printer', '/prepress'];
 
   for (const setting of compressionSettings) {
     const gsCommand = `"C:\\Program Files\\gs\\gs10.03.1\\bin\\gswin64c.exe" -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=${setting} -dDownsampleColorImages=true -dColorImageResolution=100 -dNOPAUSE -dQUIET -dBATCH -sOutputFile="${outputPath}" "${inputPath}"`;
 
     try {
       await executeGsCommand(gsCommand);
-      
       const compressedStats = await fs.stat(outputPath);
-      
+
       if (compressedStats.size < targetSize) {
         await fs.unlink(inputPath);
+        await fs.rename(outputPath, inputPath);
         return { compressed: true, originalFileRemoved: true };
-      } else {
-        return { compressed: true, originalFileRemoved: false }; 
       }
     } catch (error) {
       console.error(`Error compressing with setting ${setting}: ${error.message}`);
@@ -99,17 +91,12 @@ router.post('/compress', (req, res) => {
         const { compressed, originalFileRemoved } = await compressPDF(pdfFilePath, compressedPDFPath, targetSize);
 
         if (compressed) {
-          if (!originalFileRemoved) {
-            await fs.unlink(pdfFilePath); 
-          }
-          const renamedPath = pdfFilePath; 
-          await fs.rename(compressedPDFPath, renamedPath); 
-          compressedFiles.push(renamedPath);
-        } 
+          compressedFiles.push(file.originalname); // Keep track of the original file name after compression
+        }
       }
 
       res.json({ message: 'Files processed successfully.', files: compressedFiles });
-
+    
     } catch (compressionError) {
       return res.status(500).json({ message: 'PDF compression failed', error: compressionError.message });
     }

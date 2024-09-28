@@ -1,5 +1,5 @@
 import express from 'express';
-import { handleFileUpload } from '../middlewares/pdfMiddleware.js';
+import { handleFileUpload } from '../middlewares/uploadMiddleware.js';
 import { TataPDFParsing } from '../controller/pdfReaderController.js';
 import logActivity from "../middlewares/logActivity.js";
 

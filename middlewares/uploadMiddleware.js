@@ -1,14 +1,13 @@
 import fs from 'fs';
 import path from 'path';
 import multer from 'multer';
-import sharp from 'sharp';
 import { fileURLToPath } from 'url';
-import { statSync } from 'fs';
 import { exec } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Multer storage setup
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadPath = path.join(__dirname, "../uploads/");
@@ -20,6 +19,7 @@ const storage = multer.diskStorage({
   },
 });
 
+// Check file type function
 const checkFileType = (file, cb) => {
   const allowedTypes = [
     "image/jpeg",
@@ -34,13 +34,14 @@ const checkFileType = (file, cb) => {
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error("Unsupported file type! Please upload an image, a PDF document, or an Excel file."), false);
+    cb(new Error("Unsupported file type! Please upload an image, PDF, or Excel file."), false);
   }
 };
 
+// Multer upload middleware
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 2000000 },
+  limits: { fileSize: 2000000 }, // 2MB limit
   fileFilter: (req, file, cb) => {
     checkFileType(file, cb);
   },
@@ -62,29 +63,10 @@ const upload = multer({
   { name: "experience", maxCount: 1 },
   { name: "quotationImage", maxCount: 1 },
   { name: "other", maxCount: 1 },
-  { name: "file", maxCount: 1 },
+  { name: "file", maxCount: 1 }, // PDF or main file to extract data
 ]);
 
-const compressImageToSize = async (filePath, targetSize = 100000) => {
-  let quality = 80;
-  let compressedPath = filePath;
-  let fileSize = statSync(filePath).size;
-
-  while (fileSize > targetSize && quality > 10) {
-    compressedPath = `${filePath}-compressed.jpg`;
-    await sharp(filePath)
-      .resize(700)
-      .jpeg({ quality })
-      .toFile(compressedPath);
-
-    fileSize = statSync(compressedPath).size;
-    quality -= 10;
-  }
-
-  fs.unlinkSync(filePath); 
-  return compressedPath;
-};
-
+// PDF Compression with Ghostscript
 const compressPDFWithGhostscript = (inputPath, outputPath, targetSize, callback) => {
   const gsCommand = `"C:\\Program Files\\gs\\gs10.03.1\\bin\\gswin64c.exe" -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen -dNOPAUSE -dQUIET -dBATCH -sOutputFile=${outputPath} ${inputPath}`;
 
@@ -93,18 +75,35 @@ const compressPDFWithGhostscript = (inputPath, outputPath, targetSize, callback)
       console.error(`Error during Ghostscript compression: ${error.message}`);
       return callback(error, null);
     }
+
     const fileSize = fs.statSync(outputPath).size;
 
     if (fileSize > targetSize) {
       console.warn(`Warning: Final compressed file is larger than target size of ${targetSize} bytes.`);
     }
 
-    fs.unlinkSync(inputPath);
+    fs.unlinkSync(inputPath); // Remove the original file after compression
 
     callback(null, outputPath);
   });
 };
 
+// Function to extract data from PDF (implement your extraction logic here)
+const extractDataFromPDF = (pdfFilePath) => {
+  // This is a placeholder; replace with your actual PDF extraction logic.
+  // You can use libraries like 'pdf-parse' or any other suitable tool for extraction.
+  
+  // Simulate extraction result
+  const extractedData = {
+    title: "Sample PDF Title",
+    content: "Extracted content goes here...",
+    // Add more fields as needed
+  };
+
+  return extractedData;
+};
+
+// Main file upload handler
 export const handleFileUpload = (req, res, next) => {
   upload(req, res, async (err) => {
     if (err) {
@@ -116,29 +115,35 @@ export const handleFileUpload = (req, res, next) => {
     }
 
     try {
-      if (req.files && req.files.image) {
-        const imageFilePath = req.files.image[0].path;
-        const compressedImagePath = await compressImageToSize(imageFilePath, 100000);
-        req.files.image[0].path = compressedImagePath;
-      }
-
+      // Step 1: Extract data from the original PDF (if PDF file is uploaded)
       if (req.files && req.files.file) {
         const pdfFilePath = req.files.file[0].path;
-        const compressedPDFPath = `${pdfFilePath}-compressed.pdf`;
+        console.log("PDF uploaded:", pdfFilePath);
 
+        // Extract data before compressing
+        const extractedData = extractDataFromPDF(pdfFilePath);
+        req.extractedData = extractedData; // Store the extracted data for further use
+
+        console.log("PDF data extracted:", extractedData);
+
+        // Step 2: Compress PDF after data extraction
+        const compressedPDFPath = `${pdfFilePath}-compressed.pdf`;
         compressPDFWithGhostscript(pdfFilePath, compressedPDFPath, 500000, (error, finalPath) => {
           if (error) {
             return res.status(500).json({ message: "PDF compression failed", error: error.message });
           }
 
+          // Update the file path after compression
           req.files.file[0].path = finalPath;
-          next();
+          console.log("PDF compressed to:", finalPath);
+          next(); // Proceed to the next middleware after compression
         });
       } else {
+        // If no PDF file, move to next middleware
         next();
       }
     } catch (compressionError) {
-      return res.status(500).json({ message: "File compression failed", error: compressionError.message });
+      return res.status(500).json({ message: "File processing failed", error: compressionError.message });
     }
   });
 };
