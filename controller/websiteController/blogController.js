@@ -149,15 +149,20 @@ export const getBlogPostById = async (req, res) => {
   }
 };
 
-// UPDATE: Update a blog post by ID
+// UPDATE: Update a blog post by ID 
 export const updateBlogPostById = async (req, res) => {
   try {
-    const { title, description, category, author, website, updatedBy } =
-      req.body;
+    const { title, description, category, author, website, updatedBy } = req.body;
+
+    const existingCategory = await Category.findOne({ category: category, isActive: true });
+    if (!existingCategory) {
+      return res.status(400).json({ message: "Invalid or inactive category." });
+    }
+
     let updatedData = {
       title,
       description,
-      category,
+      category: existingCategory.category,
       author,
       website,
       updatedBy,
@@ -173,12 +178,20 @@ export const updateBlogPostById = async (req, res) => {
       updatedData,
       { new: true }
     );
-    if (!updatedPost)
+
+    if (!updatedPost) {
       return res.status(404).json({ message: "Post not found" });
+    }
+
+    const responsePost = {
+      ...updatedPost.toObject(),
+      categoryId: existingCategory._id,
+      category: existingCategory.category,
+    };
 
     res.status(200).json({
       message: "Blog post updated successfully.",
-      data: updatedPost,
+      data: responsePost,
       success: true,
       status: "success",
     });
