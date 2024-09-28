@@ -154,9 +154,10 @@ export const updateBlogPostById = async (req, res) => {
   try {
     const { title, description, category, author, website, updatedBy } = req.body;
 
-    const existingCategory = await Category.findOne({ category: category, isActive: true });
+    const existingCategory = await Category.findOne({ category: category });
+    
     if (!existingCategory) {
-      return res.status(400).json({ message: "Invalid or inactive category." });
+      return res.status(400).json({ message: "Invalid category." });
     }
 
     let updatedData = {
