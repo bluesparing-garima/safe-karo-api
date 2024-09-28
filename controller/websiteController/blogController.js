@@ -25,7 +25,7 @@ export const createBlogPost = async (req, res) => {
         isActive,
       } = req.body;
 
-      const existingCategory = await Category.findOne({ category, isActive: true });
+      const existingCategory = await Category.findOne({ category: category, isActive: true });
       if (!existingCategory) {
         return res.status(400).json({ message: "Invalid or inactive category." });
       }
@@ -37,7 +37,7 @@ export const createBlogPost = async (req, res) => {
       const newPost = new BlogPost({
         title,
         description,
-        category: categoryId,
+        category: existingCategory.category,
         author,
         website,
         createdBy,
