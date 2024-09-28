@@ -176,41 +176,42 @@ export const updateBlogPostById = async (req, res) => {
 
     try {
       const { title, description, category, author, website, updatedBy } = req.body;
-      const updatedData = {};
 
-      if (title) updatedData.title = title;
-      if (description) updatedData.description = description;
-      if (author) updatedData.author = author;
-      if (website) updatedData.website = website;
-      if (updatedBy) updatedData.updatedBy = updatedBy;
-      updatedData.updatedOn = new Date();
-
-      if (category) {
-        const existingCategory = await Category.findOne({ category });
-        if (!existingCategory) {
-          return res.status(400).json({ message: "Invalid category." });
-        }
-        updatedData.categoryId = existingCategory._id;
-        updatedData.category = existingCategory.category;
+      const existingCategory = await Category.findOne({ category: category, isActive: true });
+      if (!existingCategory) {
+        return res.status(400).json({ message: "Invalid or inactive category." });
       }
 
-      if (req.files?.image) {
+      let updatedData = {
+        title,
+        description,
+        categoryId: existingCategory._id,
+        category: existingCategory.category,
+        author,
+        website,
+        updatedBy,
+        updatedOn: new Date(),
+      };
+
+      if (req.files && req.files.image) {
         updatedData.image = path.basename(req.files.image[0].path);
       }
 
-      const updatedPost = await BlogPost.findByIdAndUpdate(
-        req.params.id,
-        { $set: updatedData },
-        { new: true }
-      );
+      const updatedPost = await BlogPost.findByIdAndUpdate(req.params.id, updatedData, { new: true });
 
       if (!updatedPost) {
         return res.status(404).json({ message: "Post not found" });
       }
 
+      const responsePost = {
+        ...updatedPost.toObject(),
+        categoryId: existingCategory._id,
+        category: existingCategory.category,
+      };
+
       res.status(200).json({
         message: "Blog post updated successfully.",
-        data: updatedPost,
+        data: responsePost,
         success: true,
         status: "success",
       });
