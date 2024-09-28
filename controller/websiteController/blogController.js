@@ -1,6 +1,7 @@
 import BlogPost from "../../models/websiteModels/blogSchema.js";
 import { handleFileUpload } from "../../middlewares/uploadMiddleware.js";
 import Category from "../../models/websiteModels/blogCategorySchema.js";
+import path from 'path';
 
 // CREATE: Add a new blog post with file upload handling
 export const createBlogPost = async (req, res) => {
@@ -32,7 +33,7 @@ export const createBlogPost = async (req, res) => {
 
       const categoryId = existingCategory._id;
 
-      const image = req.files.image ? req.files.image[0].path : "";
+      const image = req.files.image ? path.basename(req.files.image[0].path) : "";
 
       const newPost = new BlogPost({
         title,
