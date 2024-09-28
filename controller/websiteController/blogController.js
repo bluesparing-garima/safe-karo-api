@@ -154,26 +154,29 @@ export const updateBlogPostById = async (req, res) => {
   try {
     const { title, description, category, author, website, updatedBy } = req.body;
 
-    const existingCategory = await Category.findOne({ category: category });
-    
-    if (!existingCategory) {
-      return res.status(400).json({ message: "Invalid category." });
-    }
-
     let updatedData = {
       title,
       description,
-      category: existingCategory.category,
       author,
       website,
       updatedBy,
       updatedOn: new Date(),
     };
 
+    if (category) {
+      const existingCategory = await Category.findOne({ category: category });
+      
+      if (!existingCategory) {
+        return res.status(400).json({ message: "Invalid category." });
+      }
+
+      updatedData.category = existingCategory.category;
+      updatedData.categoryId = existingCategory._id;
+    }
+
     if (req.files?.image) {
       updatedData.image = req.files.image[0].path;
     }
-
     const updatedPost = await BlogPost.findByIdAndUpdate(
       req.params.id,
       updatedData,
@@ -184,15 +187,9 @@ export const updateBlogPostById = async (req, res) => {
       return res.status(404).json({ message: "Post not found" });
     }
 
-    const responsePost = {
-      ...updatedPost.toObject(),
-      categoryId: existingCategory._id,
-      category: existingCategory.category,
-    };
-
     res.status(200).json({
       message: "Blog post updated successfully.",
-      data: responsePost,
+      data: updatedPost,
       success: true,
       status: "success",
     });
