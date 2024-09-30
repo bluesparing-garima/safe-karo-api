@@ -11,6 +11,7 @@ import leadModel from "../../models/partnerModels/leadGenerateSchema.js";
 import UserProfile from "../../models/adminModels/userProfileSchema.js";
 import sendEmail from "../../utils/sendEmails.js";
 import BrokerModel from "../../models/adminModels/brokerSchema.js";
+import mongoose from "mongoose";
 
 const dataFilePath = path.join(process.cwd(), "data", "motorpolicy_data.json");
 const hashFilePath = path.join(
@@ -511,6 +512,12 @@ export const createMotorPolicy = async (req, res) => {
 
     const formattedIssueDate = new Date(issueDate);
 
+    let policyCompletedByName = "Unknown";
+    if (mongoose.Types.ObjectId.isValid(policyCompletedBy)) {
+      const userProfile = await UserProfile.findById(policyCompletedBy).lean();
+      policyCompletedByName = userProfile ? userProfile.fullName : "Unknown";
+    }
+
     const newMotorPolicy = new MotorPolicyModel({
       policyStatus,
       partnerId: partnerId || "",
@@ -519,7 +526,8 @@ export const createMotorPolicy = async (req, res) => {
       relationshipManagerName: relationshipManagerName || "",
       paymentDetails: paymentDetails || "",
       bookingId: bookingId || "",
-      policyCompletedBy: policyCompletedBy || "",
+      policyCompletedBy,
+      policyCompletedByName,
       policyType,
       caseType,
       category,
@@ -669,19 +677,41 @@ export const getMotorPolicies = async (req, res) => {
       isActive: true,
     });
 
+    const policyCompletedByIds = [
+      ...new Set(forms.map((policy) => policy.policyCompletedBy)),
+    ].filter(
+      (id) => id && id.match(/^[0-9a-fA-F]{24}$/) // Ensure valid ObjectId format
+    );
+
+    const userProfiles = await UserProfile.find({
+      _id: { $in: policyCompletedByIds },
+    }).lean();
+
+    const profileMap = {};
+    userProfiles.forEach((profile) => {
+      profileMap[profile._id] = profile.fullName;
+    });
+
+    const formsWithCompletedByName = forms.map((form) => ({
+      ...form.toObject(),
+      policyCompletedByName: profileMap[form.policyCompletedBy] || "Unknown", // Add the name or "Unknown" if not found
+    }));
+
     res.status(200).json({
       message: "All Motor Policies.",
-      data: forms,
+      data: formsWithCompletedByName,
       success: true,
       status: "success",
       totalCount,
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ status: "error", success: false, message: error.message });
+    res.status(500).json({
+      status: "error",
+      success: false,
+      message: error.message,
+    });
   }
-};
+}
 
 // Get motor policies with date filter.
 export const getMotorPoliciesByDateRange = async (req, res) => {
@@ -719,7 +749,7 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
       });
     }
 
-    // Extract unique partnerIds, partnerNames, and brokerIds from the policies
+    // Extract unique partnerIds, partnerNames, brokerIds, and policyCompletedByIds from the policies
     const partnerNames = [
       ...new Set(policies.map((policy) => policy.partnerName)),
     ];
@@ -733,9 +763,18 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
     ].filter(
       (id) => id && id.match(/^[0-9a-fA-F]{24}$/) // Ensure valid ObjectId format
     );
-    
+    const policyCompletedByIds = [
+      ...new Set(policies.map((policy) => policy.policyCompletedBy)),
+    ].filter(
+      (id) => id && id.match(/^[0-9a-fA-F]{24}$/)
+    );
+
     const userProfiles = await UserProfile.find({
-      $or: [{ fullName: { $in: partnerNames } }, { _id: { $in: partnerIds } }],
+      $or: [
+        { fullName: { $in: partnerNames } },
+        { _id: { $in: partnerIds } },
+        { _id: { $in: policyCompletedByIds } },
+      ],
     }).lean();
 
     const brokers = await BrokerModel.find({ _id: { $in: brokerIds } }).lean();
@@ -791,6 +830,8 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
 
         const brokerCode = brokerMap[policy.brokerId] || "";
 
+        const completedByUser = profileMap[policy.policyCompletedBy] || {};
+
         return {
           ...policy,
           partnerCode: userProfile.partnerId,
@@ -823,6 +864,7 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
           brokerTimer,
           leadTimer,
           leadDate,
+          policyCompletedByName: completedByUser.fullName || "Unknown",
         };
       })
     );
