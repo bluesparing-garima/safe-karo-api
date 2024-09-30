@@ -956,11 +956,18 @@ export const getMotorPolicyByVehicleNumber = async (req, res) => {
       });
     }
 
+    // Get the full name of the user who completed the policy
+    const userProfile = await UserProfile.findById(motorPolicy.policyCompletedBy);
+    const policyCompletedByName = userProfile ? userProfile.fullName : '';
+
     return res.status(200).json({
       status: "success",
       success: true,
       message: `Motor Policy details retrieved successfully`,
-      data: motorPolicy,
+      data: {
+        ...motorPolicy.toObject(),
+        policyCompletedByName, // Add the completed by name here
+      },
     });
   } catch (err) {
     return res.status(400).json({
@@ -976,7 +983,6 @@ export const getMotorPolicyByPolicyId = async (req, res) => {
   try {
     const { policyId } = req.params;
 
-    // Find the motor policy by policyId
     const policy = await MotorPolicyModel.findById(policyId);
 
     if (!policy) {
@@ -987,7 +993,6 @@ export const getMotorPolicyByPolicyId = async (req, res) => {
       });
     }
 
-    // Find the corresponding payout details by policyNumber
     const payoutDetails = await MotorPolicyPaymentModel.findOne(
       { policyNumber: policy.policyNumber },
       {
@@ -1002,14 +1007,17 @@ export const getMotorPolicyByPolicyId = async (req, res) => {
       }
     );
 
-    // Merge policy data with payout details
+    // Get the full name of the user who completed the policy
+    const userProfile = await UserProfile.findById(policy.policyCompletedBy);
+    const policyCompletedByName = userProfile ? userProfile.fullName : '';
+
     const policyWithPayoutDetails = {
-      ...policy._doc, // Spread the motor policy data
-      ...(payoutDetails?._doc || {}), // Spread the payout details if they exist
-      _id: policy._id, // Ensure the _id is from MotorPolicyModel (policyId)
+      ...policy._doc,
+      ...(payoutDetails?._doc || {}),
+      _id: policy._id,
+      policyCompletedByName, // Add the completed by name here
     };
 
-    // Send the response with the correct _id
     res.status(200).json({
       message: "Motor Policy with payout details retrieved successfully.",
       data: policyWithPayoutDetails,
@@ -1064,7 +1072,6 @@ export const getMotorPolicyByPartnerId = async (req, res) => {
     }
 
     const policyNumbers = policies.map((policy) => policy.policyNumber);
-
     const payments = await MotorPolicyPaymentModel.find({
       policyNumber: { $in: policyNumbers },
     }).lean();
@@ -1074,8 +1081,12 @@ export const getMotorPolicyByPartnerId = async (req, res) => {
       paymentMap[payment.policyNumber] = payment;
     });
 
-    const policiesWithDetails = policies.map((policy) => {
+    const policiesWithDetails = await Promise.all(policies.map(async (policy) => {
       const payment = paymentMap[policy.policyNumber] || {};
+      
+      // Get the full name of the user who completed the policy
+      const userProfile = await UserProfile.findById(policy.policyCompletedBy);
+      const policyCompletedByName = userProfile ? userProfile.fullName : '';
 
       return {
         ...policy,
@@ -1091,8 +1102,9 @@ export const getMotorPolicyByPartnerId = async (req, res) => {
         paymentCreatedOn: payment.createdOn || 0,
         paymentUpdatedBy: payment.updatedBy || 0,
         paymentUpdatedOn: payment.updatedOn || 0,
+        policyCompletedByName, // Add the completed by name here
       };
-    });
+    }));
 
     res.status(200).json({
       message: `Motor Policies from ${startDate} to ${endDate} for partner ${partnerId} with payout details.`,
@@ -1148,7 +1160,6 @@ export const getMotorPolicyByRelationshipManagerId = async (req, res) => {
     }
 
     const policyNumbers = policies.map((policy) => policy.policyNumber);
-
     const payments = await MotorPolicyPaymentModel.find({
       policyNumber: { $in: policyNumbers },
     }).lean();
@@ -1158,8 +1169,12 @@ export const getMotorPolicyByRelationshipManagerId = async (req, res) => {
       paymentMap[payment.policyNumber] = payment;
     });
 
-    const policiesWithDetails = policies.map((policy) => {
+    const policiesWithDetails = await Promise.all(policies.map(async (policy) => {
       const payment = paymentMap[policy.policyNumber] || {};
+      
+      // Get the full name of the user who completed the policy
+      const userProfile = await UserProfile.findById(policy.policyCompletedBy);
+      const policyCompletedByName = userProfile ? userProfile.fullName : '';
 
       return {
         ...policy,
@@ -1175,8 +1190,9 @@ export const getMotorPolicyByRelationshipManagerId = async (req, res) => {
         paymentCreatedOn: payment.createdOn || 0,
         paymentUpdatedBy: payment.updatedBy || 0,
         paymentUpdatedOn: payment.updatedOn || 0,
+        policyCompletedByName, // Add the completed by name here
       };
-    });
+    }));
 
     res.status(200).json({
       message: `Motor Policies from ${startDate} to ${endDate} for relationship manager ${relationshipManagerId} with payout details.`,
