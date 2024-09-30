@@ -1,9 +1,10 @@
-import express from 'express'; 
-import fs from 'fs/promises';  
+import express from 'express';
+import fs from 'fs/promises';
 import path from 'path';
 import multer from 'multer';
 import { fileURLToPath } from 'url';
 import { exec } from 'child_process';
+import pLimit from 'p-limit';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,20 +17,16 @@ const storage = multer.diskStorage({
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
-    cb(null, file.originalname);
+    cb(null, file.originalname); 
   },
 });
 
 const upload = multer({
   storage: storage,
   fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'application/pdf') {
-      cb(null, true);
-    } else {
-      cb(new Error('Only PDF files are allowed!'), false);
-    }
+    cb(null, true);
   },
-}).array('files');
+}).array('files', 10000);
 
 const executeGsCommand = (gsCommand) => {
   return new Promise((resolve, reject) => {
@@ -43,33 +40,40 @@ const executeGsCommand = (gsCommand) => {
   });
 };
 
-const compressPDF = async (inputPath, outputPath, targetSize) => {
-  const stats = await fs.stat(inputPath);
+const compressPDF = async (filePath, targetSize) => {
+  const stats = await fs.stat(filePath);
   if (stats.size < targetSize) {
-    return { compressed: false, originalFileRemoved: false };
+    return { compressed: false }; 
   }
 
   const compressionSettings = ['/screen', '/ebook', '/printer', '/prepress'];
+  const tempOutputPath = filePath.replace('.pdf', '-temp.pdf');
 
   for (const setting of compressionSettings) {
-    const gsCommand = `"C:\\Program Files\\gs\\gs10.03.1\\bin\\gswin64c.exe" -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=${setting} -dDownsampleColorImages=true -dColorImageResolution=100 -dNOPAUSE -dQUIET -dBATCH -sOutputFile="${outputPath}" "${inputPath}"`;
+    const gsCommand = `"C:\\Program Files\\gs\\gs10.03.1\\bin\\gswin64c.exe" -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=${setting} -dDownsampleColorImages=true -dColorImageResolution=75 -dNOPAUSE -dQUIET -dBATCH -sOutputFile="${tempOutputPath}" "${filePath}"`;
 
     try {
       await executeGsCommand(gsCommand);
-      const compressedStats = await fs.stat(outputPath);
+      const compressedStats = await fs.stat(tempOutputPath);
 
-      if (compressedStats.size < targetSize) {
-        await fs.unlink(inputPath);
-        await fs.rename(outputPath, inputPath);
-        return { compressed: true, originalFileRemoved: true };
+      if (compressedStats.size < stats.size) {
+        await fs.unlink(filePath);
+        await fs.rename(tempOutputPath, filePath); 
+
+        return { compressed: true };
+      } else {
+        await fs.unlink(tempOutputPath);
       }
     } catch (error) {
       console.error(`Error compressing with setting ${setting}: ${error.message}`);
+      await fs.unlink(tempOutputPath); 
     }
   }
 
-  return { compressed: false, originalFileRemoved: false };
+  return { compressed: false };
 };
+
+const limit = pLimit(20);
 
 router.post('/compress', (req, res) => {
   upload(req, res, async (err) => {
@@ -79,26 +83,28 @@ router.post('/compress', (req, res) => {
       return res.status(500).json({ message: 'File upload error.', error: err.message });
     }
 
-    const files = req.files; 
-    const targetSize = 500000;
-    const compressedFiles = []; 
+    const files = req.files;
+    const pdfTargetSize = 200000; 
+    const processedFiles = [];
 
     try {
-      for (const file of files) {
-        const pdfFilePath = file.path; 
-        const compressedPDFPath = pdfFilePath.replace('.pdf', '-compressed.pdf'); 
-        
-        const { compressed, originalFileRemoved } = await compressPDF(pdfFilePath, compressedPDFPath, targetSize);
+      await Promise.all(files.map(file => limit(async () => {
+        const filePath = file.path;
 
-        if (compressed) {
-          compressedFiles.push(file.originalname); // Keep track of the original file name after compression
+        if (file.mimetype === 'application/pdf') {
+          const { compressed } = await compressPDF(filePath, pdfTargetSize);
+          if (compressed) {
+            processedFiles.push(file.originalname); 
+          }
+        } else {
+          processedFiles.push(file.originalname);
         }
-      }
+      })));
 
-      res.json({ message: 'Files processed successfully.', files: compressedFiles });
-    
+      res.json({ message: 'Files processed successfully.', files: processedFiles });
+
     } catch (compressionError) {
-      return res.status(500).json({ message: 'PDF compression failed', error: compressionError.message });
+      return res.status(500).json({ message: 'Compression failed', error: compressionError.message });
     }
   });
 });
