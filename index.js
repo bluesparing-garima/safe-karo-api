@@ -19,7 +19,8 @@ import activityLogRoutes from "./routes/adminRoutes/activityLogRoutes.js";
 // blogs
 import blogs from "./routes/websiteRoutes/blogRoutes.js";
 import blogcategories from "./routes/websiteRoutes/blogCategoryRoutes.js";
-
+import NewsLetter from "./routes/websiteRoutes/newsLetterRoutes.js";
+import NewsLetterCategories from "./routes/websiteRoutes/newsLetterCategoryRoutes.js";
 import assigneeRolesRouters from "./routes/adminRoutes/userRolesRoutes.js";
 import policyTypeRoutes from "./routes/adminRoutes/policyTypeRoutes.js";
 import caseTypeRoutes from "./routes/adminRoutes/caseTypeRoutes.js";
@@ -277,9 +278,11 @@ app.use("/api/broker-dashboard", brokerChart);
 
 // ---------------------------------------- ranks ------------------------------
 app.use("/api/ranks",ranks);
-// ---------------------------------------- blogs ------------------------------
+// ---------------------------------------- blogs and newsLetter ------------------------------
 app.use("/api/blog-category", blogcategories);
 app.use("/api/blogs",blogs);
+app.use("/api/news-letter-category", NewsLetterCategories);
+app.use("/api/news-letter",NewsLetter);
 
 // Test Routes
 app.use("/api", testRoutes);
