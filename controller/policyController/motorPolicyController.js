@@ -513,9 +513,12 @@ export const createMotorPolicy = async (req, res) => {
     const formattedIssueDate = new Date(issueDate);
 
     let policyCompletedByName = "Unknown";
+    let policyCompletedByCode = "Unknown";
+
     if (mongoose.Types.ObjectId.isValid(policyCompletedBy)) {
       const userProfile = await UserProfile.findById(policyCompletedBy).lean();
       policyCompletedByName = userProfile ? userProfile.fullName : "Unknown";
+      policyCompletedByCode = userProfile ? userProfile.partnerId : "Unknown";
     }
 
     const newMotorPolicy = new MotorPolicyModel({
@@ -528,6 +531,7 @@ export const createMotorPolicy = async (req, res) => {
       bookingId: bookingId || "",
       policyCompletedBy,
       policyCompletedByName,
+      policyCompletedByCode, 
       policyType,
       caseType,
       category,
@@ -688,18 +692,21 @@ export const getMotorPolicies = async (req, res) => {
     }).lean();
 
     const profileMap = {};
+    const completedByMap = {}; // To hold mapping for policyCompletedById to partnerId
     userProfiles.forEach((profile) => {
       profileMap[profile._id] = profile.fullName;
+      completedByMap[profile._id] = profile.partnerId; // Store partnerId based on policyCompletedById
     });
 
-    const formsWithCompletedByName = forms.map((form) => ({
+    const formsWithCompletedByDetails = forms.map((form) => ({
       ...form.toObject(),
       policyCompletedByName: profileMap[form.policyCompletedBy] || "Unknown", // Add the name or "Unknown" if not found
+      policyCompletedByCode: completedByMap[form.policyCompletedBy] || "Unknown", // Add partnerId or "Unknown" if not found
     }));
 
     res.status(200).json({
       message: "All Motor Policies.",
-      data: formsWithCompletedByName,
+      data: formsWithCompletedByDetails,
       success: true,
       status: "success",
       totalCount,
@@ -711,7 +718,7 @@ export const getMotorPolicies = async (req, res) => {
       message: error.message,
     });
   }
-}
+};
 
 // Get motor policies with date filter.
 export const getMotorPoliciesByDateRange = async (req, res) => {
@@ -750,22 +757,14 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
     }
 
     // Extract unique partnerIds, partnerNames, brokerIds, and policyCompletedByIds from the policies
-    const partnerNames = [
-      ...new Set(policies.map((policy) => policy.partnerName)),
-    ];
-    const partnerIds = [
-      ...new Set(policies.map((policy) => policy.partnerId)),
-    ].filter(
+    const partnerNames = [...new Set(policies.map((policy) => policy.partnerName))];
+    const partnerIds = [...new Set(policies.map((policy) => policy.partnerId))].filter(
       (id) => id && id.match(/^[0-9a-fA-F]{24}$/) // Ensure valid ObjectId format
     );
-    const brokerIds = [
-      ...new Set(policies.map((policy) => policy.brokerId)),
-    ].filter(
+    const brokerIds = [...new Set(policies.map((policy) => policy.brokerId))].filter(
       (id) => id && id.match(/^[0-9a-fA-F]{24}$/) // Ensure valid ObjectId format
     );
-    const policyCompletedByIds = [
-      ...new Set(policies.map((policy) => policy.policyCompletedBy)),
-    ].filter(
+    const policyCompletedByIds = [...new Set(policies.map((policy) => policy.policyCompletedBy))].filter(
       (id) => id && id.match(/^[0-9a-fA-F]{24}$/)
     );
 
@@ -787,6 +786,12 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
     userProfiles.forEach((profile) => {
       profileMap[profile.fullName] = profile;
       profileMap[profile._id] = profile;
+    });
+
+    // Create a map for policyCompletedBy to get partnerId
+    const completedByMap = {};
+    userProfiles.forEach((profile) => {
+      completedByMap[profile._id] = profile.partnerId;
     });
 
     const policyNumbers = policies.map((policy) => policy.policyNumber);
@@ -831,6 +836,7 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
         const brokerCode = brokerMap[policy.brokerId] || "";
 
         const completedByUser = profileMap[policy.policyCompletedBy] || {};
+        const policyCompletedByCode = completedByMap[policy.policyCompletedBy] || "Unknown"; // Get partnerId based on policyCompletedById
 
         return {
           ...policy,
@@ -865,6 +871,7 @@ export const getMotorPoliciesByDateRange = async (req, res) => {
           leadTimer,
           leadDate,
           policyCompletedByName: completedByUser.fullName || "Unknown",
+          policyCompletedByCode, // Add partnerId here
         };
       })
     );
@@ -1007,15 +1014,17 @@ export const getMotorPolicyByPolicyId = async (req, res) => {
       }
     );
 
-    // Get the full name of the user who completed the policy
+    // Get the full name and partnerId of the user who completed the policy
     const userProfile = await UserProfile.findById(policy.policyCompletedBy);
     const policyCompletedByName = userProfile ? userProfile.fullName : '';
+    const policyCompletedByCode = userProfile ? userProfile.partnerId : ''; // Add partnerId here
 
     const policyWithPayoutDetails = {
       ...policy._doc,
       ...(payoutDetails?._doc || {}),
       _id: policy._id,
       policyCompletedByName, // Add the completed by name here
+      policyCompletedByCode, // Add the completed by code here
     };
 
     res.status(200).json({
@@ -1084,9 +1093,10 @@ export const getMotorPolicyByPartnerId = async (req, res) => {
     const policiesWithDetails = await Promise.all(policies.map(async (policy) => {
       const payment = paymentMap[policy.policyNumber] || {};
       
-      // Get the full name of the user who completed the policy
+      // Get the full name and partnerId of the user who completed the policy
       const userProfile = await UserProfile.findById(policy.policyCompletedBy);
       const policyCompletedByName = userProfile ? userProfile.fullName : '';
+      const policyCompletedByCode = userProfile ? userProfile.partnerId : ''; // Add partnerId here
 
       return {
         ...policy,
@@ -1103,6 +1113,7 @@ export const getMotorPolicyByPartnerId = async (req, res) => {
         paymentUpdatedBy: payment.updatedBy || 0,
         paymentUpdatedOn: payment.updatedOn || 0,
         policyCompletedByName, // Add the completed by name here
+        policyCompletedByCode, // Add the completed by code here
       };
     }));
 
@@ -1172,9 +1183,10 @@ export const getMotorPolicyByRelationshipManagerId = async (req, res) => {
     const policiesWithDetails = await Promise.all(policies.map(async (policy) => {
       const payment = paymentMap[policy.policyNumber] || {};
       
-      // Get the full name of the user who completed the policy
+      // Get the full name and partnerId of the user who completed the policy
       const userProfile = await UserProfile.findById(policy.policyCompletedBy);
       const policyCompletedByName = userProfile ? userProfile.fullName : '';
+      const policyCompletedByCode = userProfile ? userProfile.partnerId : ''; // Add partnerId here
 
       return {
         ...policy,
@@ -1191,6 +1203,7 @@ export const getMotorPolicyByRelationshipManagerId = async (req, res) => {
         paymentUpdatedBy: payment.updatedBy || 0,
         paymentUpdatedOn: payment.updatedOn || 0,
         policyCompletedByName, // Add the completed by name here
+        policyCompletedByCode, // Add the completed by code here
       };
     }));
 
@@ -1379,6 +1392,7 @@ export const getMotorPolicyByPolicyCompletedBy = async (req, res) => {
 
     const start = new Date(startDate);
     const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
 
     const policies = await MotorPolicyModel.find({
       policyCompletedBy,
@@ -1400,12 +1414,22 @@ export const getMotorPolicyByPolicyCompletedBy = async (req, res) => {
       });
     }
 
+    const userProfile = await UserProfile.findById(policyCompletedBy).lean();
+    const policyCompletedByName = userProfile ? userProfile.fullName : "Unknown";
+    const policyCompletedByCode = userProfile ? userProfile.partnerId : "Unknown";
+
+    const policiesWithDetails = policies.map((policy) => ({
+      ...policy,
+      policyCompletedByName,
+      policyCompletedByCode,
+    }));
+
     res.status(200).json({
       message: `Motor Policies from ${startDate} to ${endDate} for policyCompletedBy ${policyCompletedBy}.`,
-      data: policies,
+      data: policiesWithDetails,
       success: true,
       status: "success",
-      totalCount: policies.length,
+      totalCount: policiesWithDetails.length,
     });
   } catch (error) {
     res.status(500).json({
