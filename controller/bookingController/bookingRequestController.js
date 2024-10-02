@@ -4,7 +4,6 @@ import leadGenerateModel from "../../models/partnerModels/leadGenerateSchema.js"
 import fs from "fs";
 import path from "path";
 import UserProfile from "../../models/adminModels/userProfileSchema.js";
-import { query } from "express";
 
 // Function to check if the policy number already exists
 const checkPolicyNumberExist = async (policyNumber) => {
