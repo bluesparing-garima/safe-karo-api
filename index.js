@@ -290,10 +290,10 @@ app.use("/api/broker-dashboard", checkUserAuth, brokerChart);
 // ---------------------------------------- ranks ------------------------------
 app.use("/api/ranks", checkUserAuth, ranks);
 // ---------------------------------------- blogs and newsLetter ------------------------------
-app.use("/api/blog-category", blogcategories);
-app.use("/api/blogs", blogs);
-app.use("/api/news-letter-category", NewsLetterCategories);
-app.use("/api/news-letter", NewsLetter);
+app.use("/api/blog-category", checkUserAuth, blogcategories);
+app.use("/api/blogs", checkUserAuth, blogs);
+app.use("/api/news-letter-category", checkUserAuth, NewsLetterCategories);
+app.use("/api/news-letter", checkUserAuth, NewsLetter);
 
 // Test Routes
 app.use("/api", checkUserAuth, testRoutes);
