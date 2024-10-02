@@ -1,102 +1,13 @@
-// import express from "express";
-// import multer from "multer";
-// import path from "path";
-// import fs from "fs";
-
-// // Function to determine the folder name based on the document type
-// const getFolderName = (document) => {
-//   const baseUploadPath = "../uploads/";
-//   switch (document) {
-//     case "teamDocuments":
-//       return path.join(baseUploadPath, "teamDocuments");
-//     case "bookingRequest":
-//       return path.join(baseUploadPath, "bookingRequest");
-//     case "motorPolicy":
-//       return path.join(baseUploadPath, "motorPolicy");
-//     default:
-//       return baseUploadPath;
-//   }
-// };
-
-// // Ensure the directory exists, if not, create it
-// const ensureDirExists = (dir) => {
-//   if (!fs.existsSync(dir)) {
-//     fs.mkdirSync(dir, { recursive: true });
-//   }
-// };
-
-// // Multer storage configuration
-// const storage = multer.diskStorage({
-//   destination: (req, file, cb) => {
-//     const { document } = req.body;
-//     const folder = getFolderName(document);
-//     ensureDirExists(folder);
-//     cb(null, folder);
-//   },
-//   filename: (req, file, cb) => {
-//    // const { fullName, docName, partnerId } = req.body;
-//     const uniqueSuffix = `${fullName}_${docName}_${partnerId}${path.extname(
-//       file.originalname
-//     )}`;
-//     cb(null, uniqueSuffix);
-//   },
-// });
-
-// // File filter function
-// const fileFilter = (req, file, cb) => {
-//   if (
-//     file.mimetype.startsWith("image/") ||
-//     file.mimetype === "application/pdf" ||
-//     file.mimetype ===
-//       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
-//     file.mimetype === "application/vnd.ms-excel"
-//   ) {
-//     cb(null, true);
-//   } else {
-//     cb(
-//       new Error(
-//         "Unsupported file type! Please upload an image, a PDF document, or an Excel file."
-//       ),
-//       false
-//     );
-//   }
-// };
-// // Multer upload instance
-// const upload = multer({ dest: '../uploads/' })
-
-// // Middleware to handle file uploads
-// const uploadMiddleware = (req, res, next) => {
-//   upload(req, res, (err) => {
-//     if (err) {
-//       return res.status(400).json({ message: err.message });
-//     }
-//     next();
-//   });
-// };
-
-// const app = express();
-
-// app.use(express.json());
-// app.use(express.urlencoded({ extended: true }));
-
-// // app.post('/upload', uploadMiddleware, (req, res) => {
-// //   res.status(200).json({ message: 'Files uploaded successfully!', files: req.files });
-// // });
-
-// const PORT = process.env.PORT || 3000;
-
-// app.listen(PORT, () => {
-// });
-
-// export default upload;
-
-import multer from "multer";
-import path from "path";
-import { fileURLToPath } from "url";
+import fs from 'fs';
+import path from 'path';
+import multer from 'multer';
+import { fileURLToPath } from 'url';
+import { exec } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Multer storage setup
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadPath = path.join(__dirname, "../uploads/");
@@ -108,6 +19,7 @@ const storage = multer.diskStorage({
   },
 });
 
+// Check file type function
 const checkFileType = (file, cb) => {
   const allowedTypes = [
     "image/jpeg",
@@ -122,20 +34,17 @@ const checkFileType = (file, cb) => {
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(
-      new Error("Unsupported file type! Please upload an image, a PDF document, or an Excel file."),
-      false
-    );
+    cb(new Error("Unsupported file type! Please upload an image, PDF, or Excel file."), false);
   }
 };
 
+// Multer upload middleware
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 2000000 }, // 2MB
+  limits: { fileSize: 2000000 }, // 2MB limit
   fileFilter: (req, file, cb) => {
     checkFileType(file, cb);
   },
-
 }).fields([
   { name: "rcFront", maxCount: 1 },
   { name: "rcBack", maxCount: 1 },
@@ -154,11 +63,49 @@ const upload = multer({
   { name: "experience", maxCount: 1 },
   { name: "quotationImage", maxCount: 1 },
   { name: "other", maxCount: 1 },
-  { name: "file", maxCount: 1 }, // Handle file field with specific PDF restriction
+  { name: "file", maxCount: 1 }, // PDF or main file to extract data
 ]);
 
+// PDF Compression with Ghostscript
+const compressPDFWithGhostscript = (inputPath, outputPath, targetSize, callback) => {
+  const gsCommand = `"C:\\Program Files\\gs\\gs10.03.1\\bin\\gswin64c.exe" -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen -dNOPAUSE -dQUIET -dBATCH -sOutputFile=${outputPath} ${inputPath}`;
+
+  exec(gsCommand, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`Error during Ghostscript compression: ${error.message}`);
+      return callback(error, null);
+    }
+
+    const fileSize = fs.statSync(outputPath).size;
+
+    if (fileSize > targetSize) {
+      console.warn(`Warning: Final compressed file is larger than target size of ${targetSize} bytes.`);
+    }
+
+    fs.unlinkSync(inputPath); // Remove the original file after compression
+
+    callback(null, outputPath);
+  });
+};
+
+// Function to extract data from PDF (implement your extraction logic here)
+const extractDataFromPDF = (pdfFilePath) => {
+  // This is a placeholder; replace with your actual PDF extraction logic.
+  // You can use libraries like 'pdf-parse' or any other suitable tool for extraction.
+  
+  // Simulate extraction result
+  const extractedData = {
+    title: "Sample PDF Title",
+    content: "Extracted content goes here...",
+    // Add more fields as needed
+  };
+
+  return extractedData;
+};
+
+// Main file upload handler
 export const handleFileUpload = (req, res, next) => {
-  upload(req, res, function (err) {
+  upload(req, res, async (err) => {
     if (err) {
       if (err instanceof multer.MulterError) {
         return res.status(400).json({ message: err.message });
@@ -166,7 +113,38 @@ export const handleFileUpload = (req, res, next) => {
         return res.status(500).json({ message: err.message });
       }
     }
-    next();
+
+    try {
+      // Step 1: Extract data from the original PDF (if PDF file is uploaded)
+      if (req.files && req.files.file) {
+        const pdfFilePath = req.files.file[0].path;
+        console.log("PDF uploaded:", pdfFilePath);
+
+        // Extract data before compressing
+        const extractedData = extractDataFromPDF(pdfFilePath);
+        req.extractedData = extractedData; // Store the extracted data for further use
+
+        console.log("PDF data extracted:", extractedData);
+
+        // Step 2: Compress PDF after data extraction
+        const compressedPDFPath = `${pdfFilePath}-compressed.pdf`;
+        compressPDFWithGhostscript(pdfFilePath, compressedPDFPath, 500000, (error, finalPath) => {
+          if (error) {
+            return res.status(500).json({ message: "PDF compression failed", error: error.message });
+          }
+
+          // Update the file path after compression
+          req.files.file[0].path = finalPath;
+          console.log("PDF compressed to:", finalPath);
+          next(); // Proceed to the next middleware after compression
+        });
+      } else {
+        // If no PDF file, move to next middleware
+        next();
+      }
+    } catch (compressionError) {
+      return res.status(500).json({ message: "File processing failed", error: compressionError.message });
+    }
   });
 };
 
