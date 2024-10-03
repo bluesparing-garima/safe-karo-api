@@ -96,6 +96,8 @@ import testRoutes from "./routes/testRoutes.js";
 // ranks
 import ranks from "./routes/adminRoutes/rankRoutes.js";
 
+//HR and Attendance
+import attendance from "./routes/adminRoutes/attendanceRoutes.js";
 
 const app = express();
 const port = process.env.PORT;
@@ -283,6 +285,10 @@ app.use("/api/blog-category", blogcategories);
 app.use("/api/blogs",blogs);
 app.use("/api/news-letter-category", NewsLetterCategories);
 app.use("/api/news-letter",NewsLetter);
+
+// ---------------------------------------- HR and attendance ------------------------------
+
+app.use("/api/attendance",attendance);
 
 // Test Routes
 app.use("/api", testRoutes);
