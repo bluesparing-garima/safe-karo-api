@@ -290,7 +290,7 @@ export const TataPDFParsingTP = async (req, res) => {
       const finalPremium = extractFinalPremiumTP(extractedText);
 
       const netPremium = parseFloat(extractField(/Net Premium \(B\)\s*₹\s*([\d,.]+)/i, extractedText)?.replace(/,/g, "")) || null;
-      const tpPremium = parseFloat(extractField(/Total Liability Premium \(B\)\s*₹\s*([\d,.]+)/i, extractedText)?.replace(/,/g, "")) || null;
+      const tp = parseFloat(extractField(/Total Liability Premium \(B\)\s*₹\s*([\d,.]+)/i, extractedText)?.replace(/,/g, "")) || null;
 
       const vehicleNumberRaw = extractField(/Registration no :\s*([A-Za-z0-9\s]+) Registration Authority/, extractedText);
       const vehicleNumber = vehicleNumberRaw ? vehicleNumberRaw.trim() : null;
@@ -305,13 +305,13 @@ export const TataPDFParsingTP = async (req, res) => {
         make,
         model,
         fuelType: extractField(/Fuel Type :\s*([A-Za-z]+)/, extractedText),
-        engineCapacity: extractField(/Engine\/Battery Capacity \(CC\/ KW\) :\s*(\d+)/, extractedText),
+        cc: extractField(/Engine\/Battery Capacity \(CC\/ KW\) :\s*(\d+)/, extractedText),
         seatingCapacity: extractField(/Seating Capacity \(including driver\) :\s*(\d+)/, extractedText),
         mfgYear: extractField(/Mfg Year :\s*(\d+)/, extractedText),
         registrationDate,
         finalPremium,
         netPremium,
-        tpPremium,
+        tp,
         broker: extractField(/Agent Name :\s*([A-Za-z\s]+)/, extractedText),
         ncb: extractField(/Claim in Previous Policy Period:\s*(\w+)/, extractedText) === 'No' ? 'no' : 'yes',
         tenure,
