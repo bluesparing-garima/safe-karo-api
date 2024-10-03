@@ -1,6 +1,7 @@
 import leadGenerateModel from "../../models/partnerModels/leadGenerateSchema.js";
 import upload from "../../middlewares/uploadMiddleware.js";
 import NotificationModel from "../../models/notificationModel.js";
+import UserProfileModel from "../../models/adminModels/userProfileSchema.js";
 
 export const createNewLead = async (req, res) => {
   upload(req, res, async (err) => {
@@ -54,13 +55,12 @@ export const createNewLead = async (req, res) => {
 
       const savedLead = await newLead.save();
 
-      let notificationFor;
+      let notificationFor = [];
       let notificationBy;
       let role;
-      
+
       if (status === 'Requested') {
         notificationBy = partnerId;
-        notificationFor = 'operation';
         role = 'partner';
       } 
       else if (status === 'Accepted') {
@@ -68,17 +68,23 @@ export const createNewLead = async (req, res) => {
         notificationFor = partnerId;
         role = 'operation';
       }
-      
-      const notification = new NotificationModel({
-        title: 'Lead Generated',
-        type: 'success',
-        role: role,
-        notificationFor,
-        notificationBy,
-        createdBy,
+
+      const operationUsers = await UserProfileModel.find({
+        role: { $in: ['operation', 'Operation'] }, // Case-insensitive match
       });
-      
-      await notification.save();
+
+      for (const user of operationUsers) {
+        const notification = new NotificationModel({
+          title: 'Lead Generated',
+          type: 'success',
+          role: role,
+          notificationFor: user._id,
+          notificationBy,
+          createdBy,
+        });
+
+        await notification.save();
+      }
 
       res.status(200).json({
         message: "New Lead created successfully",

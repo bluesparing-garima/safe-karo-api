@@ -407,9 +407,16 @@ export const getBookingRequestsByRMId = async (req, res) => {
 // Accept booking request
 export const acceptBookingRequest = async (req, res) => {
   try {
+    const { bookingAcceptedBy } = req.body;
+
     const existingBooking = await BookingRequestModel.findById(req.params.id);
     if (!existingBooking) {
       return res.status(404).json({ message: "Booking not found" });
+    }
+
+    const acceptingUser = await UserProfile.findById(bookingAcceptedBy);
+    if (!acceptingUser) {
+      return res.status(404).json({ message: "Accepting user not found" });
     }
 
     const updatedBooking = await BookingRequestModel.findByIdAndUpdate(
@@ -418,6 +425,16 @@ export const acceptBookingRequest = async (req, res) => {
       { new: true }
     );
 
+    const notification = new NotificationModel({
+      title: `Request accepted by ${acceptingUser.fullName}`,
+      type: 'success',
+      role: 'booking',
+      notificationFor: existingBooking.bookingCreatedBy,
+      notificationBy: bookingAcceptedBy,
+      createdBy: acceptingUser.fullName,
+    });
+    await notification.save();
+
     res.status(200).json({
       message: "Booking Accepted successfully",
       data: updatedBooking,
@@ -425,7 +442,7 @@ export const acceptBookingRequest = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({
-      message: "Error Accepting booking",
+      message: "Error accepting booking",
       error: error.message,
     });
   }

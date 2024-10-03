@@ -12,6 +12,7 @@ import UserProfile from "../../models/adminModels/userProfileSchema.js";
 import sendEmail from "../../utils/sendEmails.js";
 import BrokerModel from "../../models/adminModels/brokerSchema.js";
 import mongoose from "mongoose";
+import NotificationModel from "../../models/notificationModel.js";
 
 const dataFilePath = path.join(process.cwd(), "data", "motorpolicy_data.json");
 const hashFilePath = path.join(
@@ -618,29 +619,63 @@ export const createMotorPolicy = async (req, res) => {
       });
       await newMotorPolicyPayment.save();
 
-      const existingBookingRequest = await BookingRequestModel.findOne({
-        policyNumber,
-      });
+      const existingBookingRequest = await BookingRequestModel.findOne({ policyNumber });
       if (existingBookingRequest) {
         existingBookingRequest.bookingStatus = "booked";
         await existingBookingRequest.save();
       }
-
-      // Fetch partner email
+      
+      // 1. Notification to the partner
+      const partnerNotification = new NotificationModel({
+        title: `Motor policy with policyNumber: ${policyNumber} is created.`,
+        type: 'success',
+        role: 'booking',
+        notificationFor: partnerId,
+        notificationBy: policyCompletedBy,
+        createdBy: policyCompletedByName,
+      });
+      await partnerNotification.save();
+      
+      // 2. Notification to the operation person (bookingCreatedBy)
+      if (existingBookingRequest && bookingId) {
+        const operationNotification = new NotificationModel({
+          title: `Motor policy with policyNumber: ${policyNumber} is created.`,
+          type: 'success',
+          role: 'booking',
+          notificationFor: existingBookingRequest.bookingCreatedBy, // From booking request
+          notificationBy: policyCompletedBy,
+          createdBy: policyCompletedByName,
+        });
+        await operationNotification.save();
+      }
+      
+      // 3. Notification to the broker
+      if (brokerId) {
+        const brokerNotification = new NotificationModel({
+          title: `Motor policy with policyNumber: ${policyNumber} is created.`,
+          type: 'success',
+          role: 'booking',
+          notificationFor: brokerId,
+          notificationBy: policyCompletedBy,
+          createdBy: policyCompletedByName,
+        });
+        await brokerNotification.save();
+      }
+      
+      // Send email to partner
       const partner = await UserProfile.findOne({ _id: partnerId });
       if (partner && partner.email) {
-        // Prepare email content
         const emailContent = `
-        Dear ${partnerName}, 
-        Congratulations! Your offline policy of ${make} ${model} (${vehicleNumber}) has been marked booked in our system. 
-        The following are the details for the same:
-        policyNumber: ${policyNumber}
-        Insurer: ${companyName}
-        Customer Name: ${fullName}
-        Feel free to reach us out in case of any enquiry!
-        Click here to know more about e-Insurance Account
-        Warm Regards,
-        Team Insurance safekaro Pvt Ltd.
+          Dear ${partnerName}, 
+          Congratulations! Your offline policy of ${make} ${model} (${vehicleNumber}) has been marked booked in our system. 
+          The following are the details for the same:
+          policyNumber: ${policyNumber}
+          Insurer: ${companyName}
+          Customer Name: ${fullName}
+          Feel free to reach us out in case of any enquiry!
+          Click here to know more about e-Insurance Account
+          Warm Regards,
+          Team Insurance safekaro Pvt Ltd.
         `;
 
         await sendEmail({
@@ -655,10 +690,11 @@ export const createMotorPolicy = async (req, res) => {
           fullName: fullName,
         });
       }
+
       return res.status(200).json({
         status: "success",
         success: true,
-        message: `Policy Number ${policyNumber} created successfully and email sent to the partner.`,
+        message: `Policy Number ${policyNumber} created successfully and notifications sent.`,
         data: savedMotorPolicy,
       });
     } catch (err) {
