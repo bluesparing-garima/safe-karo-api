@@ -5,14 +5,15 @@ import cors from "cors";
 import connectDB from "./config/connectdb.js";
 import userRoutes from "./routes/userRoutes.js";
 import path from "path";
-import serveIndex from 'serve-index';
-import { fileURLToPath } from 'url';
+import serveIndex from "serve-index";
+import { fileURLToPath } from "url";
 
 // middleware
 import {
   requestLogger,
   handleInvalidRoutes,
 } from "./middlewares/requestLogger.js";
+import checkUserAuth from "./middlewares/Auth.js";
 
 import activityLogRoutes from "./routes/adminRoutes/activityLogRoutes.js";
 
@@ -52,16 +53,14 @@ import brokerDashboardRoutes from "./routes/dashboardRoutes/brokerDashboardRoute
 import relationShipManagerRoutes from "./routes/dashboardRoutes/relationshipManagerRoute.js";
 
 // partner - admin dashboard routes
-import partnerAdminDashboarRoutes from "./routes/dashboardRoutes/partnerAdminDashboard/partnerAdminDashboardRoutes.js"
+import partnerAdminDashboarRoutes from "./routes/dashboardRoutes/partnerAdminDashboard/partnerAdminDashboardRoutes.js";
 
 // broker - admin dashboard routes
-import brokerAdminDashboarRoutes from "./routes/dashboardRoutes/brokerAdminDashboard/brokerAdminDashboardRoutes.js"
-
+import brokerAdminDashboarRoutes from "./routes/dashboardRoutes/brokerAdminDashboard/brokerAdminDashboardRoutes.js";
 
 // premiums dashboard routes
-import netPremiumDashboardRoutes from "./routes/dashboardRoutes/netPremiumDashboard/netPremiumDashboardRoute.js"
-import finalPremiumDashboardRoutes from "./routes/dashboardRoutes/finalPremiumDashboard/finalPremiumDashboardRoute.js"
-
+import netPremiumDashboardRoutes from "./routes/dashboardRoutes/netPremiumDashboard/netPremiumDashboardRoute.js";
+import finalPremiumDashboardRoutes from "./routes/dashboardRoutes/finalPremiumDashboard/finalPremiumDashboardRoute.js";
 
 // Motor policy routes
 import motorPolicyRoutes from "./routes/policy/motorPolicyRoutes.js";
@@ -89,13 +88,16 @@ import bookingChart from "./routes/barAndLineChartRoutes/bookingChartRoutes.js";
 import brokerChart from "./routes/barAndLineChartRoutes/brokerChartRoutes.js";
 
 // pdf reader
-import pdfRoutes from './routes/pdfReaderRoute.js';
-import pdfCompress from './routes/pdfCompress.js';
+import pdfRoutes from "./routes/pdfReaderRoute.js";
+import pdfCompress from "./routes/pdfCompress.js";
+
+// Refresh Token
+import refreshTokenRoutes from "./routes/refreshTokenRoute.js";
+
 import testRoutes from "./routes/testRoutes.js";
 
 // ranks
 import ranks from "./routes/adminRoutes/rankRoutes.js";
-
 
 const app = express();
 const port = process.env.PORT;
@@ -116,11 +118,20 @@ app.get("/", (req, res) => {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "uploads")),
+  serveIndex(path.join(__dirname, "uploads"), { icons: true })
+);
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')), serveIndex(path.join(__dirname, 'uploads'), { icons: true }));
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "uploads")),
+  serveIndex(path.join(__dirname, "uploads"), { icons: true })
+);
 
-app.use('/api/policy/pdf', pdfRoutes);
-app.use('/api/pdf',pdfCompress);
+app.use("/api/policy/pdf", pdfRoutes);
+app.use("/api/pdf", pdfCompress);
 // JSON
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -131,88 +142,91 @@ app.use(express.urlencoded({ extended: true }));
 // });
 
 // userProfile
-app.use("/api/user-profile", userProfile);
+app.use("/api/user-profile", checkUserAuth,userProfile);
 
 // Booking request
-app.use("/api/booking-request", bookingRequestRoute);
+app.use("/api/booking-request", checkUserAuth, bookingRequestRoute);
 
 // motor policy Routes
-app.use("/api/policy/motor", motorPolicyRoutes);
+app.use("/api/policy/motor", checkUserAuth, motorPolicyRoutes);
 
 // motor policy payment Routes
-app.use("/api/policy/motor/payment", motorPolicyPayment);
+app.use("/api/policy/motor/payment", checkUserAuth, motorPolicyPayment);
 
 // filter policy Routes
-app.use("/api/policy/motor/filter", filterPolicy);
+app.use("/api/policy/motor/filter", checkUserAuth, filterPolicy);
 
 //Partner lead generate.
-app.use("/api/lead-Generate", leadGenerate);
+app.use("/api/lead-Generate", checkUserAuth, leadGenerate);
 
 // lead Quotation.
-app.use("/api/lead-quotation", leadQuotation);
+app.use("/api/lead-quotation", checkUserAuth, leadQuotation);
 
 // lead payment.
-app.use("/api/lead-payment", leadPayment);
+app.use("/api/lead-payment", checkUserAuth, leadPayment);
 
-// Load Routes
+// user login/register
 app.use("/api/user", userRoutes);
 
+// Refresh token
+app.use("/api/user/refresh-token", refreshTokenRoutes);
+
 //assignee roles Routes
-app.use("/api/user-roles", assigneeRolesRouters);
+app.use("/api/user-roles", checkUserAuth, assigneeRolesRouters);
 
 //create new Policy Routes
-app.use("/api/policy-type", policyTypeRoutes);
+app.use("/api/policy-type", checkUserAuth, policyTypeRoutes);
 
 //create case type Routes
-app.use("/api/case-type", caseTypeRoutes);
+app.use("/api/case-type", checkUserAuth, caseTypeRoutes);
 
 //add Roles
-app.use("/api/roles", addRolesRoutes);
+app.use("/api/roles", checkUserAuth, addRolesRoutes);
 
 // upload payin excel
-app.use("/api/pay-in/excel", payInexcelRoutes);
+app.use("/api/pay-in/excel", checkUserAuth, payInexcelRoutes);
 
 //upload payout excel
-app.use("/api/pay-out/excel", payOutExcelRoutes);
+app.use("/api/pay-out/excel", checkUserAuth, payOutExcelRoutes);
 
 // percentage Update manually
-app.use("/api/policy/motor/commission", percentageUpdate);
+app.use("/api/policy/motor/commission", checkUserAuth, percentageUpdate);
 
 // PayIn Routes
-app.use("/api/calculate", payInRoutes);
+app.use("/api/calculate", checkUserAuth, payInRoutes);
 
 //PayOut Routes
-app.use("/api/calculate", payOutRoute);
+app.use("/api/calculate", checkUserAuth, payOutRoute);
 
 // product-type Routes
-app.use("/api/product-type", vehicleType);
+app.use("/api/product-type", checkUserAuth, vehicleType);
 
 // Product Name
-app.use("/api/product", productName);
+app.use("/api/product", checkUserAuth, productName);
 
 // Use the partner routes
-app.use("/api/partner", partnerRoutes);
+app.use("/api/partner", checkUserAuth, partnerRoutes);
 
 // Company Name's
-app.use("/api/company", company);
+app.use("/api/company", checkUserAuth, company);
 
 // Broker
-app.use("/api/broker", broker);
+app.use("/api/broker", checkUserAuth, broker);
 
 // Category
-app.use("/api/category", category);
+app.use("/api/category", checkUserAuth, category);
 
 // FuelType
-app.use("/api/fuel-type", fuelType);
+app.use("/api/fuel-type", checkUserAuth, fuelType);
 
 // Make
-app.use("/api/make", make);
+app.use("/api/make", checkUserAuth, make);
 
 // Model
-app.use("/api/model", model);
+app.use("/api/model", checkUserAuth, model);
 
 // Branch
-app.use("/api/branches", branch);
+app.use("/api/branches", checkUserAuth, branch);
 
 // --------------------------------------- Dashboard Route --------------------------------
 
@@ -226,10 +240,9 @@ app.use("/api/operation-dashboard", operationDashboardRoutes);
 
 app.use("/api/account-dashboard", accountDashboardRoutes);
 
- app.use("/api/broker-dashboard",brokerDashboardRoutes);
+app.use("/api/broker-dashboard", brokerDashboardRoutes);
 
 app.use("/api/relationship-manager-dashboard", relationShipManagerRoutes);
-
 
 // ------------------------------------ PartnerAdmin Dashboard Routes -------------------------
 
@@ -239,53 +252,51 @@ app.use("/api/dashboard/partner-admin", partnerAdminDashboarRoutes);
 
 app.use("/api/dashboard/broker-admin", brokerAdminDashboarRoutes);
 
-
 // ------------------------------------Premiums Dashboard Routes -------------------------
 
 app.use("/api/dashboard/net-premium", netPremiumDashboardRoutes);
 
 app.use("/api/dashboard/final-premium", finalPremiumDashboardRoutes);
 
-
 // activity logs
-app.use("/api/activityLog", activityLogRoutes);
+app.use("/api/activityLog", checkUserAuth, activityLogRoutes);
 
 // --------------------------------------- Account Route --------------------------------
 
 // Account routes
-app.use("/api/account", accountRoute);
+app.use("/api/account", checkUserAuth, accountRoute);
 
 // Credit and Debit
-app.use("/api/credit-debit", creditAndDebit);
+app.use("/api/credit-debit", checkUserAuth, creditAndDebit);
 
 // Debit details
-app.use("/api", debitRoute);
+app.use("/api", checkUserAuth, debitRoute);
 
 // Credit details
-app.use("/api/credits",creditRoute);
+app.use("/api/credits", checkUserAuth, creditRoute);
 
 // excel compare
-app.use("/api", excelCompare);
+app.use("/api", checkUserAuth, excelCompare);
 
 // account Manage
-app.use("/api/account-manage",accountManage);
+app.use("/api/account-manage", checkUserAuth, accountManage);
 
 // ---------------------------------------- Bar and Line charts ------------------------------
-app.use("/api/partner-dashboard", partnerChart);
-app.use("/api/admin-dashboard", adminChart);
-app.use("/api/booking-dashboard", bookingChart);
-app.use("/api/broker-dashboard", brokerChart);
+app.use("/api/partner-dashboard", checkUserAuth, partnerChart);
+app.use("/api/admin-dashboard", checkUserAuth, adminChart);
+app.use("/api/booking-dashboard", checkUserAuth, bookingChart);
+app.use("/api/broker-dashboard", checkUserAuth, brokerChart);
 
 // ---------------------------------------- ranks ------------------------------
-app.use("/api/ranks",ranks);
+app.use("/api/ranks", checkUserAuth, ranks);
 // ---------------------------------------- blogs and newsLetter ------------------------------
-app.use("/api/blog-category", blogcategories);
-app.use("/api/blogs",blogs);
-app.use("/api/news-letter-category", NewsLetterCategories);
-app.use("/api/news-letter",NewsLetter);
+app.use("/api/blog-category", checkUserAuth, blogcategories);
+app.use("/api/blogs", checkUserAuth, blogs);
+app.use("/api/news-letter-category", checkUserAuth, NewsLetterCategories);
+app.use("/api/news-letter", checkUserAuth, NewsLetter);
 
 // Test Routes
-app.use("/api", testRoutes);
+app.use("/api", checkUserAuth, testRoutes);
 
 app.use(handleInvalidRoutes);
 
