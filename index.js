@@ -16,6 +16,11 @@ import {
 
 import activityLogRoutes from "./routes/adminRoutes/activityLogRoutes.js";
 
+// blogs
+import blogs from "./routes/websiteRoutes/blogRoutes.js";
+import blogcategories from "./routes/websiteRoutes/blogCategoryRoutes.js";
+import NewsLetter from "./routes/websiteRoutes/newsLetterRoutes.js";
+import NewsLetterCategories from "./routes/websiteRoutes/newsLetterCategoryRoutes.js";
 import assigneeRolesRouters from "./routes/adminRoutes/userRolesRoutes.js";
 import policyTypeRoutes from "./routes/adminRoutes/policyTypeRoutes.js";
 import caseTypeRoutes from "./routes/adminRoutes/caseTypeRoutes.js";
@@ -52,6 +57,12 @@ import partnerAdminDashboarRoutes from "./routes/dashboardRoutes/partnerAdminDas
 // broker - admin dashboard routes
 import brokerAdminDashboarRoutes from "./routes/dashboardRoutes/brokerAdminDashboard/brokerAdminDashboardRoutes.js"
 
+
+// premiums dashboard routes
+import netPremiumDashboardRoutes from "./routes/dashboardRoutes/netPremiumDashboard/netPremiumDashboardRoute.js"
+import finalPremiumDashboardRoutes from "./routes/dashboardRoutes/finalPremiumDashboard/finalPremiumDashboardRoute.js"
+
+
 // Motor policy routes
 import motorPolicyRoutes from "./routes/policy/motorPolicyRoutes.js";
 import motorPolicyPayment from "./routes/policy/motorPolicyPaymentRoutes.js";
@@ -79,8 +90,12 @@ import brokerChart from "./routes/barAndLineChartRoutes/brokerChartRoutes.js";
 
 // pdf reader
 import pdfRoutes from './routes/pdfReaderRoute.js';
-
+import pdfCompress from './routes/pdfCompress.js';
 import testRoutes from "./routes/testRoutes.js";
+
+// ranks
+import ranks from "./routes/adminRoutes/rankRoutes.js";
+
 
 const app = express();
 const port = process.env.PORT;
@@ -105,7 +120,7 @@ const __dirname = path.dirname(__filename);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')), serveIndex(path.join(__dirname, 'uploads'), { icons: true }));
 
 app.use('/api/policy/pdf', pdfRoutes);
-
+app.use('/api/pdf',pdfCompress);
 // JSON
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -224,6 +239,14 @@ app.use("/api/dashboard/partner-admin", partnerAdminDashboarRoutes);
 
 app.use("/api/dashboard/broker-admin", brokerAdminDashboarRoutes);
 
+
+// ------------------------------------Premiums Dashboard Routes -------------------------
+
+app.use("/api/dashboard/net-premium", netPremiumDashboardRoutes);
+
+app.use("/api/dashboard/final-premium", finalPremiumDashboardRoutes);
+
+
 // activity logs
 app.use("/api/activityLog", activityLogRoutes);
 
@@ -240,6 +263,7 @@ app.use("/api", debitRoute);
 
 // Credit details
 app.use("/api/credits",creditRoute);
+
 // excel compare
 app.use("/api", excelCompare);
 
@@ -251,6 +275,14 @@ app.use("/api/partner-dashboard", partnerChart);
 app.use("/api/admin-dashboard", adminChart);
 app.use("/api/booking-dashboard", bookingChart);
 app.use("/api/broker-dashboard", brokerChart);
+
+// ---------------------------------------- ranks ------------------------------
+app.use("/api/ranks",ranks);
+// ---------------------------------------- blogs and newsLetter ------------------------------
+app.use("/api/blog-category", blogcategories);
+app.use("/api/blogs",blogs);
+app.use("/api/news-letter-category", NewsLetterCategories);
+app.use("/api/news-letter",NewsLetter);
 
 // Test Routes
 app.use("/api", testRoutes);

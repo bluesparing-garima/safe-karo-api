@@ -10,7 +10,8 @@ import {
   getUnPaidAndPartialPaidPayments,
   getPaidPayments,
   getPaidPaymentsOfBroker,
-  getBrokerUnPaidAndPartialPaidPayments
+  getBrokerUnPaidAndPartialPaidPayments,
+  updateAllBrokerIds
 
 } from '../../controller/policyController/motorPolicyPaymentController.js';
 
@@ -23,6 +24,7 @@ router.get('/partner-id/paid-status', logActivity, getPaidPayments);
 router.get('/broker-id/paid-status',logActivity,getPaidPaymentsOfBroker);
 router.get('/:policyId', logActivity, getMotorPolicyPaymentByPolicyId);
 router.put('/status-manage',logActivity,policyStatusManage);
+router.put('/update-all-brokerids', updateAllBrokerIds);
 router.put('/:policyId', logActivity, updateMotorPolicyPayment);
 router.delete('/:id', logActivity, deleteMotorPolicyPayment);
 

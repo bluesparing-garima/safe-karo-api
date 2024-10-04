@@ -2,28 +2,40 @@ import fs from "fs";
 import { PDFExtract } from "pdf.js-extract";
 import moment from "moment";
 import policyTypeSchema from "../models/adminModels/policyTypeSchema.js";
+import { exec } from "child_process";
+import path from "path";
+import { fileURLToPath } from "url";
 
+// Helper variables
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Utility function to extract text based on regex pattern
 const extractField = (pattern, text) => {
   const match = text.match(pattern);
   return match ? match[1].trim() : null;
 };
 
+// Extract case type based on policy number
 const extractCaseType = (policyNumber) => {
   if (!policyNumber) return null;
   return policyNumber.toLowerCase().includes("new") ? "New" : "Rollover";
 };
 
+// Extract RTO and vehicle number
 const extractRtoAndVehicleNumber = (registrationNumber) => {
   if (!registrationNumber) return { rto: null, vehicleNumber: null };
   const rto = registrationNumber.substring(0, 4);
   return { rto, vehicleNumber: registrationNumber };
 };
 
+// Extract IDV (Insured Declared Value)
 const extractIDV = (text) => {
   const idvPattern = /Total\s*IDV\s*₹?\s*(\d+)/i;
   return extractField(idvPattern, text);
 };
 
+// Extract vehicle details
 const extractVehicleDetailsDynamic = (text) => {
   const vehicleRegex = /(?:Registration\s*Number|Reg\s*No)\s*:\s*([A-Za-z0-9]+)/i;
   const makeModelRegex = /(?:Make\/Model)\s*:\s*([\w\s]+)\/([\w\s]+)/i;
@@ -41,39 +53,44 @@ const extractVehicleDetailsDynamic = (text) => {
   };
 };
 
+// Extract broker information
 const extractBroker = (text) => {
   const brokerPattern = /Agent Name:\s*([A-Za-z\s]+)\s*Agent License Code/i;
   return extractField(brokerPattern, text);
 };
 
+// Extract full name of the insured
 const extractFullName = (text) => {
   const fullNamePattern = /Name:\s*([A-Za-z\s]+)\s*Address/i;
   return extractField(fullNamePattern, text);
 };
 
+// Extract product type
 const extractProductType = (text) => {
   const productTypePattern = /Commercial Class:\s*([A-Za-z\s]+)\s*Alternate Policy No/i;
   return extractField(productTypePattern, text);
 };
 
+// Extract final premium amount
 const extractFinalPremium = (text) => {
   const finalPremiumPattern = /TOTAL POLICY PREMIUM\s*₹?\s*([\d,.]+)/i;
   const premium = extractField(finalPremiumPattern, text);
   return premium ? parseFloat(premium.replace(/,/g, "")) : null;
 };
 
+// Extract the type of cover based on the term lengths for OD and TP
 const extractTypeOfCover = (text) => {
   const typeOfCoverPattern = /Package\s*\((\d+)\s*year\s*OD\s*\+\s*(\d+)\s*year\s*TP\)/i;
   const match = text.match(typeOfCoverPattern);
-  
+
   if (match) {
     const [odYear, tpYear] = match.slice(1, 3).map(Number);
     return Math.min(odYear, tpYear);
-  } 
+  }
   return 0;
 };
 
-// New function to extract NCB (No Claim Bonus)
+// Extract NCB (No Claim Bonus)
 const extractNCB = (text) => {
   const ncbPattern = /NCB claimed\s*:\s*([A-Za-z]+)/i;
   const ncbValue = extractField(ncbPattern, text);
@@ -83,15 +100,37 @@ const extractNCB = (text) => {
   return "yes";
 };
 
+// Compress PDF using Ghostscript
+const compressPDFWithGhostscript = (inputPath, outputPath, targetSize, callback) => {
+  const gsCommand = `"C:\\Program Files\\gs\\gs10.03.1\\bin\\gswin64c.exe" -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen -dNOPAUSE -dQUIET -dBATCH -sOutputFile=${outputPath} ${inputPath}`;
+
+  exec(gsCommand, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`Error during Ghostscript compression: ${error.message}`);
+      return callback(error, null);
+    }
+    const fileSize = fs.statSync(outputPath).size;
+
+    if (fileSize > targetSize) {
+      console.warn(`Warning: Final compressed file is larger than target size of ${targetSize} bytes.`);
+    }
+
+    fs.unlinkSync(inputPath); // Remove the original uncompressed file
+    callback(null, outputPath);
+  });
+};
+
+// Main function to handle PDF parsing and compression
 export const TataPDFParsing = async (req, res) => {
   const filePath = req.files["file"][0].path;
-  const { companyName, policyType, broker,brokerId } = req.body;
+  const { companyName, policyType, broker, brokerId } = req.body;
 
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ message: "File not found" });
   }
 
   try {
+    // Step 1: Extract data from the original PDF
     const pdfExtract = new PDFExtract();
     pdfExtract.extract(filePath, {}, async (err, data) => {
       if (err) {
@@ -103,13 +142,13 @@ export const TataPDFParsing = async (req, res) => {
         .map((page) => page.content.map((item) => item.str).join(" "))
         .join("\n");
 
+      // Extract policy details
       const rawPolicyType = extractField(/Policy Type\s*:\s*([A-Za-z\s-]+)/i, extractedText);
-
       let finalPolicyType = rawPolicyType;
-
+      
       if (rawPolicyType === "Auto Secure - Commercial Vehicle Package Policy - Passenger Carrying Vehicle  Commercial Class") {
         const policyTypeData = await policyTypeSchema.findOne({ type: rawPolicyType });
-        finalPolicyType = policyTypeData?.value || "Comprehensive/ Package";
+        finalPolicyType = policyTypeData?.value || "Comprehensive/Package";
       }
 
       const issueDate = moment(extractField(/Own Damage period of insurance desired from\*:\s*(\d{2}\/\d{2}\/\d{4})/, extractedText), "DD/MM/YYYY").format("MM-DD-YYYY") || null;
@@ -135,17 +174,29 @@ export const TataPDFParsing = async (req, res) => {
         productType: extractProductType(extractedText),
         finalPremium: extractFinalPremium(extractedText),
         category: "motor",
-        ncb: extractNCB(extractedText), // Add the NCB extraction
+        ncb: extractNCB(extractedText),
         companyName,
-        policyType, 
+        policyType,
         broker,
-        brokerId
+        brokerId,
       };
 
-      return res.status(200).json({
-        message: "PDF data extracted successfully",
-        data: extractedData,
-        status: "Success",
+      // Step 2: Compress the PDF after extraction
+      const compressedPDFPath = `${filePath}-compressed.pdf`;
+
+      compressPDFWithGhostscript(filePath, compressedPDFPath, 500000, (compressionError, finalPath) => {
+        if (compressionError) {
+          return res.status(500).json({ message: "PDF compression failed", error: compressionError.message });
+        }
+
+        req.files.file[0].path = finalPath; // Replace original file path with compressed file path
+
+        // Step 3: Send response after compression
+        return res.status(200).json({
+          message: "PDF data extracted and compressed successfully",
+          data: extractedData,
+          status: "Success",
+        });
       });
     });
   } catch (error) {
