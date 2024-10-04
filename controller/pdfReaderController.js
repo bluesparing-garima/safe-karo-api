@@ -208,3 +208,134 @@ export const TataPDFParsing = async (req, res) => {
     });
   }
 };
+
+/*------------------------------------ TP tata ------------------------------------------ */
+
+const extractTenureAndIssueDate = (text) => {
+  const tenurePattern = /TP cover period\s*:\s*([\d\w\s'():]+) to ([\d\w\s'():]+)/i;
+  const match = text.match(tenurePattern);
+
+  if (match) {
+    const issueDateRaw = match[1];
+    const endDateRaw = match[2];
+
+    const issueDate = moment(issueDateRaw, "DD MMM 'YY");
+    const endDate = moment(endDateRaw, "DD MMM 'YY");
+
+    const tenure = endDate.diff(issueDate, 'years', true);
+    
+    return {
+      tenure: Math.max(Math.floor(tenure), 1),
+      issueDate: issueDate.isValid() ? issueDate.format("MM-DD-YYYY") : null,
+      endDate: endDate.isValid() ? endDate.format("MM-DD-YYYY") : null
+    };
+  }
+  return { tenure: null, issueDate: null, endDate: null };
+};
+
+const extractPhoneNumber = (text) => {
+  const phonePattern = /Customer contact number :\s*(\d{10})/i;
+  return extractField(phonePattern, text);
+};
+
+const extractMakeAndModel = (text) => {
+  const makeModelPattern = /Make\/Model :\s*([\w\s]+)\/([\w\s]+)/i;
+  const match = text.match(makeModelPattern);
+
+  if (match) {
+    const make = match[1].trim();
+    const model = match[2].replace(/ Fuel Type/i, '').trim();
+    return { make, model };
+  }
+  return { make: null, model: null };
+};
+
+const extractFinalPremiumTP = (text) => {
+  const premiumPattern = /(?:Total Policy Premium|Premium amount)\s*[:₹]?\s*([\d,.]+)/i;
+  const match = text.match(premiumPattern);
+  
+  if (match) {
+    return parseFloat(match[1].replace(/,/g, ""));
+  }
+  
+  return null;
+};
+
+// Main function to handle PDF parsing and compression
+export const TataPDFParsingTP = async (req, res) => {
+  const filePath = req.files["file"][0].path;
+  const { companyName, policyType, broker, brokerId } = req.body;
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ message: "File not found" });
+  }
+
+  try {
+    const pdfExtract = new PDFExtract();
+    pdfExtract.extract(filePath, {}, async (err, data) => {
+      if (err) {
+        console.error("Error extracting PDF:", err);
+        return res.status(500).json({ message: "Error extracting PDF", error: err });
+      }
+
+      const extractedText = data.pages
+        .map((page) => page.content.map((item) => item.str).join(" "))
+        .join("\n");
+
+      const registrationDateRaw = extractField(/Date of Registration :\s*([\d/]+)/, extractedText);
+      const registrationDate = registrationDateRaw ? moment(registrationDateRaw, "DD/MM/YYYY").format("MM-DD-YYYY") : null;
+
+      const { make, model } = extractMakeAndModel(extractedText);
+
+      const finalPremium = extractFinalPremiumTP(extractedText);
+
+      const netPremium = parseFloat(extractField(/Net Premium \(B\)\s*₹\s*([\d,.]+)/i, extractedText)?.replace(/,/g, "")) || null;
+      const tp = parseFloat(extractField(/Total Liability Premium \(B\)\s*₹\s*([\d,.]+)/i, extractedText)?.replace(/,/g, "")) || null;
+
+      const vehicleNumberRaw = extractField(/Registration no :\s*([A-Za-z0-9\s]+) Registration Authority/, extractedText);
+      const vehicleNumber = vehicleNumberRaw ? vehicleNumberRaw.trim() : null;
+
+      const { tenure, issueDate, endDate } = extractTenureAndIssueDate(extractedText);
+
+      const extractedData = {
+        policyNumber: extractField(/Policy No & Certificate No :\s*([\d\s]+)/, extractedText),
+        fullName: extractField(/Insured Name :\s*([A-Za-z\s.]+)/, extractedText),
+        vehicleNumber,
+        rto: vehicleNumber ? vehicleNumber.substring(0, 5) : null,
+        make,
+        model,
+        fuelType: extractField(/Fuel Type :\s*([A-Za-z]+)/, extractedText),
+        cc: extractField(/Engine\/Battery Capacity \(CC\/ KW\) :\s*(\d+)/, extractedText),
+        seatingCapacity: extractField(/Seating Capacity \(including driver\) :\s*(\d+)/, extractedText),
+        mfgYear: extractField(/Mfg Year :\s*(\d+)/, extractedText),
+        registrationDate,
+        finalPremium,
+        netPremium,
+        tp,
+        broker: extractField(/Agent Name :\s*([A-Za-z\s]+)/, extractedText),
+        ncb: extractField(/Claim in Previous Policy Period:\s*(\w+)/, extractedText) === 'No' ? 'no' : 'yes',
+        tenure,
+        issueDate,
+        endDate,
+        phoneNumber: extractPhoneNumber(extractedText),
+        companyName,
+        policyType,
+        broker,
+        brokerId,
+      };
+
+      return res.status(200).json({
+        message: "PDF data extracted successfully",
+        data: extractedData,
+        status: "Success",
+      });
+    });
+  } catch (error) {
+    console.error("Error parsing PDF:", error);
+    return res.status(500).json({
+      message: "Error parsing PDF",
+      error: error.message,
+      status: "error",
+    });
+  }
+};
