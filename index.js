@@ -51,6 +51,7 @@ import operationDashboardRoutes from "./routes/dashboardRoutes/operationDashboar
 import accountDashboardRoutes from "./routes/dashboardRoutes/accountDashboardRoute.js";
 import brokerDashboardRoutes from "./routes/dashboardRoutes/brokerDashboardRoute.js";
 import relationShipManagerRoutes from "./routes/dashboardRoutes/relationshipManagerRoute.js";
+import hrDashboardRoutes from './routes/dashboardRoutes/hrDashboardRoute.js';
 
 // partner - admin dashboard routes
 import partnerAdminDashboarRoutes from "./routes/dashboardRoutes/partnerAdminDashboard/partnerAdminDashboardRoutes.js";
@@ -249,6 +250,8 @@ app.use("/api/account-dashboard", accountDashboardRoutes);
 app.use("/api/broker-dashboard", brokerDashboardRoutes);
 
 app.use("/api/relationship-manager-dashboard", relationShipManagerRoutes);
+
+app.use("/api/hr-dashboard", hrDashboardRoutes);
 
 // ------------------------------------ PartnerAdmin Dashboard Routes -------------------------
 
