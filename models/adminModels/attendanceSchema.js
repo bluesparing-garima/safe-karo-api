@@ -3,9 +3,9 @@ import mongoose from "mongoose";
 const attendanceSchema = new mongoose.Schema(
   {
     employeeId: {
-      type: mongoose.Schema.Types.ObjectId, // Change to ObjectId
-      ref: "UserProfile", // Reference to the UserProfileModel
-      required: true, // Make this required to ensure an employee is associated
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "UserProfile",
+      required: true,
     },
     employeeName: {
       type: String,
@@ -19,25 +19,25 @@ const attendanceSchema = new mongoose.Schema(
     inTime: {
       type: Date,
       required: function () {
-        return this.attendanceType === "present"; // Only required for present
+        return this.attendanceType === "present";
       },
     },
     outTime: {
       type: Date,
       required: function () {
-        return this.attendanceType === "present"; // Only required for present
+        return this.attendanceType === "present" && this.outTime != null;
       },
     },
     totalHours: {
-      type: Number,
+      type: String,
       required: function () {
-        return this.attendanceType === "present" && !!this.outTime; // Only required for present when outTime is present
+        return this.attendanceType === "present" && !!this.outTime;
       },
     },
     remarks: {
       type: String,
       required: function () {
-        return this.attendanceType === "leave" || this.attendanceType === "half day"; // Required for leave and half-day
+        return this.attendanceType === "leave" || this.attendanceType === "half day";
       },
     },
     isActive: {
@@ -62,7 +62,6 @@ const attendanceSchema = new mongoose.Schema(
       trim: true,
     },
   },
-  { timestamps: true }
 );
 
 const AttendanceModel = mongoose.model("Attendance", attendanceSchema);

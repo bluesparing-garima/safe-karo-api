@@ -300,7 +300,7 @@ app.use("/api/news-letter", checkUserAuth, NewsLetter);
 
 // ---------------------------------------- HR and attendance ------------------------------
 
-app.use("/api/attendance",attendance);
+app.use("/api/attendance",checkUserAuth,attendance);
 
 // Test Routes
 app.use("/api", checkUserAuth, testRoutes);
