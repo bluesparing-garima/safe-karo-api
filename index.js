@@ -94,6 +94,9 @@ import pdfCompress from "./routes/pdfCompress.js";
 // Refresh Token
 import refreshTokenRoutes from "./routes/refreshTokenRoute.js";
 
+// Holiday Calendar
+import holidayCalendar from "./routes/adminRoutes/holidayCalendarRoutes.js";
+
 import testRoutes from "./routes/testRoutes.js";
 
 // ranks
@@ -142,7 +145,7 @@ app.use(express.urlencoded({ extended: true }));
 // });
 
 // userProfile
-app.use("/api/user-profile", checkUserAuth,userProfile);
+app.use("/api/user-profile", checkUserAuth, userProfile);
 
 // Booking request
 app.use("/api/booking-request", checkUserAuth, bookingRequestRoute);
@@ -294,6 +297,10 @@ app.use("/api/blog-category", checkUserAuth, blogcategories);
 app.use("/api/blogs", checkUserAuth, blogs);
 app.use("/api/news-letter-category", checkUserAuth, NewsLetterCategories);
 app.use("/api/news-letter", checkUserAuth, NewsLetter);
+
+// ---------------------------------------- Holiday Calendar ------------------------------
+
+app.use("/api/holiday-calendar", holidayCalendar);
 
 // Test Routes
 app.use("/api", checkUserAuth, testRoutes);
