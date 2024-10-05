@@ -5,7 +5,7 @@ const holidaySchema = new mongoose.Schema({
         required: true,
         unique: true
     },
-    reason: {
+    name: {
         type: String,
         required: true
     }
