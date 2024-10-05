@@ -102,6 +102,9 @@ import testRoutes from "./routes/testRoutes.js";
 // ranks
 import ranks from "./routes/adminRoutes/rankRoutes.js";
 
+//HR and Attendance
+import attendance from "./routes/adminRoutes/attendanceRoutes.js";
+
 const app = express();
 const port = process.env.PORT;
 const DATABASE_URL = process.env.DATEBASE_URL;
@@ -297,6 +300,11 @@ app.use("/api/blog-category", checkUserAuth, blogcategories);
 app.use("/api/blogs", checkUserAuth, blogs);
 app.use("/api/news-letter-category", checkUserAuth, NewsLetterCategories);
 app.use("/api/news-letter", checkUserAuth, NewsLetter);
+
+
+// ---------------------------------------- HR and attendance ------------------------------
+
+app.use("/api/attendance",checkUserAuth,attendance);
 
 // ---------------------------------------- Holiday Calendar ------------------------------
 

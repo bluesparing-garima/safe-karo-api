@@ -28,9 +28,13 @@ const generatePartnerId = async (role) => {
     case "HR":
       prefix = "717H";
       break;
-      case "partner":
-      case "Partner": 
+    case "partner":
+    case "Partner": 
       prefix = "8717A";
+      break;
+    case "IT":
+    case "it":
+      prefix = "IT";
       break;
     default:
       throw new Error("Invalid role");
@@ -69,7 +73,7 @@ const hashPassword = async (password) => {
 export const createUserProfile = (req, res) => {
   upload(req, res, async (err) => {
     if (err) {
-      return res.status(400).json({ message: err.message});
+      return res.status(400).json({ message: err.message });
     }
     if (!req.files || Object.keys(req.files).length === 0) {
       return res.status(400).json({ message: "No files selected!" });
@@ -186,7 +190,6 @@ export const createUserProfile = (req, res) => {
     }
   });
 };
-
 
 // Check email existence
 export const checkEmailExists = async (req, res) => {
