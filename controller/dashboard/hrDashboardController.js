@@ -1,44 +1,76 @@
 import HolidayCalendar from "../../models/adminModels/holidayCalendarSchema.js";
-import Attendance from "../../models/adminModels/AttendanceSchema.js";
+import Attendance from "../../models/adminModels/attendanceSchema.js";
 import UserProfileModel from "../../models/adminModels/userProfileSchema.js";
 
-export const getHRDashboardData = async (req, res) => {
+export const getHRDashboardCount = async (req, res) => {
   try {
-    const currentDate = new Date();
-    const today = new Date(currentDate.setHours(0, 0, 0, 0));
-    const endOfToday = new Date(currentDate.setHours(23, 59, 59, 999));
+    const { startDate, endDate, hrId } = req.query;
 
-    // Get today's leave and half-day count
-    const leaveCount = await Attendance.countDocuments({
-      attendanceType: { $in: ["leave", "halfDay"] },
-      createdOn: { $gte: today, $lte: endOfToday },
-      isActive: true,
-    });
+    const today = new Date();
+    const startOfToday = new Date(today.setHours(0, 0, 0, 0));
+    const endOfToday = new Date(today.setHours(23, 59, 59, 999));
 
-    // Get month-wise holiday count
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth();
-    const monthlyHolidays = await HolidayCalendar.countDocuments({
-      date: {
-        $gte: new Date(currentYear, currentMonth, 1),
-        $lt: new Date(currentYear, currentMonth + 1, 1),
+    const leaveDetails = await Attendance.aggregate([
+      {
+        $match: {
+          attendanceType: { $in: ["leave", "half day"] },
+          createdOn: { $gte: startOfToday, $lte: endOfToday },
+          isActive: true,
+        },
       },
-    });
+      {
+        $lookup: {
+          from: "userprofiles",
+          localField: "employeeId",
+          foreignField: "_id",
+          as: "employeeDetails",
+        },
+      },
+      {
+        $unwind: {
+          path: "$employeeDetails",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          employeeId: "$employeeDetails._id",
+          employeeName: "$employeeDetails.fullName",
+          leaveType: "$attendanceType",
+          remarks: "$remarks",
+        },
+      },
+    ]);
 
-    // Get yearly holiday count
-    const yearHolidays = await HolidayCalendar.countDocuments({
-      date: { $gte: new Date(currentYear, 0, 1), $lt: new Date(currentYear + 1, 0, 1) },
-    });
+    const leaveCount = leaveDetails.length;
 
-    // Get role counts from UserProfile
+    const start = new Date(startDate || new Date().setHours(0, 0, 0, 0));
+    const end = new Date(endDate || new Date().setHours(23, 59, 59, 999));
+
+    const monthlyHolidays = await HolidayCalendar.find({
+      date: { $gte: start, $lt: end },
+    }).select("date name");
+
+    const monthlyHolidayCount = monthlyHolidays.length;
+
+    const currentYear = new Date().getFullYear();
+    const yearHolidays = await HolidayCalendar.find({
+      date: {
+        $gte: new Date(currentYear, 0, 1),
+        $lt: new Date(currentYear + 1, 0, 1),
+      },
+    }).select("date name");
+
+    const yearHolidayCount = yearHolidays.length;
+
     const roleCounts = await UserProfileModel.aggregate([
       { $match: { isActive: true } },
       { $group: { _id: "$role", count: { $sum: 1 } } },
     ]);
 
-    // Format role counts into an object
     const formattedRoleCounts = {};
-    roleCounts.forEach(role => {
+    roleCounts.forEach((role) => {
       formattedRoleCounts[role._id] = role.count;
     });
 
@@ -46,8 +78,21 @@ export const getHRDashboardData = async (req, res) => {
       message: "HR Dashboard data retrieved successfully",
       data: {
         leaveCountToday: leaveCount,
-        monthlyHolidays,
-        yearTotalHolidays: yearHolidays,
+        leaveDetailsToday: leaveDetails,
+        monthlyHolidays: {
+          count: monthlyHolidayCount,
+          holidays: monthlyHolidays.map((holiday) => ({
+            date: holiday.date,
+            name: holiday.name,
+          })),
+        },
+        yearTotalHolidays: {
+          count: yearHolidayCount,
+          holidays: yearHolidays.map((holiday) => ({
+            date: holiday.date,
+            name: holiday.name,
+          })),
+        },
         roles: formattedRoleCounts,
       },
       status: "success",

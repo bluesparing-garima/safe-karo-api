@@ -49,21 +49,21 @@ const attendanceSchema = new mongoose.Schema(
       default: Date.now,
     },
     createdBy: {
-      type: mongoose.Schema.Types.ObjectId, // Change to ObjectId
-      ref: "UserProfile", // Reference to the UserProfileModel
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: "UserProfile",
       trim: true,
     },
     updatedOn: {
       type: Date,
     },
     updatedBy: {
-      type: mongoose.Schema.Types.ObjectId, // Change to ObjectId
-      ref: "UserProfile", // Reference to the UserProfileModel
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: "UserProfile",
       trim: true,
     },
   },
 );
 
-const AttendanceModel = mongoose.model("Attendance", attendanceSchema);
+const AttendanceModel = mongoose.models.Attendance || mongoose.model("Attendance", attendanceSchema);
 
 export default AttendanceModel;
