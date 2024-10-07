@@ -6,6 +6,14 @@ export const getHRDashboardCount = async (req, res) => {
   try {
     const { startDate, endDate, hrId } = req.query;
 
+    // Check if all required fields are present
+    if (!startDate || !endDate || !hrId) {
+      return res.status(400).json({
+        message: "startDate, endDate, and hrId are required fields",
+        status: "failure",
+      });
+    }
+
     const today = new Date();
     const startOfToday = new Date(today.setHours(0, 0, 0, 0));
     const endOfToday = new Date(today.setHours(23, 59, 59, 999));
@@ -45,8 +53,8 @@ export const getHRDashboardCount = async (req, res) => {
 
     const leaveCount = leaveDetails.length;
 
-    const start = new Date(startDate || new Date().setHours(0, 0, 0, 0));
-    const end = new Date(endDate || new Date().setHours(23, 59, 59, 999));
+    const start = new Date(startDate);
+    const end = new Date(endDate);
 
     const monthlyHolidays = await HolidayCalendar.find({
       date: { $gte: start, $lt: end },

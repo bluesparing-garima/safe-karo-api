@@ -13,7 +13,7 @@ import {
   requestLogger,
   handleInvalidRoutes,
 } from "./middlewares/requestLogger.js";
-//impor from "./middlewares/Auth.js";
+import checkUserAuth from "./middlewares/Auth.js";
 
 import activityLogRoutes from "./routes/adminRoutes/activityLogRoutes.js";
 
@@ -149,28 +149,28 @@ app.use(express.urlencoded({ extended: true }));
 // });
 
 // userProfile
-app.use("/api/user-profile", userProfile);
+app.use("/api/user-profile", checkUserAuth, userProfile);
 
 // Booking request
-app.use("/api/booking-request", bookingRequestRoute);
+app.use("/api/booking-request", checkUserAuth, bookingRequestRoute);
 
 // motor policy Routes
-app.use("/api/policy/motor", motorPolicyRoutes);
+app.use("/api/policy/motor", checkUserAuth, motorPolicyRoutes);
 
 // motor policy payment Routes
-app.use("/api/policy/motor/payment", motorPolicyPayment);
+app.use("/api/policy/motor/payment", checkUserAuth, motorPolicyPayment);
 
 // filter policy Routes
-app.use("/api/policy/motor/filter", filterPolicy);
+app.use("/api/policy/motor/filter", checkUserAuth, filterPolicy);
 
 //Partner lead generate.
-app.use("/api/lead-Generate", leadGenerate);
+app.use("/api/lead-Generate", checkUserAuth, leadGenerate);
 
 // lead Quotation.
-app.use("/api/lead-quotation", leadQuotation);
+app.use("/api/lead-quotation", checkUserAuth, leadQuotation);
 
 // lead payment.
-app.use("/api/lead-payment", leadPayment);
+app.use("/api/lead-payment", checkUserAuth, leadPayment);
 
 // user login/register
 app.use("/api/user", userRoutes);
@@ -179,61 +179,61 @@ app.use("/api/user", userRoutes);
 app.use("/api/user/refresh-token", refreshTokenRoutes);
 
 //assignee roles Routes
-app.use("/api/user-roles", assigneeRolesRouters);
+app.use("/api/user-roles", checkUserAuth, assigneeRolesRouters);
 
 //create new Policy Routes
-app.use("/api/policy-type", policyTypeRoutes);
+app.use("/api/policy-type", checkUserAuth, policyTypeRoutes);
 
 //create case type Routes
-app.use("/api/case-type", caseTypeRoutes);
+app.use("/api/case-type", checkUserAuth, caseTypeRoutes);
 
 //add Roles
-app.use("/api/roles", addRolesRoutes);
+app.use("/api/roles", checkUserAuth, addRolesRoutes);
 
 // upload payin excel
-app.use("/api/pay-in/excel", payInexcelRoutes);
+app.use("/api/pay-in/excel", checkUserAuth, payInexcelRoutes);
 
 //upload payout excel
-app.use("/api/pay-out/excel", payOutExcelRoutes);
+app.use("/api/pay-out/excel", checkUserAuth, payOutExcelRoutes);
 
 // percentage Update manually
-app.use("/api/policy/motor/commission", percentageUpdate);
+app.use("/api/policy/motor/commission", checkUserAuth, percentageUpdate);
 
 // PayIn Routes
-app.use("/api/calculate", payInRoutes);
+app.use("/api/calculate", checkUserAuth, payInRoutes);
 
 //PayOut Routes
-app.use("/api/calculate", payOutRoute);
+app.use("/api/calculate", checkUserAuth, payOutRoute);
 
 // product-type Routes
-app.use("/api/product-type", vehicleType);
+app.use("/api/product-type", checkUserAuth, vehicleType);
 
 // Product Name
-app.use("/api/product", productName);
+app.use("/api/product", checkUserAuth, productName);
 
 // Use the partner routes
-app.use("/api/partner", partnerRoutes);
+app.use("/api/partner", checkUserAuth, partnerRoutes);
 
 // Company Name's
-app.use("/api/company", company);
+app.use("/api/company", checkUserAuth, company);
 
 // Broker
-app.use("/api/broker", broker);
+app.use("/api/broker", checkUserAuth, broker);
 
 // Category
-app.use("/api/category", category);
+app.use("/api/category", checkUserAuth, category);
 
 // FuelType
-app.use("/api/fuel-type", fuelType);
+app.use("/api/fuel-type", checkUserAuth, fuelType);
 
 // Make
-app.use("/api/make", make);
+app.use("/api/make", checkUserAuth, make);
 
 // Model
-app.use("/api/model", model);
+app.use("/api/model", checkUserAuth, model);
 
 // Branch
-app.use("/api/branches", branch);
+app.use("/api/branches", checkUserAuth, branch);
 
 // --------------------------------------- Dashboard Route --------------------------------
 
@@ -268,53 +268,53 @@ app.use("/api/dashboard/net-premium", netPremiumDashboardRoutes);
 app.use("/api/dashboard/final-premium", finalPremiumDashboardRoutes);
 
 // activity logs
-app.use("/api/activityLog", activityLogRoutes);
+app.use("/api/activityLog", checkUserAuth, activityLogRoutes);
 
 // --------------------------------------- Account Route --------------------------------
 
 // Account routes
-app.use("/api/account", accountRoute);
+app.use("/api/account", checkUserAuth, accountRoute);
 
 // Credit and Debit
-app.use("/api/credit-debit", creditAndDebit);
+app.use("/api/credit-debit", checkUserAuth, creditAndDebit);
 
 // Debit details
-app.use("/api", debitRoute);
+app.use("/api", checkUserAuth, debitRoute);
 
 // Credit details
-app.use("/api/credits", creditRoute);
+app.use("/api/credits", checkUserAuth, creditRoute);
 
 // excel compare
-app.use("/api", excelCompare);
+app.use("/api", checkUserAuth, excelCompare);
 
 // account Manage
-app.use("/api/account-manage", accountManage);
+app.use("/api/account-manage", checkUserAuth, accountManage);
 
 // ---------------------------------------- Bar and Line charts ------------------------------
-app.use("/api/partner-dashboard", partnerChart);
-app.use("/api/admin-dashboard", adminChart);
-app.use("/api/booking-dashboard", bookingChart);
-app.use("/api/broker-dashboard", brokerChart);
+app.use("/api/partner-dashboard", checkUserAuth, partnerChart);
+app.use("/api/admin-dashboard", checkUserAuth, adminChart);
+app.use("/api/booking-dashboard", checkUserAuth, bookingChart);
+app.use("/api/broker-dashboard", checkUserAuth, brokerChart);
 
 // ---------------------------------------- ranks ------------------------------
-app.use("/api/ranks", ranks);
+app.use("/api/ranks", checkUserAuth, ranks);
 // ---------------------------------------- blogs and newsLetter ------------------------------
-app.use("/api/blog-category", blogcategories);
-app.use("/api/blogs", blogs);
-app.use("/api/news-letter-category", NewsLetterCategories);
-app.use("/api/news-letter", NewsLetter);
+app.use("/api/blog-category", checkUserAuth, blogcategories);
+app.use("/api/blogs", checkUserAuth, blogs);
+app.use("/api/news-letter-category", checkUserAuth, NewsLetterCategories);
+app.use("/api/news-letter", checkUserAuth, NewsLetter);
 
 
 // ---------------------------------------- HR and attendance ------------------------------
 
-app.use("/api/attendance",attendance);
+app.use("/api/attendance",checkUserAuth,attendance);
 
 // ---------------------------------------- Holiday Calendar ------------------------------
 
 app.use("/api/holiday-calendar", holidayCalendar);
 
 // Test Routes
-app.use("/api", testRoutes);
+app.use("/api", checkUserAuth, testRoutes);
 
 app.use(handleInvalidRoutes);
 
