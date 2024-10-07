@@ -191,7 +191,7 @@ export const getRolesAndAttendanceStats = async (req, res) => {
         let presentCount = 0;
         let leaveCount = 0;
         let halfDayCount = 0;
-        let todaysAttendance = "Leave";
+        let todaysAttendance = "Default";
 
         attendanceRecords.forEach((record) => {
           if (record.attendanceType === "present") {
