@@ -9,7 +9,7 @@ export const createHoliday = async (req, res) => {
     await holiday.save();
     res
       .status(201)
-      .json({ message: "HolidayCalendar created successfully", holiday });
+      .json({ message: "HolidayCalendar created successfully", holiday,status:"success"});
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -28,7 +28,7 @@ export const getHolidays = async (req, res) => {
       name: holiday.name,
     }));
 
-    res.status(200).json(formattedHolidays);
+    res.status(200).json( {message: "HolidayCalendar retrived successfully",formattedHolidays, status:"success"});
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -64,7 +64,7 @@ export const getHolidaysByDateRange = async (req, res) => {
       name: holiday.name,
     }));
 
-    res.status(200).json(formattedHolidays);
+    res.status(200).json({ message: "HolidayCalendar retrived successfully with date range.",formattedHolidays, status: "success"});
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -86,7 +86,7 @@ export const getHolidayById = async (req, res) => {
       name: holiday.name,
     };
 
-    res.status(200).json(formattedHoliday);
+    res.status(200).json({ message: "HolidayCalendar retrived successfully by Id",formattedHoliday, status: "success"});
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -106,7 +106,7 @@ export const updateHoliday = async (req, res) => {
     }
     res
       .status(200)
-      .json({ message: "HolidayCalendar updated successfully", holiday });
+      .json({ message: "HolidayCalendar updated successfully", holiday, status:"success" });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }

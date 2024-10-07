@@ -1,4 +1,4 @@
-import AttendanceModel from "../../models/adminModels/attendanceSchema.js"; 
+import AttendanceModel from "../../models/adminModels/attendanceSchema.js";
 import UserProfileModel from "../../models/adminModels/userProfileSchema.js";
 import mongoose from 'mongoose';
 import moment from 'moment';
@@ -14,20 +14,6 @@ export const convertTimeStringToDate = (timeString) => {
   return date;
 };
 
-// Calculate total hours worked between inTime and outTime
-export const calculateTotalHours = (inTime, outTime) => {
-  const totalMilliseconds = new Date(outTime) - new Date(inTime);
-  const totalHours = Math.floor(totalMilliseconds / (1000 * 60 * 60)); // Whole hours
-  const totalMinutes = Math.floor((totalMilliseconds % (1000 * 60 * 60)) / (1000 * 60)); // Remaining minutes
-  return { totalHours, totalMinutes }; // Return both
-};
-
-// Format total hours as a string
-export const formatTotalHours = ({ totalHours, totalMinutes }) => {
-  return `${totalHours} hours ${totalMinutes} mins`;
-};
-
-
 // Format a Date object as "HH:mm"
 export const formatDateToTimeString = (date) => {
   const hours = date.getHours().toString().padStart(2, '0');
@@ -38,28 +24,27 @@ export const formatDateToTimeString = (date) => {
 // Function to create attendance record
 export const createAttendance = async (req, res) => {
   try {
-    const { employeeId, attendanceType, inTime, outTime, remarks } = req.body;
+    const { employeeId, attendanceType, inTime, outTime, totalHours, remarks } = req.body;
 
     if (!mongoose.isValidObjectId(employeeId)) {
-      return res.status(400).json({ message: "Invalid employee ID format" });
+      return res.status(400).json({ status: "error", message: "Invalid employee ID format" });
     }
 
     const employeeProfile = await UserProfileModel.findById(employeeId);
     if (!employeeProfile) {
-      return res.status(404).json({ message: "Employee not found" });
+      return res.status(404).json({ status: "error", message: "Employee not found" });
     }
 
-    const currentDate = new Date();
-    const [inHours, inMinutes] = inTime.split(':').map(Number);
-    const inTimeDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), inHours, inMinutes);
+    if (attendanceType === 'present' && !inTime) {
+      return res.status(400).json({ status: "error", message: "inTime is required for 'present' attendance type" });
+    }
 
-    let totalHours = 0;
-    let outTimeDate;
-
+    let inTimeDate, outTimeDate;
+    if (inTime) {
+      inTimeDate = convertTimeStringToDate(inTime);
+    }
     if (outTime) {
-      const [outHours, outMinutes] = outTime.split(':').map(Number);
-      outTimeDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate(), outHours, outMinutes);
-      totalHours = calculateTotalHours(inTimeDate, outTimeDate);
+      outTimeDate = convertTimeStringToDate(outTime);
     }
 
     const newAttendance = new AttendanceModel({
@@ -69,27 +54,29 @@ export const createAttendance = async (req, res) => {
       inTime: inTimeDate,
       outTime: outTimeDate,
       totalHours,
-      remarks,
+      remarks: attendanceType !== 'present' ? remarks : undefined,
     });
 
     await newAttendance.save();
 
     res.status(201).json({
+      status: "success",
       message: "Attendance record created successfully",
       data: {
         ...newAttendance._doc,
-        inTime: formatDateToTimeString(inTimeDate),
+        inTime: inTimeDate ? formatDateToTimeString(inTimeDate) : undefined,
         outTime: outTimeDate ? formatDateToTimeString(outTimeDate) : undefined,
       },
     });
   } catch (error) {
     res.status(500).json({
+      status: "error",
       message: "Error creating attendance record",
       error: error.message,
     });
   }
 };
-  
+
 // Get All Attendances
 export const getAllAttendances = async (req, res) => {
   try {
@@ -106,13 +93,14 @@ export const getAllAttendances = async (req, res) => {
         employeeName: employeeId.fullName,
         inTime: inTime ? formatDateToTimeString(inTime) : undefined,
         outTime: outTime ? formatDateToTimeString(outTime) : undefined,
-        totalHours: attendance.totalHours || "0 hours 0 mins",
+        totalHours: totalHours || "0 hours 0 mins",
       };
     });
 
-    res.status(200).json({ data: flattenedAttendances });
+    res.status(200).json({ message:"Attendance record retrived successfully", data: flattenedAttendances,status: "success" });
   } catch (error) {
     res.status(500).json({
+      status: "error",
       message: "Error retrieving attendance records",
       error: error.message,
     });
@@ -129,26 +117,117 @@ export const getAttendanceByEmployeeId = async (req, res) => {
       .lean();
 
     if (!attendances || attendances.length === 0) {
-      return res.status(404).json({ message: "No attendance records found for this employee" });
+      return res.status(404).json({ status: "error", message: "No attendance records found for this employee" });
     }
 
     const formattedAttendances = attendances.map((attendance) => {
       const { inTime, outTime } = attendance;
-      const { totalHours, totalMinutes } = calculateTotalHours(inTime, outTime);
       return {
         ...attendance,
         employeeId: attendance.employeeId._id,
         employeeName: attendance.employeeId.fullName,
         inTime: inTime ? formatDateToTimeString(inTime) : undefined,
         outTime: outTime ? formatDateToTimeString(outTime) : undefined,
-        totalHours: formatTotalHours({ totalHours, totalMinutes }), // Format total hours
+        totalHours: attendance.totalHours || "0 hours 0 mins",
       };
     });
 
-    res.status(200).json({ data: formattedAttendances });
+    res.status(200).json({ message:"Attendance record retrived successfully by EmployeeId", data: formattedAttendances, status: "success" });
   } catch (error) {
     res.status(500).json({
+      status: "error",
       message: "Error retrieving attendance records",
+      error: error.message,
+    });
+  }
+};
+
+// API to fetch distinct roles from UserProfileModel
+export const getAllDistinctRoles = async (req, res) => {
+  try {
+    const roles = await UserProfileModel.distinct("role");
+
+    res.status(200).json({
+      message: "Distinct roles fetched successfully",
+      roles,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error fetching distinct roles",
+      error: error.message,
+    });
+  }
+};
+
+// API Endpoint: Get roles and attendance statistics excluding "partner" roles
+export const getRolesAndAttendanceStats = async (req, res) => {
+  try {
+    const roles = await UserProfileModel.distinct("role", {
+      role: { $nin: ["partner", "Partner"] },
+    });
+
+    const roleAttendanceStats = {};
+
+    for (const role of roles) {
+      const employees = await UserProfileModel.find({ role }).lean();
+
+      if (employees.length === 0) continue;
+
+      roleAttendanceStats[role] = {
+        employees: [],
+      };
+
+      for (const employee of employees) {
+        const employeeId = employee._id;
+
+        const startOfMonth = moment().startOf("month").toDate();
+        const endOfMonth = moment().endOf("month").toDate();
+
+        const attendanceRecords = await AttendanceModel.find({
+          employeeId,
+          createdOn: { $gte: startOfMonth, $lte: endOfMonth },
+        }).lean();
+
+        let presentCount = 0;
+        let leaveCount = 0;
+        let halfDayCount = 0;
+        let todaysAttendance = "Leave";
+
+        attendanceRecords.forEach((record) => {
+          if (record.attendanceType === "present") {
+            presentCount++;
+          } else if (record.attendanceType === "leave") {
+            leaveCount++;
+          } else if (record.attendanceType === "halfday") {
+            halfDayCount++;
+          }
+
+          const recordDate = moment(record.createdOn).startOf("day").toDate();
+          const today = moment().startOf("day").toDate();
+          if (recordDate.getTime() === today.getTime()) {
+            todaysAttendance = record.attendanceType;
+          }
+        });
+
+        roleAttendanceStats[role].employees.push({
+          employeeId: employeeId.toString(),
+          employeeName: employee.fullName,
+          present: presentCount,
+          leave: leaveCount,
+          halfDay: halfDayCount,
+          todaysAttendance,
+        });
+      }
+    }
+
+    res.status(200).json({
+      message: "Roles and attendance statistics fetched successfully",
+      data: roleAttendanceStats,
+      status:"success"
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error fetching roles and attendance statistics",
       error: error.message,
     });
   }
@@ -175,18 +254,17 @@ export const getAttendancesByEmployeeIdAndDateRange = async (req, res) => {
 
     const formattedAttendances = attendances.map((attendance) => {
       const { inTime, outTime } = attendance;
-      const { totalHours, totalMinutes } = calculateTotalHours(inTime, outTime);
       return {
         ...attendance,
         employeeId: attendance.employeeId._id,
         employeeName: attendance.employeeId.fullName,
         inTime: inTime ? formatDateToTimeString(inTime) : undefined,
         outTime: outTime ? formatDateToTimeString(outTime) : undefined,
-        totalHours: formatTotalHours({ totalHours, totalMinutes }), // Format total hours
+        totalHours: attendance.totalHours || "0 hours 0 mins", // No formatting of totalHours
       };
     });
 
-    res.status(200).json({ data: formattedAttendances });
+    res.status(200).json({ message:"Attendance record retrived successfully by employeeId and date filter.",data: formattedAttendances, status: "success" });
   } catch (error) {
     res.status(500).json({
       message: "Error retrieving attendance records",
@@ -208,7 +286,6 @@ export const getAttendanceById = async (req, res) => {
     }
 
     const { inTime, outTime } = attendance;
-    const { totalHours, totalMinutes } = calculateTotalHours(inTime, outTime);
 
     const formattedAttendance = {
       ...attendance,
@@ -216,10 +293,10 @@ export const getAttendanceById = async (req, res) => {
       employeeName: attendance.employeeId.fullName,
       inTime: inTime ? formatDateToTimeString(inTime) : undefined,
       outTime: outTime ? formatDateToTimeString(outTime) : undefined,
-      totalHours: formatTotalHours({ totalHours, totalMinutes }), // Format total hours
+      totalHours: attendance.totalHours || "0 hours 0 mins", // Show totalHours directly from DB
     };
 
-    res.status(200).json({ data: formattedAttendance });
+    res.status(200).json({ message:"Attendance record retrived successfully",data: formattedAttendance , status: "success"});
   } catch (error) {
     res.status(500).json({
       message: "Error retrieving attendance record",
@@ -232,43 +309,42 @@ export const getAttendanceById = async (req, res) => {
 export const updateAttendance = async (req, res) => { 
   try {
     const { id } = req.params;
-    const { attendanceType, inTime, outTime, remarks, updatedBy } = req.body;
+    const { attendanceType, inTime, outTime, totalHours, remarks, updatedBy } = req.body;
 
-    const attendance = await AttendanceModel.findById(id);
+    let attendance = await AttendanceModel.findById(id);
+
     if (!attendance) {
-      return res.status(404).json({ message: "Attendance record not found" });
-    }
+      attendance = new AttendanceModel({
+        _id: id,
+        attendanceType,
+        inTime: convertTimeStringToDate(inTime),
+        outTime: convertTimeStringToDate(outTime),
+        totalHours,
+        remarks,
+        createdOn: new Date(),
+        updatedBy,
+      });
+    } else {
+      if (attendanceType) attendance.attendanceType = attendanceType;
 
-    if (attendanceType) attendance.attendanceType = attendanceType;
-
-    let inTimeDate, outTimeDate;
-    if (inTime) {
-      inTimeDate = convertTimeStringToDate(inTime);
-      attendance.inTime = inTimeDate;
-    }
-
-    if (outTime) {
-      outTimeDate = convertTimeStringToDate(outTime);
-      attendance.outTime = outTimeDate;
-
-      // Calculate total hours only if both inTime and outTime are present
-      if (attendance.inTime) {
-        const { totalHours, totalMinutes } = calculateTotalHours(attendance.inTime, outTimeDate);
-        attendance.totalHours = formatTotalHours({ totalHours, totalMinutes });
+      if (inTime) {
+        attendance.inTime = convertTimeStringToDate(inTime);
       }
+
+      if (outTime) {
+        attendance.outTime = convertTimeStringToDate(outTime);
+      }
+
+      if (totalHours) attendance.totalHours = totalHours;
+
+      if (remarks !== undefined) attendance.remarks = remarks;
+
+      attendance.updatedOn = new Date();
+      if (updatedBy) attendance.updatedBy = updatedBy;
     }
 
-    // Update remarks if provided
-    if (remarks !== undefined) attendance.remarks = remarks;
-
-    // Set updatedOn and updatedBy fields
-    attendance.updatedOn = new Date();
-    if (updatedBy) attendance.updatedBy = updatedBy;
-
-    // Save the updated attendance record
     await attendance.save();
 
-    // Format inTime and outTime as "HH:mm" for response
     const response = {
       ...attendance.toObject(),
       inTime: attendance.inTime ? formatDateToTimeString(attendance.inTime) : undefined,
@@ -276,12 +352,13 @@ export const updateAttendance = async (req, res) => {
     };
 
     res.status(200).json({
-      message: "Attendance record updated successfully",
+      message: attendance.isNew ? "Attendance record created successfully" : "Attendance record updated successfully",
       data: response,
+      status:"success"
     });
   } catch (error) {
     res.status(500).json({
-      message: "Error updating attendance record",
+      message: "Error updating or creating attendance record",
       error: error.message,
     });
   }
@@ -295,7 +372,7 @@ export const deleteAttendance = async (req, res) => {
     if (!attendance) {
       return res.status(404).json({ message: "Attendance record not found" });
     }
-    res.status(200).json({ message: "Attendance record deleted successfully" });
+    res.status(200).json({ message: "Attendance record deleted successfully", status:"success" });
   } catch (error) {
     res
       .status(500)
