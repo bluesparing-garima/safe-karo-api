@@ -32,6 +32,7 @@ const userProfileSchema = new mongoose.Schema({
   address: { type: String, trim: true },
   pincode: { type: String, trim: true },
   isActive: { type: Boolean, default: true },
+  profileImage: { type: String, trim: true },
   image: { type: String, trim: true },
   adharCardFront: { type: String, trim: true },
   adharCardBack: { type: String, trim: true },
