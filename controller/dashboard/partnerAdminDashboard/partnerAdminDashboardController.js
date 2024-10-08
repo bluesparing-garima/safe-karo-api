@@ -1,6 +1,7 @@
 import MotorPolicyModel from "../../../models/policyModel/motorpolicySchema.js";
 import MotorPolicyPaymentModel from "../../../models/policyModel/motorPolicyPaymentSchema.js";
 import UserProfile from "../../../models/adminModels/userProfileSchema.js";
+import creditAndDebitSchema from "../../../models/accountsModels/creditAndDebitSchema.js";
 
 export const getAllPartnersWithPayOutCommissionAndDateFilter = async (req, res) => {
   try {
@@ -1228,7 +1229,7 @@ export const getUnpaidAndPartialPayOutAmountByCompany = async (req, res) => {
 
 export const getAllPartnersWithPartnerBalanceAndDateFilter = async (req, res) => {
   try {
-    const { startDate, endDate, category } = req.query; // Extract category from query
+    const { startDate, endDate, category } = req.query;
 
     if (!startDate || !endDate) {
       return res.status(400).json({
@@ -1247,8 +1248,8 @@ export const getAllPartnersWithPartnerBalanceAndDateFilter = async (req, res) =>
         $match: {
           issueDate: { $gte: start, $lte: end },
           isActive: true,
-          ...(category && { category }), // Include category filter
-        }
+          ...(category && { category }),
+        },
       },
       {
         $group: {
@@ -1272,50 +1273,28 @@ export const getAllPartnersWithPartnerBalanceAndDateFilter = async (req, res) =>
     let totalPartnerBalanceSum = 0;
 
     for (const partner of partners) {
-      const userProfile = await UserProfile.findOne({
-        _id: partner._id,
-      }).select("partnerId");
-
-      const policies = await MotorPolicyModel.find({
-        partnerId: partner._id,
-        isActive: true,
-        issueDate: { $gte: start, $lte: end },
-        ...(category && { category }), // Include category filter
-      })
-        .select("policyNumber")
-        .lean();
-
-      const policyNumbers = policies.map((policy) => policy.policyNumber);
-
-      const totalBalance = await MotorPolicyPaymentModel.aggregate([
+      const lastBalanceEntry = await creditAndDebitSchema.findOne(
         {
-          $match: {
-            policyNumber: { $in: policyNumbers },
-            ...(category && { category }), // Include category filter
-          }
+          partnerId: partner._id,
+          createdOn: { $gte: start, $lte: end },
         },
-        {
-          $group: {
-            _id: null,
-            totalPartnerBalance: { $sum: "$partnerBalance" },
-          },
-        },
-      ]);
+        { partnerBalance: 1 },
+        { sort: { createdOn: -1 } }
+      );
 
-      const partnerBalance =
-        totalBalance.length > 0 ? totalBalance[0].totalPartnerBalance : 0;
+      const partnerBalance = lastBalanceEntry ? lastBalanceEntry.partnerBalance : 0;
 
-      if (partnerBalance > 0) {
+      if (partnerBalance !== 0) {
         totalPartnerBalanceSum += partnerBalance;
 
         partnerSummaries.push({
           partnerId: partner._id,
           partnerName: partner.partnerName,
-          partnerCode: userProfile?.partnerId || "N/A",
           totalPartnerBalance: partnerBalance,
         });
       }
     }
+
     res.status(200).json({
       message: `Partner balance between ${startDate} and ${endDate} fetched successfully.`,
       data: partnerSummaries,
@@ -1334,17 +1313,20 @@ export const getAllPartnersWithPartnerBalanceAndDateFilter = async (req, res) =>
 
 export const getAllPartnersWithPartnerBalance = async (req, res) => {
   try {
-    const { category } = req.query; // Extract category from query
+    const { category } = req.query;
 
     const partners = await MotorPolicyModel.aggregate([
       {
         $match: {
           isActive: true,
-          ...(category && { category }), // Include category filter
-        }
+          ...(category && { category }),
+        },
       },
       {
-        $group: { _id: "$partnerId", partnerName: { $first: "$partnerName" } },
+        $group: {
+          _id: "$partnerId",
+          partnerName: { $first: "$partnerName" },
+        },
       },
     ]);
 
@@ -1362,49 +1344,25 @@ export const getAllPartnersWithPartnerBalance = async (req, res) => {
     let totalPartnerBalanceSum = 0;
 
     for (const partner of partners) {
-      const userProfile = await UserProfile.findOne({
-        _id: partner._id,
-      }).select("partnerId");
+      const lastBalanceEntry = await creditAndDebitSchema.findOne(
+        { partnerId: partner._id },
+        { partnerBalance: 1 },
+        { sort: { createdOn: -1 } }
+      );
 
-      const policies = await MotorPolicyModel.find({
-        partnerId: partner._id,
-        isActive: true,
-        ...(category && { category }), // Include category filter
-      })
-        .select("policyNumber")
-        .lean();
+      const partnerBalance = lastBalanceEntry ? lastBalanceEntry.partnerBalance : 0;
 
-      const policyNumbers = policies.map((policy) => policy.policyNumber);
-
-      const totalBalance = await MotorPolicyPaymentModel.aggregate([
-        {
-          $match: {
-            policyNumber: { $in: policyNumbers },
-            ...(category && { category }), // Include category filter
-          }
-        },
-        {
-          $group: {
-            _id: null,
-            totalPartnerBalance: { $sum: "$partnerBalance" },
-          },
-        },
-      ]);
-
-      const partnerBalance =
-        totalBalance.length > 0 ? totalBalance[0].totalPartnerBalance : 0;
-
-      if (partnerBalance > 0) {
+      if (partnerBalance !== 0) {
         totalPartnerBalanceSum += partnerBalance;
 
         partnerSummaries.push({
           partnerId: partner._id,
           partnerName: partner.partnerName,
-          partnerCode: userProfile?.partnerId || "N/A",
           totalPartnerBalance: partnerBalance,
         });
       }
     }
+
     res.status(200).json({
       message: "Partners with partner balance fetched successfully.",
       data: partnerSummaries,
@@ -1423,7 +1381,7 @@ export const getAllPartnersWithPartnerBalance = async (req, res) => {
 
 export const getPartnerBalanceByCompanyWithDate = async (req, res) => {
   try {
-    const { partnerId, startDate, endDate, category } = req.query; // Extract category from query
+    const { partnerId, startDate, endDate, category } = req.query;
 
     if (!startDate || !endDate) {
       return res.status(400).json({
@@ -1454,7 +1412,7 @@ export const getPartnerBalanceByCompanyWithDate = async (req, res) => {
           partnerId,
           issueDate: { $gte: start, $lte: end },
           isActive: true,
-          ...(category && { category }), // Include category filter
+          ...(category && { category }),
         },
       },
       { $group: { _id: "$companyName" } },
@@ -1481,7 +1439,7 @@ export const getPartnerBalanceByCompanyWithDate = async (req, res) => {
         companyName: company._id,
         isActive: true,
         issueDate: { $gte: start, $lte: end },
-        ...(category && { category }), // Include category filter
+        ...(category && { category }),
       })
         .select("policyNumber")
         .lean();
@@ -1492,7 +1450,7 @@ export const getPartnerBalanceByCompanyWithDate = async (req, res) => {
         {
           $match: {
             policyNumber: { $in: policyNumbers },
-            ...(category && { category }), // Include category filter
+            ...(category && { category }),
           }
         },
         {
@@ -1537,7 +1495,7 @@ export const getPartnerBalanceByCompanyWithDate = async (req, res) => {
 
 export const getPartnerBalanceByCompany = async (req, res) => {
   try {
-    const { partnerId, category } = req.query; // Extract category from query
+    const { partnerId, category } = req.query;
 
     const partner = await UserProfile.findOne({ _id: partnerId }).select(
       "fullName partnerId"
@@ -1555,7 +1513,7 @@ export const getPartnerBalanceByCompany = async (req, res) => {
         $match: {
           partnerId,
           isActive: true,
-          ...(category && { category }), // Include category filter
+          ...(category && { category }),
         },
       },
       { $group: { _id: "$companyName" } },
@@ -1581,7 +1539,7 @@ export const getPartnerBalanceByCompany = async (req, res) => {
         partnerId,
         companyName: company._id,
         isActive: true,
-        ...(category && { category }), // Include category filter
+        ...(category && { category }),
       })
         .select("policyNumber")
         .lean();
@@ -1592,7 +1550,7 @@ export const getPartnerBalanceByCompany = async (req, res) => {
         {
           $match: {
             policyNumber: { $in: policyNumbers },
-            ...(category && { category }), // Include category filter
+            ...(category && { category }),
           }
         },
         {
