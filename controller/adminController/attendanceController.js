@@ -21,7 +21,7 @@ export const formatDateToTimeString = (date) => {
   return `${hours}:${minutes}`;
 };
 
-// Function to create attendance record
+// Function to create or update attendance record
 export const createAttendance = async (req, res) => {
   try {
     const { employeeId, attendanceType, inTime, outTime, totalHours, remarks } = req.body;
@@ -47,6 +47,33 @@ export const createAttendance = async (req, res) => {
       outTimeDate = convertTimeStringToDate(outTime);
     }
 
+    const today = moment().startOf('day');
+    const existingAttendance = await AttendanceModel.findOne({
+      employeeId,
+      createdAt: { $gte: today.toDate(), $lte: moment(today).endOf('day').toDate() },
+    });
+
+    if (existingAttendance) {
+      existingAttendance.attendanceType = attendanceType;
+      existingAttendance.inTime = inTimeDate || existingAttendance.inTime;
+      existingAttendance.outTime = outTimeDate || existingAttendance.outTime;
+      existingAttendance.totalHours = totalHours || existingAttendance.totalHours;
+      existingAttendance.remarks = attendanceType !== 'present' ? remarks : undefined;
+
+      await existingAttendance.save();
+
+      return res.status(200).json({
+        status: "success",
+        message: "Attendance record updated successfully",
+        data: {
+          ...existingAttendance._doc,
+          inTime: existingAttendance.inTime ? formatDateToTimeString(existingAttendance.inTime) : undefined,
+          outTime: existingAttendance.outTime ? formatDateToTimeString(existingAttendance.outTime) : undefined,
+        },
+      });
+    }
+
+    // Create a new attendance record
     const newAttendance = new AttendanceModel({
       employeeId,
       employeeName: employeeProfile.fullName,
@@ -88,16 +115,20 @@ export const getAllAttendances = async (req, res) => {
       const { employeeId, inTime, outTime, totalHours, ...attendanceData } = attendance;
 
       return {
-        ...attendanceData, 
-        employeeId: employeeId._id,
-        employeeName: employeeId.fullName,
+        ...attendanceData,
+        employeeId: employeeId ? employeeId._id : undefined, 
+        employeeName: employeeId ? employeeId.fullName : "Unknown",
         inTime: inTime ? formatDateToTimeString(inTime) : undefined,
         outTime: outTime ? formatDateToTimeString(outTime) : undefined,
         totalHours: totalHours || "0 hours 0 mins",
       };
     });
 
-    res.status(200).json({ message:"Attendance record retrived successfully", data: flattenedAttendances,status: "success" });
+    res.status(200).json({
+      message: "Attendance record retrieved successfully",
+      data: flattenedAttendances,
+      status: "success",
+    });
   } catch (error) {
     res.status(500).json({
       status: "error",
@@ -159,6 +190,72 @@ export const getAllDistinctRoles = async (req, res) => {
   }
 };
 
+// API Endpoint: Get attendance statistics for employee
+export const getRolesAndAttendanceStatsByEmployeeId = async (req, res) => {
+  try {
+    const { employeeId } = req.params; 
+    
+    const employee = await UserProfileModel.findById(employeeId).lean();
+    
+    if (!employee) {
+      return res.status(404).json({
+        message: "Employee not found",
+        status: "error",
+      });
+    }
+    
+    const startOfMonth = moment().startOf("month").toDate();
+    const endOfMonth = moment().endOf("month").toDate();
+
+    const attendanceRecords = await AttendanceModel.find({
+      employeeId,
+      createdOn: { $gte: startOfMonth, $lte: endOfMonth },
+    }).lean();
+
+    let presentCount = 0;
+    let leaveCount = 0;
+    let halfDayCount = 0;
+    let todaysAttendance = "Default";
+
+    attendanceRecords.forEach((record) => {
+      if (record.attendanceType === "present") {
+        presentCount++;
+      } else if (record.attendanceType === "leave") {
+        leaveCount++;
+      } else if (record.attendanceType === "halfday") {
+        halfDayCount++;
+      }
+
+      const recordDate = moment(record.createdOn).startOf("day").toDate();
+      const today = moment().startOf("day").toDate();
+      if (recordDate.getTime() === today.getTime()) {
+        todaysAttendance = record.attendanceType;
+      }
+    });
+
+    const attendanceStats = {
+      employeeId: employeeId.toString(),
+      employeeName: employee.fullName,
+      role: employee.role,
+      present: presentCount,
+      leave: leaveCount,
+      halfDay: halfDayCount,
+      todaysAttendance,
+    };
+
+    res.status(200).json({
+      message: "Attendance statistics fetched successfully",
+      data: attendanceStats,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error fetching attendance statistics",
+      error: error.message,
+    });
+  }
+};
+
 // API Endpoint: Get roles and attendance statistics excluding "partner" roles
 export const getRolesAndAttendanceStats = async (req, res) => {
   try {
@@ -167,6 +264,7 @@ export const getRolesAndAttendanceStats = async (req, res) => {
     });
 
     const roleAttendanceStats = {};
+    const today = moment().startOf("day").toDate();
 
     for (const role of roles) {
       const employees = await UserProfileModel.find({ role }).lean();
@@ -180,6 +278,23 @@ export const getRolesAndAttendanceStats = async (req, res) => {
       for (const employee of employees) {
         const employeeId = employee._id;
 
+        const todaysAttendanceRecord = await AttendanceModel.findOne({
+          employeeId,
+          createdOn: { $gte: today, $lte: moment().endOf("day").toDate() },
+        });
+
+        if (!todaysAttendanceRecord) {
+          const leaveAttendance = new AttendanceModel({
+            employeeId,
+            employeeName: employee.fullName,
+            attendanceType: "leave",
+            createdOn: today,
+            remarks: "Marked as leave due to no entry",
+          });
+
+          await leaveAttendance.save();
+        }
+
         const startOfMonth = moment().startOf("month").toDate();
         const endOfMonth = moment().endOf("month").toDate();
 
@@ -191,21 +306,15 @@ export const getRolesAndAttendanceStats = async (req, res) => {
         let presentCount = 0;
         let leaveCount = 0;
         let halfDayCount = 0;
-        let todaysAttendance = "Default";
+        let todaysAttendance = todaysAttendanceRecord ? todaysAttendanceRecord.attendanceType : "leave";
 
         attendanceRecords.forEach((record) => {
           if (record.attendanceType === "present") {
             presentCount++;
           } else if (record.attendanceType === "leave") {
             leaveCount++;
-          } else if (record.attendanceType === "halfday") {
+          } else if (record.attendanceType === "half day") {
             halfDayCount++;
-          }
-
-          const recordDate = moment(record.createdOn).startOf("day").toDate();
-          const today = moment().startOf("day").toDate();
-          if (recordDate.getTime() === today.getTime()) {
-            todaysAttendance = record.attendanceType;
           }
         });
 
@@ -223,7 +332,7 @@ export const getRolesAndAttendanceStats = async (req, res) => {
     res.status(200).json({
       message: "Roles and attendance statistics fetched successfully",
       data: roleAttendanceStats,
-      status:"success"
+      status: "success",
     });
   } catch (error) {
     res.status(500).json({

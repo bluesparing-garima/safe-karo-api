@@ -45,7 +45,7 @@ export const getHRDashboardCount = async (req, res) => {
           employeeId: "$employeeDetails._id",
           employeeName: "$employeeDetails.fullName",
           leaveType: "$attendanceType",
-          remarks: "$remarks",
+          remarks: "$remarks",  
         },
       },
     ]);
@@ -106,14 +106,15 @@ export const getHRDashboardCount = async (req, res) => {
     const yearHolidayCount = yearHolidays.length;
 
     const roleCounts = await UserProfileModel.aggregate([
-      { $match: { isActive: true } },
+      { $match: { isActive: true, role: { $nin: ["partner", "Partner"] } } },
       { $group: { _id: "$role", count: { $sum: 1 } } },
     ]);
-
+    
     const formattedRoleCounts = {};
     roleCounts.forEach((role) => {
       formattedRoleCounts[role._id] = role.count;
     });
+    
 
     res.status(200).json({
       message: "HR Dashboard data retrieved successfully",
