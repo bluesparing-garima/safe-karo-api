@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import UserProfileModel from "../../models/adminModels/userProfileSchema.js";
 import UserModel from "../../models/userSchema.js";
-import upload from '../../middlewares/uploadMiddleware.js'
+import upload from "../../middlewares/uploadMiddleware.js";
 
 // Function to generate Partner ID
 const generatePartnerId = async (role) => {
@@ -28,9 +28,13 @@ const generatePartnerId = async (role) => {
     case "HR":
       prefix = "717H";
       break;
-      case "partner":
-      case "Partner": 
+    case "partner":
+    case "Partner":
       prefix = "8717A";
+      break;
+    case "IT":
+    case "it":
+      prefix = "IT";
       break;
     default:
       throw new Error("Invalid role");
@@ -48,7 +52,7 @@ const generatePartnerId = async (role) => {
     const lastPartnerId = lastUser.partnerId;
     const suffix = lastPartnerId.slice(prefix.length);
     let number = parseInt(suffix, 10);
-    
+
     number++;
     newPartnerId = `${prefix}${number}`;
   } else {
@@ -57,7 +61,6 @@ const generatePartnerId = async (role) => {
 
   return newPartnerId;
 };
-
 
 // Function to hash passwords
 const hashPassword = async (password) => {
@@ -69,7 +72,7 @@ const hashPassword = async (password) => {
 export const createUserProfile = (req, res) => {
   upload(req, res, async (err) => {
     if (err) {
-      return res.status(400).json({ message: err.message});
+      return res.status(400).json({ message: err.message });
     }
     if (!req.files || Object.keys(req.files).length === 0) {
       return res.status(400).json({ message: "No files selected!" });
@@ -106,7 +109,6 @@ export const createUserProfile = (req, res) => {
       }, {});
 
       const missingFields = [];
-
       if (!branchName) missingFields.push("branchName");
       if (!role) missingFields.push("role");
 
@@ -123,9 +125,7 @@ export const createUserProfile = (req, res) => {
       });
 
       if (existingUserInUserModel || existingUserInUserProfileModel) {
-        return res.status(400).json({
-          message: "Email already exists",
-        });
+        return res.status(400).json({ message: "Email already exists" });
       }
 
       // Generate partner ID based on role
@@ -151,7 +151,7 @@ export const createUserProfile = (req, res) => {
         accountHolderName,
         accountNumber,
         salary,
-        ...fileDetails,
+        profileImage: fileDetails.profileImage,
         joiningDate,
         createdBy,
         isActive: isActive !== undefined ? isActive : true,
@@ -186,7 +186,6 @@ export const createUserProfile = (req, res) => {
     }
   });
 };
-
 
 // Check email existence
 export const checkEmailExists = async (req, res) => {
@@ -251,9 +250,9 @@ export const getUserProfilesByRole = async (req, res) => {
       role === "RM" || role === "Relationship Manager"
         ? ["RM", "Relationship Manager"]
         : [role];
-    
+
     // Create case-insensitive regular expressions for each role
-    const regexRoles = searchRoles.map((r) => new RegExp(`^${r}$`, 'i'));
+    const regexRoles = searchRoles.map((r) => new RegExp(`^${r}$`, "i"));
 
     const userProfile = await UserProfileModel.find({
       role: { $in: regexRoles },
@@ -314,13 +313,15 @@ export const getAllUserProfilesByHeadRMId = async (req, res) => {
 export const getUserProfilesExcludingRoles = async (req, res) => {
   try {
     const excludedRoles = ["partner", "agent"];
-    
+
     // Create case-insensitive regular expressions for each excluded role
-    const regexRoles = excludedRoles.map((role) => new RegExp(`^${role}$`, 'i'));
-    
+    const regexRoles = excludedRoles.map(
+      (role) => new RegExp(`^${role}$`, "i")
+    );
+
     const userProfiles = await UserProfileModel.find({
       role: { $nin: regexRoles },
-    }).select('-password -originalPassword'); // Exclude password and originalPassword fields
+    }).select("-password -originalPassword"); // Exclude password and originalPassword fields
 
     const transformedUserProfiles = userProfiles.map((profile) => ({
       teamId: profile._id,
@@ -412,18 +413,21 @@ export const updateUserProfile = (req, res) => {
 
       const userUpdateData = {};
       if (updateData.email) userUpdateData.email = updateData.email;
-      if (updateData.phoneNumber) userUpdateData.phoneNumber = updateData.phoneNumber;
+      if (updateData.phoneNumber)
+        userUpdateData.phoneNumber = updateData.phoneNumber;
       if (updateData.password) userUpdateData.password = updateData.password;
 
       if (Object.keys(userUpdateData).length > 0) {
         const updatedUser = await UserModel.findOneAndUpdate(
-          { partnerId: updatedProfile._id }, 
+          { partnerId: updatedProfile._id },
           userUpdateData,
           { new: true }
         );
 
         if (!updatedUser) {
-          return res.status(404).json({ message: "User not found in UserModel" });
+          return res
+            .status(404)
+            .json({ message: "User not found in UserModel" });
         }
       }
 
@@ -440,7 +444,6 @@ export const updateUserProfile = (req, res) => {
     }
   });
 };
-
 
 // Delete (deactivate) a user profile by ID
 export const deleteUserProfile = async (req, res) => {

@@ -4,7 +4,7 @@ import path from 'path';
 import multer from 'multer';
 import { fileURLToPath } from 'url';
 import { exec } from 'child_process';
-import pLimit from 'p-limit'; // Ensure this import is included
+import pLimit from 'p-limit';
 import sharp from 'sharp';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -16,6 +16,7 @@ const router = express.Router();
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadPath = path.join(__dirname, '../uploads/');
+    
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
@@ -25,9 +26,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage: storage,
-  fileFilter: (req, file, cb) => {
-    cb(null, true);
-  },
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB limit, adjust as necessary
 }).array('files', 10000);
 
 // Function to execute Ghostscript command
@@ -121,9 +120,16 @@ const limit = pLimit(20); // This defines the concurrency limit
 router.post('/compress', (req, res) => {
   upload(req, res, async (err) => {
     if (err instanceof multer.MulterError) {
+      console.error('Multer error:', err);
       return res.status(400).json({ message: 'Multer error during file upload.', error: err.message });
     } else if (err) {
+      console.error('File upload error:', err);
       return res.status(500).json({ message: 'File upload error.', error: err.message });
+    }
+
+    if (!req.files || req.files.length === 0) {
+      console.error('No files uploaded.');
+      return res.status(400).json({ message: 'No files uploaded.' });
     }
 
     const files = req.files;
@@ -174,6 +180,7 @@ router.post('/compress', (req, res) => {
         missingFiles: missingFiles.length > 0 ? missingFiles : null,
       });
     } catch (compressionError) {
+      console.error('Compression failed:', compressionError);
       return res.status(500).json({ message: 'Compression failed', error: compressionError.message });
     }
   });

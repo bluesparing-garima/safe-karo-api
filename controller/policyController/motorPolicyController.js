@@ -590,6 +590,7 @@ export const createMotorPolicy = async (req, res) => {
       const newMotorPolicyPayment = new MotorPolicyPaymentModel({
         category: savedMotorPolicy.category,
         partnerId: savedMotorPolicy.partnerId,
+        partnerName: savedMotorPolicy.partnerName,
         policyId: savedMotorPolicy._id,
         brokerId: savedMotorPolicy.brokerId,
         policyNumber: savedMotorPolicy.policyNumber,

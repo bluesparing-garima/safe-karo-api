@@ -6,6 +6,7 @@ import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
 export const createPercentageData = async (req, res) => {
   try {
     const {
+      partnerName,
       policyType,
       caseType,
       productType,
@@ -32,7 +33,6 @@ export const createPercentageData = async (req, res) => {
       !policyType ||
       !caseType ||
       !productType ||
-      !subCategory ||
       !companyName ||
       !broker ||
       !make ||
@@ -69,6 +69,7 @@ export const createPercentageData = async (req, res) => {
     endDateObj.setHours(23, 59, 59, 999);
 
     const query = {
+      partnerName,
       policyType,
       caseType,
       productType,
@@ -117,7 +118,6 @@ export const createPercentageData = async (req, res) => {
       }
     };
 
-    // Create or update records in PayInExcelDataModel and PayOutExcelDataModel
     if (payInODPercentage !== undefined && payInTPPercentage !== undefined) {
       await createOrUpdateRecord(PayInExcelDataModel, {
         od: payInODPercentage,
@@ -132,7 +132,6 @@ export const createPercentageData = async (req, res) => {
       });
     }
 
-    // Update MotorPolicyPaymentModel based on the provided percentages
     const motorPolicyQuery = {
       policyType,
       caseType,
@@ -154,7 +153,6 @@ export const createPercentageData = async (req, res) => {
     const matchingPolicies = await MotorPolicyModel.find(motorPolicyQuery);
 
     if (matchingPolicies.length === 0) {
-      // Save payInExcelData and payOutExcelData even if no matching policies
       res.status(200).json({
         message: "No matching policies found, but PayIn and PayOut records created.",
         success: true,
