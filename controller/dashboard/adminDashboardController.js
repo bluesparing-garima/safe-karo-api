@@ -12,6 +12,8 @@ import ProductType from "../../models/adminModels/productSchema.js";
 import SubProductType from "../../models/adminModels/productSubTypeSchema.js";
 import Account from "../../models/accountsModels/accountSchema.js";
 import CreditAndDebit from "../../models/accountsModels/creditAndDebitSchema.js";
+import HolidayCalendar from "../../models/adminModels/holidayCalendarSchema.js";
+import Attendance from "../../models/adminModels/attendanceSchema.js";
 
 export const getDashboardCount = async (req, res) => { 
   try {
@@ -378,8 +380,114 @@ export const getDashboardCount = async (req, res) => {
       };
     });
 
+    const today = new Date();
+    const startOfToday = new Date(today.setHours(0, 0, 0, 0));
+    const endOfToday = new Date(today.setHours(23, 59, 59, 999));
+
+    const leaveDetailsToday = await Attendance.aggregate([
+      {
+        $match: {
+          attendanceType: { $in: ["leave", "half day"] },
+          createdOn: { $gte: startOfToday, $lte: endOfToday },
+          isActive: true,
+        },
+      },
+      {
+        $lookup: {
+          from: "userprofiles",
+          localField: "employeeId",
+          foreignField: "_id",
+          as: "employeeDetails",
+        },
+      },
+      {
+        $unwind: {
+          path: "$employeeDetails",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          employeeId: "$employeeDetails._id",
+          employeeName: "$employeeDetails.fullName",
+          leaveType: "$attendanceType",
+          remarks: "$remarks",  
+        },
+      },
+    ]);
+
+    const leaveCountToday = leaveDetailsToday.length;
+
+    const presentDetailsToday = await Attendance.aggregate([
+      {
+        $match: {
+          attendanceType: "present",
+          createdOn: { $gte: startOfToday, $lte: endOfToday },
+          isActive: true,
+        },
+      },
+      {
+        $lookup: {
+          from: "userprofiles",
+          localField: "employeeId",
+          foreignField: "_id",
+          as: "employeeDetails",
+        },
+      },
+      {
+        $unwind: {
+          path: "$employeeDetails",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          employeeId: "$employeeDetails._id",
+          employeeName: "$employeeDetails.fullName",
+          department: "$employeeDetails.department",
+        },
+      },
+    ]);
+
+    const presentCountToday = presentDetailsToday.length;
+
+    const monthlyHolidays = await HolidayCalendar.find({
+      date: { $gte: new Date(queryStartDate || startDate), $lt: new Date(queryEndDate || endDate) },
+    }).select("date name");
+
+    const monthlyHolidayCount = monthlyHolidays.length;
+
+    const yearHolidays = await HolidayCalendar.find({
+      date: {
+        $gte: new Date(currentYear, 0, 1),
+        $lt: new Date(currentYear + 1, 0, 1),
+      },
+    }).select("date name");
+
+    const yearHolidayCount = yearHolidays.length;
+
     const data = [
       {
+        leaveCountToday,
+        leaveDetailsToday,
+        presentCountToday,
+        presentDetailsToday,
+        monthlyHolidays: {
+          count: monthlyHolidayCount,
+          holidays: monthlyHolidays.map((holiday) => ({
+            date: holiday.date,
+            name: holiday.name,
+          })),
+        },
+        yearTotalHolidays: {
+          count: yearHolidayCount,
+          holidays: yearHolidays.map((holiday) => ({
+            date: holiday.date,
+            name: holiday.name,
+          })),
+        },
         roleCounts: formattedRoleCounts,
         categories: totalData,
         bookingRequests: formattedBookingCounts,

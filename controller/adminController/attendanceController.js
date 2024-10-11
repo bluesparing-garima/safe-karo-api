@@ -1,5 +1,6 @@
 import AttendanceModel from "../../models/adminModels/attendanceSchema.js";
 import UserProfileModel from "../../models/adminModels/userProfileSchema.js";
+import cron from 'node-cron';
 import mongoose from 'mongoose';
 import moment from 'moment';
 
@@ -35,9 +36,17 @@ export const createAttendance = async (req, res) => {
       return res.status(404).json({ status: "error", message: "Employee not found" });
     }
 
-    if (attendanceType === 'present' && !inTime) {
-      return res.status(400).json({ status: "error", message: "inTime is required for 'present' attendance type" });
+    if (employeeProfile.role && employeeProfile.role.toLowerCase() === "partner") {
+      return res.status(403).json({ status: "error", message: "Attendance cannot be created for partners" });
     }
+
+    const todayStart = moment().startOf('day');
+    const todayEnd = moment().endOf('day');
+
+    const existingAttendance = await AttendanceModel.findOne({
+      employeeId,
+      createdOn: { $gte: todayStart.toDate(), $lte: todayEnd.toDate() },
+    });
 
     let inTimeDate, outTimeDate;
     if (inTime) {
@@ -47,18 +56,15 @@ export const createAttendance = async (req, res) => {
       outTimeDate = convertTimeStringToDate(outTime);
     }
 
-    const today = moment().startOf('day');
-    const existingAttendance = await AttendanceModel.findOne({
-      employeeId,
-      createdAt: { $gte: today.toDate(), $lte: moment(today).endOf('day').toDate() },
-    });
-
     if (existingAttendance) {
       existingAttendance.attendanceType = attendanceType;
       existingAttendance.inTime = inTimeDate || existingAttendance.inTime;
       existingAttendance.outTime = outTimeDate || existingAttendance.outTime;
       existingAttendance.totalHours = totalHours || existingAttendance.totalHours;
-      existingAttendance.remarks = attendanceType !== 'present' ? remarks : undefined;
+
+      if (inTime || outTime) {
+        existingAttendance.remarks = undefined;
+      }
 
       await existingAttendance.save();
 
@@ -73,7 +79,8 @@ export const createAttendance = async (req, res) => {
       });
     }
 
-    // Create a new attendance record
+    const currentDate = moment().toDate();
+
     const newAttendance = new AttendanceModel({
       employeeId,
       employeeName: employeeProfile.fullName,
@@ -81,12 +88,13 @@ export const createAttendance = async (req, res) => {
       inTime: inTimeDate,
       outTime: outTimeDate,
       totalHours,
-      remarks: attendanceType !== 'present' ? remarks : undefined,
+      remarks,
+      createdOn: currentDate,
     });
 
     await newAttendance.save();
 
-    res.status(201).json({
+    return res.status(201).json({
       status: "success",
       message: "Attendance record created successfully",
       data: {
@@ -96,7 +104,7 @@ export const createAttendance = async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       status: "error",
       message: "Error creating attendance record",
       error: error.message,
@@ -116,7 +124,7 @@ export const getAllAttendances = async (req, res) => {
 
       return {
         ...attendanceData,
-        employeeId: employeeId ? employeeId._id : undefined, 
+        employeeId: employeeId ? employeeId._id : undefined,
         employeeName: employeeId ? employeeId.fullName : "Unknown",
         inTime: inTime ? formatDateToTimeString(inTime) : undefined,
         outTime: outTime ? formatDateToTimeString(outTime) : undefined,
@@ -137,6 +145,47 @@ export const getAllAttendances = async (req, res) => {
     });
   }
 };
+
+// Function to check attendance for all employees every 30 minutes and mark leave if missing
+export const checkAndMarkAttendanceEvery30Minutes = async () => {
+  try {
+    const todayStart = moment().startOf("day").toDate();
+    const todayEnd = moment().endOf("day").toDate();
+
+    const employees = await UserProfileModel.find({
+      role: { $not: { $regex: '^partner$', $options: 'i' } }
+    }).lean();
+
+    for (const employee of employees) {
+      const employeeId = employee._id;
+
+      const existingAttendance = await AttendanceModel.findOne({
+        employeeId,
+        createdOn: { $gte: todayStart, $lte: todayEnd },
+      });
+
+      if (!existingAttendance) {
+        const leaveAttendance = new AttendanceModel({
+          employeeId,
+          employeeName: employee.fullName,
+          attendanceType: "leave",
+          createdOn: new Date(),
+          remarks: "Did not mark attendance",
+        });
+
+        await leaveAttendance.save();
+      }
+    }
+  } catch (error) {
+    console.error("Error checking and marking attendance:", error.message);
+  }
+};
+
+// Schedule the cron job
+cron.schedule('*/1 * * * *', async () => {
+  console.log("Running scheduled job to check and mark missing attendance...");
+  await checkAndMarkAttendanceEvery30Minutes();
+});
 
 // Get All Attendances by Employee ID
 export const getAttendanceByEmployeeId = async (req, res) => {
