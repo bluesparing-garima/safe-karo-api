@@ -8,7 +8,8 @@ import {
   deleteAttendance,
   getAttendancesByEmployeeIdAndDateRange,
   getRolesAndAttendanceStats,
-  getAllDistinctRoles
+  getAllDistinctRoles,
+  getRolesAndAttendanceStatsByEmployeeId
 } from "../../controller/adminController/attendanceController.js";
 
 const router = express.Router();
@@ -24,6 +25,9 @@ router.get("/employee/:employeeId", getAttendanceByEmployeeId);
 
 // all distinct roles from UserProfileModel
 router.get("/roles", getAllDistinctRoles);
+
+// API Endpoint: Get roles and attendance statistics
+router.get("/stats/employee/:employeeId", getRolesAndAttendanceStatsByEmployeeId);
 
 // API Endpoint: Get roles and attendance statistics
 router.get("/stats", getRolesAndAttendanceStats);
