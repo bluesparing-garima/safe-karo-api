@@ -193,7 +193,7 @@ cron.schedule('*/1 * * * *', async () => {
 // Get employee data with date and employeeId.
 export const getAttendanceByEmployeeIdAndDate = async (req, res) => {
   try {
-    const { today,employeeId } = req.query;
+    const { today, employeeId } = req.query;
 
     if (!today) {
       return res.status(400).json({
@@ -203,15 +203,12 @@ export const getAttendanceByEmployeeIdAndDate = async (req, res) => {
     }
 
     const todayDate = new Date(today);
+    const startOfDay = new Date(todayDate.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(todayDate.setHours(23, 59, 59, 999));
 
     const attendances = await AttendanceModel.find({
       employeeId,
-      $expr: {
-        $eq: [
-          { $dateToString: { format: "%Y-%m-%d", date: "$createdOn" } },
-          todayDate.toISOString().split('T')[0]
-        ]
-      }
+      createdOn: { $gte: startOfDay, $lte: endOfDay },
     })
     .populate("employeeId", "fullName")
     .lean();
