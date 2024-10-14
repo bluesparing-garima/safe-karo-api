@@ -25,7 +25,7 @@ export const formatDateToTimeString = (date) => {
 // Function to create or update attendance record
 export const createAttendance = async (req, res) => {
   try {
-    const { employeeId, attendanceType, inTime, outTime, totalHours, remarks } = req.body;
+    const { employeeId, attendanceType, inTime, outTime, totalHours, remarks, location } = req.body;
 
     if (!mongoose.isValidObjectId(employeeId)) {
       return res.status(400).json({ status: "error", message: "Invalid employee ID format" });
@@ -61,6 +61,7 @@ export const createAttendance = async (req, res) => {
       existingAttendance.inTime = inTimeDate || existingAttendance.inTime;
       existingAttendance.outTime = outTimeDate || existingAttendance.outTime;
       existingAttendance.totalHours = totalHours || existingAttendance.totalHours;
+      existingAttendance.location = location || existingAttendance.location; // Add location field
 
       if (inTime || outTime) {
         existingAttendance.remarks = undefined;
@@ -89,6 +90,7 @@ export const createAttendance = async (req, res) => {
       outTime: outTimeDate,
       totalHours,
       remarks,
+      location,
       createdOn: currentDate,
     });
 
@@ -120,7 +122,7 @@ export const getAllAttendances = async (req, res) => {
       .lean();
 
     const flattenedAttendances = attendances.map((attendance) => {
-      const { employeeId, inTime, outTime, totalHours, ...attendanceData } = attendance;
+      const { employeeId, inTime, outTime, totalHours, location, ...attendanceData } = attendance;
 
       return {
         ...attendanceData,
@@ -129,6 +131,7 @@ export const getAllAttendances = async (req, res) => {
         inTime: inTime ? formatDateToTimeString(inTime) : undefined,
         outTime: outTime ? formatDateToTimeString(outTime) : undefined,
         totalHours: totalHours || "0 hours 0 mins",
+        location: location || "N/A",
       };
     });
 
@@ -418,7 +421,7 @@ export const getAttendancesByEmployeeIdAndDateRange = async (req, res) => {
         employeeName: attendance.employeeId.fullName,
         inTime: inTime ? formatDateToTimeString(inTime) : undefined,
         outTime: outTime ? formatDateToTimeString(outTime) : undefined,
-        totalHours: attendance.totalHours || "0 hours 0 mins", // No formatting of totalHours
+        totalHours: attendance.totalHours || "0 hours 0 mins",
       };
     });
 
