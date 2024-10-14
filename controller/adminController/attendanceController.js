@@ -304,7 +304,6 @@ export const getRolesAndAttendanceStatsByEmployeeId = async (req, res) => {
     const { employeeId } = req.params; 
     
     const employee = await UserProfileModel.findById(employeeId).lean();
-    
     if (!employee) {
       return res.status(404).json({
         message: "Employee not found",
@@ -318,7 +317,9 @@ export const getRolesAndAttendanceStatsByEmployeeId = async (req, res) => {
     const attendanceRecords = await AttendanceModel.find({
       employeeId,
       createdOn: { $gte: startOfMonth, $lte: endOfMonth },
-    }).lean();
+    })
+    .sort({ createdOn: -1 })
+    .lean();
 
     let presentCount = 0;
     let leaveCount = 0;
