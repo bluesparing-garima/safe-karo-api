@@ -9,7 +9,8 @@ import {
   getAttendancesByEmployeeIdAndDateRange,
   getRolesAndAttendanceStats,
   getAllDistinctRoles,
-  getRolesAndAttendanceStatsByEmployeeId
+  getRolesAndAttendanceStatsByEmployeeId,
+  getAttendanceByEmployeeIdAndDate
 } from "../../controller/adminController/attendanceController.js";
 
 const router = express.Router();
@@ -20,8 +21,11 @@ router.post("/", createAttendance);
 // Get All Attendances
 router.get("/", getAllAttendances);
 
-// Get Attendance by Employee ID
+// Get Attendance by Employee ID and date filter
 router.get("/employee/:employeeId", getAttendanceByEmployeeId);
+
+// Get Attendance by Employee ID
+router.get("/employee", getAttendanceByEmployeeIdAndDate);
 
 // all distinct roles from UserProfileModel
 router.get("/roles", getAllDistinctRoles);

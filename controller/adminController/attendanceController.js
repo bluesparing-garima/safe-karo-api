@@ -190,6 +190,62 @@ cron.schedule('*/1 * * * *', async () => {
   await checkAndMarkAttendanceEvery30Minutes();
 });
 
+// Get employee data with date and employeeId.
+export const getAttendanceByEmployeeIdAndDate = async (req, res) => {
+  try {
+    const { today, employeeId } = req.query;
+
+    if (!today) {
+      return res.status(400).json({
+        status: "error",
+        message: "Today's date is required in query parameters",
+      });
+    }
+
+    const todayDate = new Date(today);
+    const startOfDay = new Date(todayDate.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(todayDate.setHours(23, 59, 59, 999));
+
+    const attendances = await AttendanceModel.find({
+      employeeId,
+      createdOn: { $gte: startOfDay, $lte: endOfDay },
+    })
+    .populate("employeeId", "fullName")
+    .lean();
+
+    if (!attendances || attendances.length === 0) {
+      return res.status(404).json({
+        status: "error",
+        message: "No attendance records found for this employee on the given date",
+      });
+    }
+
+    const formattedAttendances = attendances.map((attendance) => {
+      const { inTime, outTime } = attendance;
+      return {
+        ...attendance,
+        employeeId: attendance.employeeId._id,
+        employeeName: attendance.employeeId.fullName,
+        inTime: inTime ? formatDateToTimeString(inTime) : undefined,
+        outTime: outTime ? formatDateToTimeString(outTime) : undefined,
+        totalHours: attendance.totalHours || "0 hours 0 mins",
+      };
+    });
+
+    res.status(200).json({
+      message: "Attendance records retrieved successfully",
+      data: formattedAttendances,
+      status: "success",
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Error retrieving attendance records",
+      error: error.message,
+    });
+  }
+};
+
 // Get All Attendances by Employee ID
 export const getAttendanceByEmployeeId = async (req, res) => {
   try {
