@@ -2,6 +2,7 @@ import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
 import MotorPolicyPaymentModel from "../../models/policyModel/motorPolicyPaymentSchema.js";
 import BookingRequest from "../../models/bookingModel/bookingRequestSchema.js";
 import creditAndDebitSchema from "../../models/accountsModels/creditAndDebitSchema.js";
+import HolidayCalendar from "../../models/adminModels/holidayCalendarSchema.js";
 
 export const getBrokerDashboardCount = async (req, res) => {
   const { brokerId, companyName } = req.query;
@@ -108,6 +109,12 @@ export const getBrokerDashboardCount = async (req, res) => {
     );
     const balance = lastBalanceEntry ? lastBalanceEntry.brokerBalance : 0;
 
+    const monthlyHolidays = await HolidayCalendar.find({
+      date: { $gte: startDate, $lt: endDate },
+    }).select("date name");
+
+    const monthlyHolidayCount = monthlyHolidays.length;
+
     const data = {
       message: "Broker dashboard counts retrieved successfully",
       data: [
@@ -126,6 +133,13 @@ export const getBrokerDashboardCount = async (req, res) => {
           },
           policyCounts: formattedPolicyCounts,
           bookingRequests: bookingRequestsWithDefaults,
+          monthlyHolidays: {
+            count: monthlyHolidayCount,
+            holidays: monthlyHolidays.map((holiday) => ({
+              date: holiday.date,
+              name: holiday.name,
+            })),
+          },
         },
       ],
       status: "success",

@@ -1,5 +1,6 @@
 import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
 import BookingRequest from "../../models/bookingModel/bookingRequestSchema.js";
+import HolidayCalendar from "../../models/adminModels/holidayCalendarSchema.js";
 
 export const getBookingDashboardCount = async (req, res) => {
   const { policyCompletedBy } = req.params;
@@ -74,6 +75,12 @@ export const getBookingDashboardCount = async (req, res) => {
       acc[curr._id] = curr.count;
       return acc;
     }, {});
+    
+    const monthlyHolidays = await HolidayCalendar.find({
+      date: { $gte: start, $lt: end },
+    }).select("date name");
+
+    const monthlyHolidayCount = monthlyHolidays.length;
 
     const data = {
       message: "Booking dashboard counts retrieved successfully",
@@ -90,6 +97,13 @@ export const getBookingDashboardCount = async (req, res) => {
             "Booked Booking": formattedBookingRequests["booked"] || 0,
           },
           policyCounts: formattedPolicyCounts,
+          monthlyHolidays: {
+            count: monthlyHolidayCount,
+            holidays: monthlyHolidays.map((holiday) => ({
+              date: holiday.date,
+              name: holiday.name,
+            })),
+          },
         },
       ],
       status: "success",

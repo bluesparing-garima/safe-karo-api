@@ -1,5 +1,7 @@
 import BookingRequest from "../../models/bookingModel/bookingRequestSchema.js";
 import leadGenerateModel from "../../models/partnerModels/leadGenerateSchema.js";
+import HolidayCalendar from "../../models/adminModels/holidayCalendarSchema.js";
+
 // Controller function to fetch booking dashboard counts
 export const getOperationDashboardCount = async (req, res) => {
   const { leadCreatedBy } = req.params;
@@ -57,6 +59,13 @@ export const getOperationDashboardCount = async (req, res) => {
       },
       {}
     );
+    
+    const monthlyHolidays = await HolidayCalendar.find({
+      date: { $gte: startDate, $lt: endDate },
+    }).select("date name");
+
+    const monthlyHolidayCount = monthlyHolidays.length;
+    
     const data = {
       message: "Operation dashboard counts retrieved successfully",
       data: [
@@ -67,6 +76,13 @@ export const getOperationDashboardCount = async (req, res) => {
             "Accepted Booking": formattedBookingRequests["accepted"] || 0,
             "Requested Booking": formattedBookingRequests["requested"] || 0,
             "Booked Booking": formattedBookingRequests["booked"] || 0,
+          },
+          monthlyHolidays: {
+            count: monthlyHolidayCount,
+            holidays: monthlyHolidays.map((holiday) => ({
+              date: holiday.date,
+              name: holiday.name,
+            })),
           },
         },
       ],

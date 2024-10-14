@@ -2,9 +2,19 @@ import creditAndDebit from "../../models/accountsModels/creditAndDebitSchema.js"
 import account from "../../models/accountsModels/accountSchema.js";
 import motorPolicy from "../../models/policyModel/motorpolicySchema.js";
 import MotorPolicyPaymentModel from "../../models/policyModel/motorPolicyPaymentSchema.js";
+import HolidayCalendar from "../../models/adminModels/holidayCalendarSchema.js";
 
 export const getAccountDashboard = async (req, res) => {
   try {
+    const { start, end } = req.query;
+
+    if (!start || !end) {
+      return res.status(400).json({
+        message: "Start and end dates are required",
+        status: "error",
+      });
+    }
+
     const totalAccounts = await account.countDocuments();
 
     const totalAmountData = await account.aggregate([
@@ -103,6 +113,12 @@ export const getAccountDashboard = async (req, res) => {
       formattedPolicyCounts[policy._id] = policy.count;
     });
 
+    const monthlyHolidays = await HolidayCalendar.find({
+      date: { $gte: new Date(start), $lt: new Date(end) },
+    }).select("date name");
+
+    const monthlyHolidayCount = monthlyHolidays.length;
+
     const data = {
       message: "Account Dashboard data retrieved successfully",
       data: [
@@ -125,6 +141,13 @@ export const getAccountDashboard = async (req, res) => {
           commissions: {
             "PayIn Commission": totalPayInCommission,
             "PayOut Commission": totalPayOutCommission,
+          },
+          monthlyHolidays: {
+            count: monthlyHolidayCount,
+            holidays: monthlyHolidays.map((holiday) => ({
+              date: holiday.date,
+              name: holiday.name,
+            })),
           },
         },
       ],

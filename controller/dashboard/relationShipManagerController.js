@@ -10,6 +10,8 @@ import Category from "../../models/adminModels/categorySchema.js";
 import Company from "../../models/adminModels/companySchema.js";
 import ProductType from "../../models/adminModels/productSchema.js";
 import SubProductType from "../../models/adminModels/productSubTypeSchema.js";
+import HolidayCalendar from "../../models/adminModels/holidayCalendarSchema.js";
+
 
 export const getRMDashboardCount = async (req, res) => {
   try {
@@ -321,6 +323,13 @@ export const getRMDashboardCount = async (req, res) => {
     const productTypeCount = await ProductType.countDocuments();
     const subProductTypeCount = await SubProductType.countDocuments();
 
+    
+    const monthlyHolidays = await HolidayCalendar.find({
+      date: { $gte: queryStartDate, $lt: queryEndDate },
+    }).select("date name");
+
+    const monthlyHolidayCount = monthlyHolidays.length;
+
     const data = [
       {
         roleCounts: formattedRoleCounts,
@@ -338,6 +347,13 @@ export const getRMDashboardCount = async (req, res) => {
           Companies: companyCount,
           "Products": productTypeCount,
           "SubProducts": subProductTypeCount,
+        },
+        monthlyHolidays: {
+          count: monthlyHolidayCount,
+          holidays: monthlyHolidays.map((holiday) => ({
+            date: holiday.date,
+            name: holiday.name,
+          })),
         },
       },
     ];
