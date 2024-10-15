@@ -185,7 +185,7 @@ export const checkAndMarkAttendanceEvery30Minutes = async () => {
 };
 
 // Schedule the cron job
-cron.schedule('*/1 * * * *', async () => {
+cron.schedule('*/30 * * * *', async () => {
   console.log("Running scheduled job to check and mark missing attendance...");
   await checkAndMarkAttendanceEvery30Minutes();
 });
