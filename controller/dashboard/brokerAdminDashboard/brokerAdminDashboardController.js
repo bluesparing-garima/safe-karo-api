@@ -1,6 +1,7 @@
 import MotorPolicyModel from "../../../models/policyModel/motorpolicySchema.js";
 import MotorPolicyPaymentModel from "../../../models/policyModel/motorPolicyPaymentSchema.js";
 import BrokerModel from "../../../models/adminModels/brokerSchema.js";
+import creditAndDebitSchema from "../../../models/accountsModels/creditAndDebitSchema.js";
 
 export const getAllBrokersWithPayInCommissionAndDateFilter = async (
   req,
@@ -1362,7 +1363,7 @@ export const getUnpaidAndPartialPayInAmountByCompany = async (req, res) => {
 
 // brokerBalance
 
-export const getBrokerBalanceForAllBrokers = async (req, res) => {
+export const getBrokerBalanceForAllBrokers = async (req, res) => { 
   try {
     const { category } = req.query;
 
@@ -1389,33 +1390,17 @@ export const getBrokerBalanceForAllBrokers = async (req, res) => {
     let totalBalance = 0;
 
     for (const broker of brokers) {
-      const brokerDetails = await BrokerModel.findOne({
-        _id: broker._id,
-      }).lean();
+      const brokerDetails = await BrokerModel.findOne({ _id: broker._id }).lean();
       if (!brokerDetails) continue;
 
-      const policies = await MotorPolicyModel.find({
-        brokerId: broker._id,
-        isActive: true,
-        ...(category && { category }),
-      })
-        .select("policyNumber")
-        .lean();
+      // Fetch broker balance from creditAndDebitSchema
+      const lastBalanceEntry = await creditAndDebitSchema.findOne(
+        { brokerId: broker._id },
+        { brokerBalance: 1 },
+        { sort: { createdOn: -1 } }
+      );
 
-      const policyNumbers = policies.map((policy) => policy.policyNumber);
-
-      const balanceData = await MotorPolicyPaymentModel.aggregate([
-        { $match: { policyNumber: { $in: policyNumbers } } },
-        {
-          $group: {
-            _id: null,
-            totalBalance: { $sum: "$brokerBalance" },
-          },
-        },
-      ]);
-
-      const brokerBalance =
-        balanceData.length > 0 ? balanceData[0].totalBalance : 0;
+      const brokerBalance = lastBalanceEntry ? lastBalanceEntry.brokerBalance : 0;
 
       if (brokerBalance > 0) {
         totalBalance += brokerBalance;
@@ -1471,7 +1456,7 @@ export const getBrokerBalanceWithDateFilter = async (req, res) => {
           issueDate: { $gte: start, $lte: end },
           ...(category && { category }),
         },
-      }, // Add category filter
+      },
       { $group: { _id: "$brokerId", brokerName: { $first: "$broker" } } },
     ]);
 
@@ -1489,41 +1474,28 @@ export const getBrokerBalanceWithDateFilter = async (req, res) => {
     let totalBalance = 0;
 
     for (const broker of brokers) {
-      const brokerDetails = await BrokerModel.findOne({
-        _id: broker._id,
-      }).lean();
+      // Fetch broker details from BrokerModel using _id
+      const brokerDetails = await BrokerModel.findOne({ _id: broker._id }).lean();
       if (!brokerDetails) continue;
 
-      const policies = await MotorPolicyModel.find({
-        brokerId: broker._id,
-        isActive: true,
-        issueDate: { $gte: start, $lte: end },
-        ...(category && { category }),
-      })
-        .select("policyNumber")
-        .lean();
-
-      const policyNumbers = policies.map((policy) => policy.policyNumber);
-
-      const balanceData = await MotorPolicyPaymentModel.aggregate([
-        { $match: { policyNumber: { $in: policyNumbers } } },
+      // Fetch broker balance from creditAndDebitSchema within date range
+      const lastBalanceEntry = await creditAndDebitSchema.findOne(
         {
-          $group: {
-            _id: null,
-            totalBalance: { $sum: "$brokerBalance" },
-          },
+          brokerId: broker._id,
+          createdOn: { $gte: start, $lte: end },
         },
-      ]);
+        { brokerBalance: 1 },
+        { sort: { createdOn: -1 } }
+      );
 
-      const brokerBalance =
-        balanceData.length > 0 ? balanceData[0].totalBalance : 0;
+      const brokerBalance = lastBalanceEntry ? lastBalanceEntry.brokerBalance : 0;
 
       if (brokerBalance > 0) {
         totalBalance += brokerBalance;
         brokerSummaries.push({
           brokerId: broker._id,
           brokerName: broker.brokerName,
-          brokerCode: brokerDetails.brokerCode,
+          brokerCode: brokerDetails.brokerCode,  // Include brokerCode from BrokerModel
           brokerBalance,
         });
       }
