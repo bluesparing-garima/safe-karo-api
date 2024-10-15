@@ -209,7 +209,7 @@ export const TataPDFParsing = async (req, res) => {
   }
 };
 
-/*------------------------------------ TP tata ------------------------------------------ */
+/*------------------------------------ TP and OD tata ------------------------------------------ */
 
 const extractTenureAndIssueDate = (text) => {
   const tenurePattern = /TP cover period\s*:\s*([\d\w\s'():]+) to ([\d\w\s'():]+)/i;
@@ -289,9 +289,32 @@ export const TataPDFParsingTP = async (req, res) => {
 
       const finalPremium = extractFinalPremiumTP(extractedText);
 
-      const netPremium = parseFloat(extractField(/Net Premium \(B\)\s*₹\s*([\d,.]+)/i, extractedText)?.replace(/,/g, "")) || null;
-      const tp = parseFloat(extractField(/Total Liability Premium \(B\)\s*₹\s*([\d,.]+)/i, extractedText)?.replace(/,/g, "")) || null;
+      const extractNetPremium = (text) => {
+        const netPatterns = [
+          /Net Premium \(A\+C\)\s*₹\s*([\d,.]+)/i,
+          /Net Premium \(A\+B\+C\)\s*₹\s*([\d,.]+)/i,
+          /Net Premium \(B\)\s*₹\s*([\d,.]+)/i,
+        ];
+      
+        for (const pattern of netPatterns) {
+          const match = text.match(pattern);
+          if (match) {
+            return parseFloat(match[1].replace(/,/g, ""));
+          }
+        }
+      
+        return null;
+      };
+      
+      const tp = parseFloat(
+        extractField(/Basic\s+TP\s+premium\s*[:₹]?\s*([\d,.]+)/i, extractedText)?.replace(/,/g, "")
+      ) || null;
 
+      const extractOwnDamagePremium = (text) => {
+        const odPattern = /Total Own Damage Premium \(A\)\s*₹\s*([\d,.]+)/i;
+        const match = text.match(odPattern);
+        return match ? parseFloat(match[1].replace(/,/g, "")) : null;
+      };      
       const vehicleNumberRaw = extractField(/Registration no :\s*([A-Za-z0-9\s]+) Registration Authority/, extractedText);
       const vehicleNumber = vehicleNumberRaw ? vehicleNumberRaw.trim() : null;
 
@@ -310,14 +333,16 @@ export const TataPDFParsingTP = async (req, res) => {
         mfgYear: extractField(/Mfg Year :\s*(\d+)/, extractedText),
         registrationDate,
         finalPremium,
-        netPremium,
+        netPremium: extractNetPremium(extractedText),
         tp,
+        od:extractOwnDamagePremium(extractedText),
         broker: extractField(/Agent Name :\s*([A-Za-z\s]+)/, extractedText),
         ncb: extractField(/Claim in Previous Policy Period:\s*(\w+)/, extractedText) === 'No' ? 'no' : 'yes',
         tenure,
         issueDate,
         endDate,
         phoneNumber: extractPhoneNumber(extractedText),
+        category:"motor",
         companyName,
         policyType,
         broker,
@@ -339,3 +364,4 @@ export const TataPDFParsingTP = async (req, res) => {
     });
   }
 };
+
