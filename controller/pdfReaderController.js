@@ -10,18 +10,21 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Utility function to extract text based on regex pattern
-const extractField = (pattern, text) => {
-  const match = text.match(pattern);
-  return match ? match[1].trim() : null;
+const extractField = (regex, text) => {
+  const match = text.match(regex);
+  return match && match[1] ? match[1].trim() : null;
 };
 
 // Extract RTO and vehicle number
 const REGEX_PATTERNS = {
   vehicleNumber: /Registration\s*Number\s*:\s*([A-Za-z0-9]+)/i,
   vehicleNumberAlt: /Registration no :\s*([A-Za-z0-9\s]+) Registration Authority/i,
-  makeModel: /Make\/Model :\s*([\w\s]+)\/([\w\s]+)/i,
+
+  makeModel: /Make\/Model\s*:\s*([\w\s]+)\/([\w\s]+)|Make\s*:\s*([\w\s]+)[\n\s]*Model\s*:\s*([\w\s]+)/i,
+
   mfgYear: /Mfg Year :\s*(\d+)/,
   seatingCapacity: /Seating Capacity \(including driver\) :\s*(\d+)/,
+  cc: /Engine\/Battery\s*Capacity\s*\(CC\/\s*KW\)\s*:\s*(\d+)/i,
 };
 
 const extractVehicleDetails = (text) => {
@@ -30,20 +33,31 @@ const extractVehicleDetails = (text) => {
   const vehicleNumberRaw =
     extractField(REGEX_PATTERNS.vehicleNumber, text) ||
     extractField(REGEX_PATTERNS.vehicleNumberAlt, text);
-    
   const vehicleNumber = vehicleNumberRaw ? vehicleNumberRaw.trim() : null;
   const rto = vehicleNumber ? vehicleNumber.substring(0, 5).trim() : null;
-  // Extract make and model
-  const makeModelMatch = extractField(REGEX_PATTERNS.makeModel, text);
-  const [make, model] = makeModelMatch ? makeModelMatch.split('/') : [null, null];
 
+  const makeModelMatch = text.match(REGEX_PATTERNS.makeModel);
+  let make = null;
+  let model = null;
+
+  if (makeModelMatch) {
+    if (makeModelMatch[1] && makeModelMatch[2]) {
+      make = makeModelMatch[1].trim();
+      model = makeModelMatch[2].replace(/ Fuel Type/i, '').trim();
+    }
+    else if (makeModelMatch[3] && makeModelMatch[4]) {
+      make = makeModelMatch[3].trim();
+      model = makeModelMatch[4].replace(/ Fuel Type/i, '').trim();
+    }
+  }
   return {
     rto,
     vehicleNumber,
-    make: make?.trim(),
-    model: model?.replace(/ Fuel Type/i, "").trim(),
+    make,
+    model,
     mfgYear: extractField(REGEX_PATTERNS.mfgYear, text),
     seatingCapacity: extractField(REGEX_PATTERNS.seatingCapacity, text),
+    cc: extractField(REGEX_PATTERNS.cc, text),
   };
 };
 
@@ -53,12 +67,13 @@ const extractCaseType = (policyNumber) => {
   return policyNumber.toLowerCase().includes("new") ? "New" : "Rollover";
 };
 
-// Extract IDV (Insured Declared Value)
 const extractIDV = (text) => {
-  const idvPattern1 = /Total\s*IDV\s*₹?\s*(\d+)/i;
-  const idvPattern2 = /Vehicle IDV\s*\(\s*₹\s*\)\s*([\d,.]+)/i;
+  const idvPattern1 = /Total\s*IDV\s*\(?₹?\)?\s*[\n\s]*([\d,.]+)/i;
+  const idvPattern2 = /Vehicle\s*IDV\s*\(?₹?\)?\s*[\n\s]*([\d,.]+)/i;
+
   const idvMatch =
     extractField(idvPattern1, text) || extractField(idvPattern2, text);
+  
   return idvMatch ? parseFloat(idvMatch.replace(/,/g, "")) : null;
 };
 
@@ -166,53 +181,60 @@ const extractNCB = (text) => {
 
 // Extract issue and end dates based on new patterns
 const extractTenureAndIssueDate = (text, policyType) => {
-  let tenurePattern;
-  
-  // Define regex patterns based on the policy type
-  switch (policyType) {
-    case 'Third Party Only/ TP':
-      tenurePattern = /TP cover period\s*:\s*([\d\w\s'():]+) to ([\d\w\s'():]+)/i;
-      break;
-      
-    case 'Own Damage Only/ OD':
-      tenurePattern = /OD cover period\s*:\s*([\d\w\s'():]+) to ([\d\w\s'():]+)/i;
-      break;
+  const patterns = [
+    {
+      type: 'Third Party Only/ TP',
+      regex: [
+        /Liability period of insurance desired from\*:\s*([\d/]+)\s*to\s*Midnight of\s*([\d/]+)/i,
+        /TP Cover Period\s*([\d\w\s']+)\(\d{2}:\d{2}Hrs\)\s*([\d\w\s']+)\s*\(Midnight\)/i
+      ]
+    },
+    {
+      type: ['Own Damage Only/ OD', 'Comprehensive/ Package'],
+      regex: [
+        /Own Damage period of insurance desired from\*:\s*([\d/]+)\s*to\s*Midnight of\s*([\d/]+)/i,
+        /OD Cover Period\s*([\d\w\s']+)\(\d{2}:\d{2}Hrs\)\s*([\d\w\s']+)\s*\(Midnight\)/i
+      ]
+    }
+  ];
 
-    case 'Comprehensive/ Package':
-      tenurePattern = /OD cover period\s*:\s*([\d\w\s'():]+) to ([\d\w\s'():]+)/i;
-      break;
+  let matchedPattern = null;
+  let issueDateRaw, endDateRaw;
 
-    default:
-      return { tenure: null, issueDate: null, endDate: null };
+  for (const patternObj of patterns) {
+    if (
+      patternObj.type === policyType || 
+      (Array.isArray(patternObj.type) && patternObj.type.includes(policyType))
+    ) {
+      for (const regex of patternObj.regex) {
+        const match = text.match(regex);
+        if (match) {
+          issueDateRaw = match[1];
+          endDateRaw = match[2];
+          matchedPattern = regex;
+          break;
+        }
+      }
+    }
+    if (matchedPattern) break;
   }
 
-  const match = text.match(tenurePattern);
-
-  if (match) {
-    let issueDateRaw = match[1];
-    const endDateRaw = match[2];
-
-    if (policyType === 'TP') {
-      issueDateRaw = issueDateRaw.replace("30 Sep '24", "14 Sep '24");
-    }
-
-    const issueDate = moment(issueDateRaw, ["DD MMM 'YY HH:mmHrs", "DD MMM 'YY"]);
-    const endDate = moment(endDateRaw, ["DD MMM 'YY HH:mmHrs", "DD MMM 'YY"]);
-
-    let tenure = endDate.diff(issueDate, 'years', true);
-    
-    if (endDate.isAfter(issueDate) && tenure < 1) {
-      tenure = 1;
-    }
-
-    return {
-      tenure: Math.max(Math.floor(tenure), 1),
-      issueDate: issueDate.isValid() ? issueDate.format("MM-DD-YYYY") : null,
-      endDate: endDate.isValid() ? endDate.format("MM-DD-YYYY") : null
-    };
+  if (!matchedPattern) {
+    return { tenure: null, issueDate: null, endDate: null };
   }
 
-  return { tenure: null, issueDate: null, endDate: null };
+  const issueDate = moment(issueDateRaw, ["DD/MM/YYYY", "DD/MM/YY", "DD MMM 'YY"]);
+  const endDate = moment(endDateRaw, ["DD/MM/YYYY", "DD/MM/YY", "DD MMM 'YY"]);
+
+  let tenure = endDate.diff(issueDate, 'years', true);
+
+  tenure = tenure < 1 && endDate.isAfter(issueDate) ? 1 : Math.floor(tenure);
+
+  return {
+    tenure: Math.max(tenure, 1),
+    issueDate: issueDate.isValid() ? issueDate.format("MM-DD-YYYY") : null,
+    endDate: endDate.isValid() ? endDate.format("MM-DD-YYYY") : null
+  };
 };
 
 export const TataPDFParsing = async (req, res) => {
@@ -253,7 +275,7 @@ export const TataPDFParsing = async (req, res) => {
         finalPolicyType = policyTypeData?.value || "Comprehensive/Package";
       }
 
-      const { issueDate, endDate } = extractTenureAndIssueDate(extractedText, policyType);
+      const { tenure,issueDate, endDate } = extractTenureAndIssueDate(extractedText, policyType);
 
 
       const extractTP = (text) => {
@@ -290,17 +312,18 @@ export const TataPDFParsing = async (req, res) => {
           /Net Premium \(A\+C\)\s*₹\s*([\d,.]+)/i,
           /Net Premium \(A\+B\+C\)\s*₹\s*([\d,.]+)/i,
           /Net Premium \(B\)\s*₹\s*([\d,.]+)/i,
+          /Net Premium \(B\+D\)\s*₹\s*([\d,.]+)/i,
         ];
-
+      
         for (const pattern of netPatterns) {
           const match = text.match(pattern);
           if (match) {
             return parseFloat(match[1].replace(/,/g, ""));
           }
         }
-
+      
         return null;
-      };
+      };      
 
       let extractedData = {
         policyNumber: extractPolicyNumber(extractedText),
@@ -315,7 +338,7 @@ export const TataPDFParsing = async (req, res) => {
         fuelType: extractField(/Fuel Type\s*:\s*([A-Za-z]+)/i, extractedText),
         issueDate,
         endDate,
-        tenure: extractTypeOfCover(extractedText),
+        tenure,
         fullName: extractFullName(extractedText),
         phoneNumber: extractPhoneNumber(extractedText),
         productType: extractProductType(extractedText),
