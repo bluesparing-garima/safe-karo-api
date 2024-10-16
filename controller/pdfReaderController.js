@@ -15,9 +15,8 @@ const extractField = (regex, text) => {
   return match && match[1] ? match[1].trim() : null;
 };
 
-// Extract RTO and vehicle number
 const REGEX_PATTERNS = {
-  vehicleNumber: /Registration\s*Number\s*:\s*([A-Za-z0-9]+)/i,
+  vehicleNumber: /Registration\s*Number\s*:\s*([A-Za-z0-9\s]+)/i,
   vehicleNumberAlt: /Registration no :\s*([A-Za-z0-9\s]+) Registration Authority/i,
 
   makeModel: /Make\/Model\s*:\s*([\w\s]+)\/([\w\s]+)|Make\s*:\s*([\w\s]+)[\n\s]*Model\s*:\s*([\w\s]+)/i,
@@ -33,8 +32,10 @@ const extractVehicleDetails = (text) => {
   const vehicleNumberRaw =
     extractField(REGEX_PATTERNS.vehicleNumber, text) ||
     extractField(REGEX_PATTERNS.vehicleNumberAlt, text);
-  const vehicleNumber = vehicleNumberRaw ? vehicleNumberRaw.trim() : null;
-  const rto = vehicleNumber ? vehicleNumber.substring(0, 5).trim() : null;
+
+  // Remove spaces from the vehicle number if it exists
+  const vehicleNumber = vehicleNumberRaw ? vehicleNumberRaw.replace(/\s+/g, '') : null;
+  const rto = vehicleNumber ? vehicleNumber.substring(0, 4).trim() : null;
 
   const makeModelMatch = text.match(REGEX_PATTERNS.makeModel);
   let make = null;
@@ -44,12 +45,12 @@ const extractVehicleDetails = (text) => {
     if (makeModelMatch[1] && makeModelMatch[2]) {
       make = makeModelMatch[1].trim();
       model = makeModelMatch[2].replace(/ Fuel Type/i, '').trim();
-    }
-    else if (makeModelMatch[3] && makeModelMatch[4]) {
+    } else if (makeModelMatch[3] && makeModelMatch[4]) {
       make = makeModelMatch[3].trim();
       model = makeModelMatch[4].replace(/ Fuel Type/i, '').trim();
     }
   }
+
   return {
     rto,
     vehicleNumber,
