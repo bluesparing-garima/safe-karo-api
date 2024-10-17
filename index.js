@@ -98,6 +98,9 @@ import refreshTokenRoutes from "./routes/refreshTokenRoute.js";
 // Holiday Calendar
 import holidayCalendar from "./routes/adminRoutes/holidayCalendarRoutes.js";
 
+// notification route
+import notificationRoutes from "./routes/notificationRoutes.js";
+
 import testRoutes from "./routes/testRoutes.js";
 
 // ranks
