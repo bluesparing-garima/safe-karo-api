@@ -1,4 +1,4 @@
-import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js"; 
+import MotorPolicyModel from "../../models/policyModel/motorpolicySchema.js";
 import MotorPolicyPaymentModel from "../../models/policyModel/motorPolicyPaymentSchema.js";
 import Lead from "../../models/partnerModels/leadGenerateSchema.js";
 import BookingRequest from "../../models/bookingModel/bookingRequestSchema.js";
@@ -32,9 +32,12 @@ export const getPartnerDashboardCount = async (req, res) => {
     let policyNumbers = [];
 
     if (companyName) {
-      const policies = await MotorPolicyModel.find({ companyName, partnerId, issueDate: dateFilter }, 'policyNumber');
-      policyNumbers = policies.map(policy => policy.policyNumber);
-      
+      const policies = await MotorPolicyModel.find(
+        { companyName, partnerId, issueDate: dateFilter },
+        "policyNumber"
+      );
+      policyNumbers = policies.map((policy) => policy.policyNumber);
+
       if (policyNumbers.length === 0) {
         return res.status(200).json({
           message: "No policies found for the provided company",
@@ -44,13 +47,23 @@ export const getPartnerDashboardCount = async (req, res) => {
       }
     }
 
-    const policyMatchFilter = companyName 
-      ? { policyNumber: { $in: policyNumbers }, partnerId, policyDate: dateFilter } 
+    const policyMatchFilter = companyName
+      ? {
+          policyNumber: { $in: policyNumbers },
+          partnerId,
+          policyDate: dateFilter,
+        }
       : { partnerId, policyDate: dateFilter };
 
     // 1. Policy Counts
     const policyCounts = await MotorPolicyModel.aggregate([
-      { $match: { ...matchFilter, ...(companyName && { policyNumber: { $in: policyNumbers } }), isActive: true } },
+      {
+        $match: {
+          ...matchFilter,
+          ...(companyName && { policyNumber: { $in: policyNumbers } }),
+          isActive: true,
+        },
+      },
       { $group: { _id: "$category", count: { $sum: 1 } } },
     ]);
 
@@ -61,47 +74,70 @@ export const getPartnerDashboardCount = async (req, res) => {
 
     // 2. Net Premium
     const netPremiumAggregate = await MotorPolicyModel.aggregate([
-      { $match: { ...matchFilter, ...(companyName && { policyNumber: { $in: policyNumbers } }) } },
+      {
+        $match: {
+          ...matchFilter,
+          ...(companyName && { policyNumber: { $in: policyNumbers } }),
+        },
+      },
       { $group: { _id: null, totalNetPremium: { $sum: "$netPremium" } } },
     ]);
-    const netPremium = netPremiumAggregate.length > 0 ? netPremiumAggregate[0].totalNetPremium : 0;
+    const netPremium =
+      netPremiumAggregate.length > 0
+        ? netPremiumAggregate[0].totalNetPremium
+        : 0;
 
     // 3. Lead Counts
-    const leadMatchFilter = companyName 
-    ? { partnerId, companyName, createdOn: dateFilter } 
-    : { partnerId, createdOn: dateFilter };
-  
-  const leadCounts = await Lead.aggregate([
-    { $match: leadMatchFilter },
-    { $group: { _id: "$status", count: { $sum: 1 } } },
-  ]);
-  
-  const formattedLeadCounts = {};
-  let totalLead = 0;
-  leadCounts.forEach((lead) => {
-    formattedLeadCounts[lead._id] = lead.count;
-    totalLead += lead.count;
-  });
+    const leadMatchFilter = companyName
+      ? { partnerId, companyName, createdOn: dateFilter }
+      : { partnerId, createdOn: dateFilter };
 
-  const leadRequests = {
-    "Total Lead": totalLead,
-  };
+    const leadCounts = await Lead.aggregate([
+      { $match: leadMatchFilter, isActive: true },
+      { $group: { _id: "$status", count: { $sum: 1 } } },
+    ]);
+
+    const formattedLeadCounts = {};
+    let totalLead = 0;
+    leadCounts.forEach((lead) => {
+      formattedLeadCounts[lead._id] = lead.count;
+      totalLead += lead.count;
+    });
+
+    const leadRequests = {
+      "Total Lead": totalLead,
+    };
     Object.keys(formattedLeadCounts).forEach((key) => {
-      leadRequests[`${key.charAt(0).toUpperCase()}${key.slice(1)} Lead`] = formattedLeadCounts[key];
+      leadRequests[`${key.charAt(0).toUpperCase()}${key.slice(1)} Lead`] =
+        formattedLeadCounts[key];
     });
 
     // 4. Rewards and Commissions
     const rewardAggregate = await MotorPolicyPaymentModel.aggregate([
-      { $match: policyMatchFilter },
-      { $group: { _id: null, totalPayOutCommission: { $sum: "$payOutCommission" } } },
+      { $match: { ...policyMatchFilter, isActive: true } },
+      {
+        $group: {
+          _id: null,
+          totalPayOutCommission: { $sum: "$payOutCommission" },
+        },
+      },
     ]);
-    const reward = rewardAggregate.length > 0 ? rewardAggregate[0].totalPayOutCommission : 0;
+    const reward =
+      rewardAggregate.length > 0 ? rewardAggregate[0].totalPayOutCommission : 0;
 
     const totalRewardAggregate = await MotorPolicyPaymentModel.aggregate([
-      { $match: { partnerId } },
-      { $group: { _id: null, totalPayOutCommission: { $sum: "$payOutCommission" } } },
+      { $match: { partnerId, isActive: true } },
+      {
+        $group: {
+          _id: null,
+          totalPayOutCommission: { $sum: "$payOutCommission" },
+        },
+      },
     ]);
-    const totalReward = totalRewardAggregate.length > 0 ? totalRewardAggregate[0].totalPayOutCommission : 0;
+    const totalReward =
+      totalRewardAggregate.length > 0
+        ? totalRewardAggregate[0].totalPayOutCommission
+        : 0;
 
     // 5. Booking Requests
     const bookingCounts = await BookingRequest.aggregate([
@@ -117,10 +153,14 @@ export const getPartnerDashboardCount = async (req, res) => {
     });
 
     const bookingStatuses = ["accepted", "requested", "booked", "Rejected"];
-    const bookingRequestsWithDefaults = bookingStatuses.reduce((acc, status) => {
-      acc[`${status.charAt(0).toUpperCase()}${status.slice(1)} Booking`] = formattedBookingCounts[status] || 0;
-      return acc;
-    }, { "Total Booking": totalBookingRequest });
+    const bookingRequestsWithDefaults = bookingStatuses.reduce(
+      (acc, status) => {
+        acc[`${status.charAt(0).toUpperCase()}${status.slice(1)} Booking`] =
+          formattedBookingCounts[status] || 0;
+        return acc;
+      },
+      { "Total Booking": totalBookingRequest }
+    );
 
     // 6. Balance
     const lastBalanceEntry = await creditAndDebitSchema.findOne(
@@ -135,13 +175,19 @@ export const getPartnerDashboardCount = async (req, res) => {
       { $match: policyMatchFilter },
       { $group: { _id: null, totalPayOutAmount: { $sum: "$payOutAmount" } } },
     ]);
-    const payOutAmount = payOutAmountAggregate.length > 0 ? payOutAmountAggregate[0].totalPayOutAmount : 0;
+    const payOutAmount =
+      payOutAmountAggregate.length > 0
+        ? payOutAmountAggregate[0].totalPayOutAmount
+        : 0;
 
     const totalPayOutAmountAggregate = await MotorPolicyPaymentModel.aggregate([
       { $match: { partnerId } },
       { $group: { _id: null, totalPayOutAmount: { $sum: "$payOutAmount" } } },
     ]);
-    const totalPayOutAmount = totalPayOutAmountAggregate.length > 0 ? totalPayOutAmountAggregate[0].totalPayOutAmount : 0;
+    const totalPayOutAmount =
+      totalPayOutAmountAggregate.length > 0
+        ? totalPayOutAmountAggregate[0].totalPayOutAmount
+        : 0;
 
     // 8. Final Data Structure
     const data = {
