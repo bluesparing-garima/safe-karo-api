@@ -132,13 +132,13 @@ export const getPartnerDashboardCount = async (req, res) => {
 
     // 7. PayOut Amounts
     const payOutAmountAggregate = await MotorPolicyPaymentModel.aggregate([
-      { $match: policyMatchFilter },
+      { $match: { ...policyMatchFilter, isActive: true } },
       { $group: { _id: null, totalPayOutAmount: { $sum: "$payOutAmount" } } },
     ]);
     const payOutAmount = payOutAmountAggregate.length > 0 ? payOutAmountAggregate[0].totalPayOutAmount : 0;
 
     const totalPayOutAmountAggregate = await MotorPolicyPaymentModel.aggregate([
-      { $match: { partnerId } },
+      { $match: { partnerId, isActive:true } },
       { $group: { _id: null, totalPayOutAmount: { $sum: "$payOutAmount" } } },
     ]);
     const totalPayOutAmount = totalPayOutAmountAggregate.length > 0 ? totalPayOutAmountAggregate[0].totalPayOutAmount : 0;
