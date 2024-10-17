@@ -170,8 +170,8 @@ export const getPartnerDashboardCount = async (req, res) => {
     );
     const balance = lastBalanceEntry ? lastBalanceEntry.partnerBalance : 0;
 
-    // 7. PayOut Amounts
-    const payOutAmountAggregate = await MotorPolicyPaymentModel.aggregate([
+    // Calculate Monthly Paid Amount
+    const monthlyPaidAmountAggregate = await MotorPolicyPaymentModel.aggregate([
       {
         $match: {
           ...policyMatchFilter,
@@ -181,19 +181,70 @@ export const getPartnerDashboardCount = async (req, res) => {
       },
       { $group: { _id: null, totalPayOutAmount: { $sum: "$payOutAmount" } } },
     ]);
-    const payOutAmount =
-      payOutAmountAggregate.length > 0
-        ? payOutAmountAggregate[0].totalPayOutAmount
+    const monthlyPaidAmount =
+      monthlyPaidAmountAggregate.length > 0
+        ? monthlyPaidAmountAggregate[0].totalPayOutAmount
         : 0;
 
-    const totalPayOutAmountAggregate = await MotorPolicyPaymentModel.aggregate([
+    // Calculate Total Paid Amount
+    const totalPaidAmountAggregate = await MotorPolicyPaymentModel.aggregate([
       { $match: { partnerId, isActive: true, payOutPaymentStatus: "Paid" } },
       { $group: { _id: null, totalPayOutAmount: { $sum: "$payOutAmount" } } },
     ]);
-    const totalPayOutAmount =
-      totalPayOutAmountAggregate.length > 0
-        ? totalPayOutAmountAggregate[0].totalPayOutAmount
+    const totalPaidAmount =
+      totalPaidAmountAggregate.length > 0
+        ? totalPaidAmountAggregate[0].totalPayOutAmount
         : 0;
+
+    // Calculate Monthly UnPaid Amount
+    const monthlyUnpaidAggregate = await MotorPolicyPaymentModel.aggregate([
+      {
+        $match: {
+          ...policyMatchFilter,
+          isActive: true,
+          payOutPaymentStatus: { $in: ["UnPaid", "Partial"] },
+        },
+      },
+      {
+        $addFields: {
+          relevantAmount: {
+            $cond: [
+              { $eq: ["$payOutPaymentStatus", "UnPaid"] },
+              "$payOutCommission",
+              { $cond: [{ $eq: ["$payOutPaymentStatus", "Partial"] }, "$payOutBalance", 0] },
+            ],
+          },
+        },
+      },
+      { $group: { _id: null, totalUnpaidAmount: { $sum: "$relevantAmount" } } },
+    ]);
+    const monthlyUnpaidAmount =
+      monthlyUnpaidAggregate.length > 0 ? monthlyUnpaidAggregate[0].totalUnpaidAmount : 0;
+
+    // Calculate Total UnPaid Amount
+    const totalUnpaidAggregate = await MotorPolicyPaymentModel.aggregate([
+      {
+        $match: {
+          partnerId,
+          isActive: true,
+          payOutPaymentStatus: { $in: ["UnPaid", "Partial"] },
+        },
+      },
+      {
+        $addFields: {
+          relevantAmount: {
+            $cond: [
+              { $eq: ["$payOutPaymentStatus", "UnPaid"] },
+              "$payOutCommission",
+              { $cond: [{ $eq: ["$payOutPaymentStatus", "Partial"] }, "$payOutBalance", 0] },
+            ],
+          },
+        },
+      },
+      { $group: { _id: null, totalUnpaidAmount: { $sum: "$relevantAmount" } } },
+    ]);
+    const totalUnpaidAmount =
+      totalUnpaidAggregate.length > 0 ? totalUnpaidAggregate[0].totalUnpaidAmount : 0;
 
     // 8. Final Data Structure
     const data = {
@@ -207,10 +258,10 @@ export const getPartnerDashboardCount = async (req, res) => {
             "Monthly Commission": Math.round(reward),
             "Total Commission": Math.round(totalReward),
             Balance: Math.round(balance),
-            "Monthly Paid Amount": Math.round(payOutAmount),
-            "Total Paid Amount": Math.round(totalPayOutAmount),
-            "Monthly UnPaid Amount": Math.round(reward - payOutAmount),
-            "Total UnPaid Amount": Math.round(totalReward - totalPayOutAmount),
+            "Monthly Paid Amount": Math.round(monthlyPaidAmount),
+            "Total Paid Amount": Math.round(totalPaidAmount),
+            "Monthly UnPaid Amount": Math.round(monthlyUnpaidAmount),
+            "Total UnPaid Amount": Math.round(totalUnpaidAmount),
           },
           policyCounts: formattedPolicyCounts,
           bookingRequests: bookingRequestsWithDefaults,
