@@ -35,6 +35,12 @@ const leadQuotationSchema = new mongoose.Schema({
     type:String,
     required:true
   },
+  operationId: {
+    type: String,
+  },
+  operationName:{
+    type:String,
+  },
   createdBy: {
     type: String,
     trim: true,

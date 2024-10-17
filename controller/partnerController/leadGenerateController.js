@@ -1,5 +1,7 @@
 import leadGenerateModel from "../../models/partnerModels/leadGenerateSchema.js";
 import upload from "../../middlewares/uploadMiddleware.js";
+import NotificationModel from "../../models/notificationModel.js";
+import UserProfileModel from "../../models/adminModels/userProfileSchema.js";
 
 export const createNewLead = async (req, res) => {
   upload(req, res, async (err) => {
@@ -32,6 +34,7 @@ export const createNewLead = async (req, res) => {
         });
         return acc;
       }, {});
+
       const newLead = new leadGenerateModel({
         policyType,
         category,
@@ -40,8 +43,8 @@ export const createNewLead = async (req, res) => {
         status,
         ...fileDetails,
         remarks,
-        partnerId: partnerId,
-        partnerName: partnerName,
+        partnerId: partnerId || "",
+        partnerName: partnerName || "",
         relationshipManagerId: relationshipManagerId || "",
         relationshipManagerName: relationshipManagerName || "",
         leadCreatedBy,
@@ -51,6 +54,37 @@ export const createNewLead = async (req, res) => {
       });
 
       const savedLead = await newLead.save();
+
+      let notificationFor = [];
+      let notificationBy;
+      let role;
+
+      if (status === 'Requested') {
+        notificationBy = partnerId;
+        role = 'partner';
+      } 
+      else if (status === 'Accepted') {
+        notificationBy = leadCreatedBy;
+        notificationFor = partnerId;
+        role = 'operation';
+      }
+
+      const operationUsers = await UserProfileModel.find({
+        role: { $in: ['operation', 'Operation'] }, // Case-insensitive match
+      });
+
+      for (const user of operationUsers) {
+        const notification = new NotificationModel({
+          title: 'Lead Generated',
+          type: 'success',
+          role: role,
+          notificationFor: user._id,
+          notificationBy,
+          createdBy,
+        });
+
+        await notification.save();
+      }
 
       res.status(200).json({
         message: "New Lead created successfully",
@@ -200,6 +234,18 @@ export const acceptLeadRequest = async (req, res) => {
       { new: true }
     );
 
+    if (req.body.status === "accepted") {
+      const newNotification = new NotificationModel({
+        title: "Lead Accepted",
+        type: "success",
+        role: "operation",
+        notificationFor: existingLead.partnerId,
+        notificationBy: req.body.leadCreatedBy,
+        createdBy: req.body.createdBy,
+      });
+
+      await newNotification.save();
+    }
     res.status(200).json({
       message: "Lead Accepted successfully",
       data: updatedLead,
@@ -221,7 +267,16 @@ export const updateLead = async (req, res) => {
     }
 
     try {
-      const updateData = req.body;
+      const { status, updatedBy } = req.body;
+      const existingLead = await leadGenerateModel.findById(req.params.id);
+
+      if (!existingLead) {
+        return res.status(404).json({
+          status: "failed",
+          message: "Lead not found",
+        });
+      }
+
       let fileDetails = {};
       if (req.files && Object.keys(req.files).length > 0) {
         fileDetails = Object.keys(req.files).reduce((acc, key) => {
@@ -233,7 +288,7 @@ export const updateLead = async (req, res) => {
       }
 
       const updatedLeadData = {
-        ...updateData,
+        ...req.body,
         ...fileDetails,
       };
 
@@ -243,11 +298,37 @@ export const updateLead = async (req, res) => {
         { new: true }
       );
 
-      if (!updatedLead) {
-        return res.status(404).json({
-          status: "failed",
-          message: "Lead not found",
+      if (status && status !== existingLead.status) {
+        const notificationBy = existingLead.leadCreatedBy;
+        const notificationFor = existingLead.partnerId;
+
+        // Log notification values
+        console.log("NotificationBy:", notificationBy);
+        console.log("NotificationFor:", notificationFor);
+
+        const newNotification = new NotificationModel({
+          title: `Lead Status changed to ${status}`,
+          type: "success",
+          role: "operation",
+          isView: false,
+          isActive: true,
+          notificationFor,
+          notificationBy,
+          createdBy: updatedBy,
         });
+
+        // Log the notification data to debug
+        console.log("Notification Data:", newNotification);
+
+        // Save the notification
+        await newNotification
+          .save()
+          .then(() => {
+            console.log("Notification saved successfully");
+          })
+          .catch((saveError) => {
+            console.error("Error saving notification:", saveError.message);
+          });
       }
 
       res.status(200).json({
@@ -256,6 +337,7 @@ export const updateLead = async (req, res) => {
         status: "success",
       });
     } catch (error) {
+      console.error("Error updating lead:", error.message);
       res.status(500).json({
         status: "failed",
         message: "Unable to update Lead",
@@ -293,4 +375,3 @@ export const deleteLead = async (req, res) => {
     });
   }
 };
-

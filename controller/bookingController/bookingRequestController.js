@@ -4,6 +4,7 @@ import leadGenerateModel from "../../models/partnerModels/leadGenerateSchema.js"
 import fs from "fs";
 import path from "path";
 import UserProfile from "../../models/adminModels/userProfileSchema.js";
+import NotificationModel from '../../models/notificationModel.js';
 
 // Function to check if the policy number already exists
 const checkPolicyNumberExist = async (policyNumber) => {
@@ -54,7 +55,7 @@ export const createBookingRequest = async (req, res) => {
         return acc;
       }, {});
 
-      // Create new booking if policy number doesn't exist
+      // Create new booking
       const newBooking = new BookingRequestModel({
         partnerId,
         leadId,
@@ -78,9 +79,8 @@ export const createBookingRequest = async (req, res) => {
         rejectionReason,
       });
 
-      // Update lead status if leadId is provided
       if (leadId) {
-        const lead = await leadGenerateModel.findByIdAndUpdate(
+        await leadGenerateModel.findByIdAndUpdate(
           leadId,
           { status: "Booking Pending" },
           { new: true }
@@ -88,6 +88,40 @@ export const createBookingRequest = async (req, res) => {
       }
 
       await newBooking.save();
+
+      // Send notification to partner
+      const partnerNotification = new NotificationModel({
+        title: 'Booking Request Sent',
+        type: 'success',
+        role: 'operation',
+        notificationFor: partnerId,
+        notificationBy: bookingCreatedBy,
+        createdBy: bookingCreatedBy,
+      });
+      await partnerNotification.save();
+
+      // Retrieve users with role 'booking' or 'Booking' from userProfile
+      const bookingPersons = await UserProfile.find({
+        role: { $in: ['booking', 'Booking'] }
+      });
+
+      // Send notifications to all booking persons
+      if (bookingPersons.length > 0) {
+        for (const user of bookingPersons) {
+          const personNotification = new NotificationModel({
+            title: 'New Booking Request Assigned',
+            type: 'success',
+            role: 'operation',
+            notificationFor: user._id,
+            notificationBy: bookingCreatedBy,
+            createdBy: bookingCreatedBy,
+          });
+          await personNotification.save();
+        }
+      } else {
+        console.log("No booking persons to notify.");
+      }
+
       res.status(200).json({
         message: "Booking Request generated successfully",
         data: newBooking,
@@ -373,9 +407,16 @@ export const getBookingRequestsByRMId = async (req, res) => {
 // Accept booking request
 export const acceptBookingRequest = async (req, res) => {
   try {
+    const { bookingAcceptedBy } = req.body;
+
     const existingBooking = await BookingRequestModel.findById(req.params.id);
     if (!existingBooking) {
       return res.status(404).json({ message: "Booking not found" });
+    }
+
+    const acceptingUser = await UserProfile.findById(bookingAcceptedBy);
+    if (!acceptingUser) {
+      return res.status(404).json({ message: "Accepting user not found" });
     }
 
     const updatedBooking = await BookingRequestModel.findByIdAndUpdate(
@@ -384,6 +425,16 @@ export const acceptBookingRequest = async (req, res) => {
       { new: true }
     );
 
+    const notification = new NotificationModel({
+      title: `Request accepted by ${acceptingUser.fullName}`,
+      type: 'success',
+      role: 'booking',
+      notificationFor: existingBooking.bookingCreatedBy,
+      notificationBy: bookingAcceptedBy,
+      createdBy: acceptingUser.fullName,
+    });
+    await notification.save();
+
     res.status(200).json({
       message: "Booking Accepted successfully",
       data: updatedBooking,
@@ -391,7 +442,7 @@ export const acceptBookingRequest = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({
-      message: "Error Accepting booking",
+      message: "Error accepting booking",
       error: error.message,
     });
   }
