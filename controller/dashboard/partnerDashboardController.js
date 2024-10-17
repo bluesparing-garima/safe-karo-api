@@ -179,7 +179,7 @@ export const getPartnerDashboardCount = async (req, res) => {
           payOutPaymentStatus: "Paid",
         },
       },
-      { $group: { _id: null, totalPayOutAmount: { $sum: "$payOutCommission" } } },
+      { $group: { _id: null, totalPayOutAmount: { $sum: "$payOutAmount" } } },
     ]);
     const monthlyPaidAmount =
       monthlyPaidAmountAggregate.length > 0
@@ -189,7 +189,7 @@ export const getPartnerDashboardCount = async (req, res) => {
     // Calculate Total Paid Amount
     const totalPaidAmountAggregate = await MotorPolicyPaymentModel.aggregate([
       { $match: { partnerId, isActive: true, payOutPaymentStatus: "Paid" } },
-      { $group: { _id: null, totalPayOutAmount: { $sum: "$payOutCommission" } } },
+      { $group: { _id: null, totalPayOutAmount: { $sum: "$payOutAmount" } } },
     ]);
     const totalPaidAmount =
       totalPaidAmountAggregate.length > 0
