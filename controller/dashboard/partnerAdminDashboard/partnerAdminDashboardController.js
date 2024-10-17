@@ -445,7 +445,7 @@ export const getAllPartnersWithPayOutAmountAndDateFilter = async (req, res) => {
           }
         },
         {
-          $group: { _id: null, totalAmount: { $sum: "$payOutAmount" } },
+          $group: { _id: null, totalAmount: { $sum: "$payOutCommission" } },
         },
       ]);
 
@@ -532,7 +532,7 @@ export const getAllPartnersWithPayOutAmount = async (req, res) => {
           } 
         },
         {
-          $group: { _id: null, totalAmount: { $sum: "$payOutAmount" } },
+          $group: { _id: null, totalAmount: { $sum: "$payOutCommission" } },
         },
       ]);
 
@@ -644,7 +644,7 @@ export const getPayOutAmountByCompanyWithDate = async (req, res) => {
         {
           $group: {
             _id: null,
-            totalPayOutAmount: { $sum: "$payOutAmount" },
+            totalPayOutAmount: { $sum: "$payOutCommission" },
           },
         },
       ]);
@@ -745,7 +745,7 @@ export const getPayOutAmountByCompany = async (req, res) => {
         {
           $group: {
             _id: null,
-            totalPayOutAmount: { $sum: "$payOutAmount" },
+            totalPayOutAmount: { $sum: "$payOutCommission" },
           },
         },
       ]);
