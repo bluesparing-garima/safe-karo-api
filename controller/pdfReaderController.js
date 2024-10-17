@@ -2,7 +2,6 @@ import fs from "fs";
 import { PDFExtract } from "pdf.js-extract";
 import moment from "moment";
 import policyTypeSchema from "../models/adminModels/policyTypeSchema.js";
-import { exec } from "child_process";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -11,16 +10,56 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Utility function to extract text based on regex pattern
-const extractField = (pattern, text) => {
-  const match = text.match(pattern);
-  return match ? match[1].trim() : null;
+const extractField = (regex, text) => {
+  const match = text.match(regex);
+  return match && match[1] ? match[1].trim() : null;
 };
 
-// Extract RTO and vehicle number
-const extractRtoAndVehicleNumber = (registrationNumber) => {
-  if (!registrationNumber) return { rto: null, vehicleNumber: null };
-  const rto = registrationNumber.substring(0, 4);
-  return { rto, vehicleNumber: registrationNumber };
+const REGEX_PATTERNS = {
+  vehicleNumber: /Registration\s*Number\s*:\s*([A-Za-z0-9\s]+)/i,
+  vehicleNumberAlt: /Registration no :\s*([A-Za-z0-9\s]+) Registration Authority/i,
+
+  makeModel: /Make\/Model\s*:\s*([\w\s]+)\/([\w\s]+)|Make\s*:\s*([\w\s]+)[\n\s]*Model\s*:\s*([\w\s]+)/i,
+
+  mfgYear: /Mfg Year :\s*(\d+)/,
+  seatingCapacity: /Seating Capacity \(including driver\) :\s*(\d+)/,
+  cc: /Engine\/Battery\s*Capacity\s*\(CC\/\s*KW\)\s*:\s*(\d+)/i,
+};
+
+const extractVehicleDetails = (text) => {
+  if (!text) return {};
+
+  const vehicleNumberRaw =
+    extractField(REGEX_PATTERNS.vehicleNumber, text) ||
+    extractField(REGEX_PATTERNS.vehicleNumberAlt, text);
+
+  // Remove spaces from the vehicle number if it exists
+  const vehicleNumber = vehicleNumberRaw ? vehicleNumberRaw.replace(/\s+/g, '') : null;
+  const rto = vehicleNumber ? vehicleNumber.substring(0, 4).trim() : null;
+
+  const makeModelMatch = text.match(REGEX_PATTERNS.makeModel);
+  let make = null;
+  let model = null;
+
+  if (makeModelMatch) {
+    if (makeModelMatch[1] && makeModelMatch[2]) {
+      make = makeModelMatch[1].trim();
+      model = makeModelMatch[2].replace(/ Fuel Type/i, '').trim();
+    } else if (makeModelMatch[3] && makeModelMatch[4]) {
+      make = makeModelMatch[3].trim();
+      model = makeModelMatch[4].replace(/ Fuel Type/i, '').trim();
+    }
+  }
+
+  return {
+    rto,
+    vehicleNumber,
+    make,
+    model,
+    mfgYear: extractField(REGEX_PATTERNS.mfgYear, text),
+    seatingCapacity: extractField(REGEX_PATTERNS.seatingCapacity, text),
+    cc: extractField(REGEX_PATTERNS.cc, text),
+  };
 };
 
 // Extract case type based on policy number
@@ -29,56 +68,81 @@ const extractCaseType = (policyNumber) => {
   return policyNumber.toLowerCase().includes("new") ? "New" : "Rollover";
 };
 
-// Extract IDV (Insured Declared Value)
 const extractIDV = (text) => {
-  const idvPattern = /Total\s*IDV\s*₹?\s*(\d+)/i;
-  return extractField(idvPattern, text);
+  const idvPattern1 = /Total\s*IDV\s*\(?₹?\)?\s*[\n\s]*([\d,.]+)/i;
+  const idvPattern2 = /Vehicle\s*IDV\s*\(?₹?\)?\s*[\n\s]*([\d,.]+)/i;
+
+  const idvMatch =
+    extractField(idvPattern1, text) || extractField(idvPattern2, text);
+  
+  return idvMatch ? parseFloat(idvMatch.replace(/,/g, "")) : null;
 };
 
-// Extract vehicle details
-const extractVehicleDetailsDynamic = (text) => {
-  const vehicleRegex = /Registration\s*Number\s*[\n\s]*([A-Za-z0-9]+)/i;
-  const makeModelRegex = /Make\s*\/\s*Model\s*\/\s*Body Type\s*\/\s*Segment\s*:\s*([A-Za-z\s]+)\/([A-Za-z0-9\s]+)/i; // Adjusted for correct format
-  const mfgYearRegex = /Mfg\.\s*Year\s*:\s*(\d{4})/i;
-  const ccKwRegex = /CC\/KW\s*:\s*(\d+)/i;
-  const capacityRegex = /Licensed Carrying Capacity Including Driver\s*:\s*(\d+)/i;
-
-  const vehicleNumber = extractField(vehicleRegex, text);
-  const makeModel = extractField(makeModelRegex, text);
-  const [make, model] = makeModel ? makeModel.split('/') : [null, null];
-
-  return {
-    vehicleNumber: extractField(vehicleRegex, text),
-    make: make?.trim(),
-    model: model?.trim(),
-    mfgYear: extractField(mfgYearRegex, text),
-    cc: extractField(ccKwRegex, text),
-    seatingCapacity: extractField(capacityRegex, text),
-  };
+const extractPhoneNumber = (text) => {
+  const phonePattern = /Customer contact number :\s*(\d{10})/i;
+  return (
+    extractField(phonePattern, text) ||
+    extractField(/Contact Number:\s*(\d{10})/, text)
+  );
 };
 
 // Extract full name of the insured
 const extractFullName = (text) => {
-  const fullNamePattern = /Name:\s*([A-Za-z\s]+)\s*Address/i;
-  return extractField(fullNamePattern, text);
+  const fullNamePatterns = [
+    /Name:\s*([A-Za-z\s]+)\s*Address/i,
+    /Insured Name :\s*([A-Za-z\s.]+)/i,
+  ];
+
+  for (const pattern of fullNamePatterns) {
+    const match = extractField(pattern, text);
+    if (match) {
+      return match;
+    }
+  }
+
+  return null;
+};
+
+const extractPolicyNumber = (text) => {
+  const patterns = [
+    /Policy No & Certificate No :\s*([\d\s]+)/,
+    /Policy Number:\s*([\d\s]+)/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = extractField(pattern, text);
+    if (match) {
+      return match;
+    }
+  }
+
+  return null;
 };
 
 // Extract product type
 const extractProductType = (text) => {
-  const productTypePattern = /Commercial Class:\s*([A-Za-z\s]+)\s*Alternate Policy No/i;
+  const productTypePattern =
+    /Commercial Class:\s*([A-Za-z\s]+)\s*Alternate Policy No/i;
   return extractField(productTypePattern, text);
 };
 
 // Extract final premium amount
 const extractFinalPremium = (text) => {
-  const finalPremiumPattern = /TOTAL POLICY PREMIUM\s*₹?\s*([\d,.]+)/i;
-  const premium = extractField(finalPremiumPattern, text);
-  return premium ? parseFloat(premium.replace(/,/g, "")) : null;
+  const premiumPattern =
+    /(?:Total Policy Premium|Premium amount)\s*[:₹]?\s*([\d,.]+)/i;
+  const match = text.match(premiumPattern);
+
+  if (match) {
+    return parseFloat(match[1].replace(/,/g, ""));
+  }
+
+  return null;
 };
 
 // Extract the type of cover based on the term lengths for OD and TP
 const extractTypeOfCover = (text) => {
-  const typeOfCoverPattern = /Package\s*\((\d+)\s*year\s*OD\s*\+\s*(\d+)\s*year\s*TP\)/i;
+  const typeOfCoverPattern =
+    /Package\s*\((\d+)\s*year\s*OD\s*\+\s*(\d+)\s*year\s*TP\)/i;
   const match = text.match(typeOfCoverPattern);
 
   if (match) {
@@ -90,58 +154,90 @@ const extractTypeOfCover = (text) => {
 
 // Extract NCB (No Claim Bonus)
 const extractNCB = (text) => {
-  const ncbPattern = /NCB claimed\s*:\s*([A-Za-z]+)/i;
-  const ncbValue = extractField(ncbPattern, text);
-  if (ncbValue && ["NA", "no", "No", "na"].includes(ncbValue.trim().toLowerCase())) {
+  const claimPattern = /Claim in Previous Policy Period\s*:\s*(No|0%|NA)/i;
+  const ncbClaimedPattern = /NCB claimed\s*:\s*(\d+\s?%|Yes|No)/i;
+
+  const claimMatch = text.match(claimPattern);
+  const ncbClaimedMatch = text.match(ncbClaimedPattern);
+
+  if (
+    claimMatch &&
+    (claimMatch[1] === "No" || claimMatch[1] === "0%" || claimMatch[1] === "NA")
+  ) {
     return "no";
   }
-  return "yes";
-};
 
-// Compress PDF using Ghostscript
-const compressPDFWithGhostscript = (inputPath, outputPath, targetSize, callback) => {
-  const gsCommand = `"C:\\Program Files\\gs\\gs10.03.1\\bin\\gswin64c.exe" -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen -dNOPAUSE -dQUIET -dBATCH -sOutputFile=${outputPath} ${inputPath}`;
-
-  exec(gsCommand, (error, stdout, stderr) => {
-    if (error) {
-      console.error(`Error during Ghostscript compression: ${error.message}`);
-      return callback(error, null);
+  if (ncbClaimedMatch) {
+    const ncbValue = ncbClaimedMatch[1].trim().toLowerCase();
+    if (ncbValue === "no" || ncbValue === "na") {
+      return "no";
     }
-    const fileSize = fs.statSync(outputPath).size;
-
-    if (fileSize > targetSize) {
-      console.warn(`Warning: Final compressed file is larger than target size of ${targetSize} bytes.`);
+    if (ncbValue === "yes" || /\d+\s?%/.test(ncbValue)) {
+      return "yes";
     }
+  }
 
-    fs.unlinkSync(inputPath);
-    callback(null, outputPath);
-  });
+  return null;
 };
 
 // Extract issue and end dates based on new patterns
-const extractIssueAndEndDates = (text) => {
-  const issueDatePattern1 = /Policy Period:\s*From\s*00:00\s*Hours\s*on\s*(\d{2}\/\d{2}\/\d{4})/i;
-  const endDatePattern1 = /to\s*Midnight\s*of\s*(\d{2}\/\d{2}\/\d{4})/i;
+const extractTenureAndIssueDate = (text, policyType) => {
+  const patterns = [
+    {
+      type: 'Third Party Only/ TP',
+      regex: [
+        /Liability period of insurance desired from\*:\s*([\d/]+)\s*to\s*Midnight of\s*([\d/]+)/i,
+        /TP Cover Period\s*([\d\w\s']+)\(\d{2}:\d{2}Hrs\)\s*([\d\w\s']+)\s*\(Midnight\)/i
+      ]
+    },
+    {
+      type: ['Own Damage Only/ OD', 'Comprehensive/ Package'],
+      regex: [
+        /Own Damage period of insurance desired from\*:\s*([\d/]+)\s*to\s*Midnight of\s*([\d/]+)/i,
+        /OD Cover Period\s*([\d\w\s']+)\(\d{2}:\d{2}Hrs\)\s*([\d\w\s']+)\s*\(Midnight\)/i
+      ]
+    }
+  ];
 
-  const issueDatePattern2 = /Liability period of insurance desired from\*:\s*(\d{2}\/\d{2}\/\d{4})/i;
-  const endDatePattern2 = /to\s*Midnight\s*of\s*(\d{2}\/\d{2}\/\d{4})/i;
+  let matchedPattern = null;
+  let issueDateRaw, endDateRaw;
 
-  const issueDate1 = extractField(issueDatePattern1, text);
-  const endDate1 = extractField(endDatePattern1, text);
+  for (const patternObj of patterns) {
+    if (
+      patternObj.type === policyType || 
+      (Array.isArray(patternObj.type) && patternObj.type.includes(policyType))
+    ) {
+      for (const regex of patternObj.regex) {
+        const match = text.match(regex);
+        if (match) {
+          issueDateRaw = match[1];
+          endDateRaw = match[2];
+          matchedPattern = regex;
+          break;
+        }
+      }
+    }
+    if (matchedPattern) break;
+  }
 
-  const issueDate2 = extractField(issueDatePattern2, text);
-  const endDate2 = extractField(endDatePattern2, text);
+  if (!matchedPattern) {
+    return { tenure: null, issueDate: null, endDate: null };
+  }
 
-  // Format dates to DD-MM-YYYY
-  const formatDate = (date) => date ? moment(date, "DD/MM/YYYY").format("DD-MM-YYYY") : null;
+  const issueDate = moment(issueDateRaw, ["DD/MM/YYYY", "DD/MM/YY", "DD MMM 'YY"]);
+  const endDate = moment(endDateRaw, ["DD/MM/YYYY", "DD/MM/YY", "DD MMM 'YY"]);
+
+  let tenure = endDate.diff(issueDate, 'years', true);
+
+  tenure = tenure < 1 && endDate.isAfter(issueDate) ? 1 : Math.floor(tenure);
 
   return {
-    issueDate: formatDate(issueDate1 || issueDate2),
-    endDate: formatDate(endDate1 || endDate2),
+    tenure: Math.max(tenure, 1),
+    issueDate: issueDate.isValid() ? issueDate.format("MM-DD-YYYY") : null,
+    endDate: endDate.isValid() ? endDate.format("MM-DD-YYYY") : null
   };
 };
 
-// Main function to handle PDF parsing and compression
 export const TataPDFParsing = async (req, res) => {
   const filePath = req.files["file"][0].path;
   const { companyName, policyType, broker, brokerId } = req.body;
@@ -155,76 +251,97 @@ export const TataPDFParsing = async (req, res) => {
     pdfExtract.extract(filePath, {}, async (err, data) => {
       if (err) {
         console.error("Error extracting PDF:", err);
-        return res.status(500).json({ message: "Error extracting PDF", error: err });
+        return res
+          .status(500)
+          .json({ message: "Error extracting PDF", error: err });
       }
 
       const extractedText = data.pages
         .map((page) => page.content.map((item) => item.str).join(" "))
         .join("\n");
 
-      const rawPolicyType = extractField(/Policy Type\s*:\s*([A-Za-z\s-]+)/i, extractedText);
+      const rawPolicyType = extractField(
+        /Policy Type\s*:\s*([A-Za-z\s-]+)/i,
+        extractedText
+      );
       let finalPolicyType = rawPolicyType;
 
-      if (rawPolicyType === "Auto Secure - Commercial Vehicle Package Policy - Passenger Carrying Vehicle  Commercial Class") {
-        const policyTypeData = await policyTypeSchema.findOne({ type: rawPolicyType });
+      if (
+        rawPolicyType ===
+        "Auto Secure - Commercial Vehicle Package Policy - Passenger Carrying Vehicle  Commercial Class"
+      ) {
+        const policyTypeData = await policyTypeSchema.findOne({
+          type: rawPolicyType,
+        });
         finalPolicyType = policyTypeData?.value || "Comprehensive/Package";
       }
-      const { issueDate, endDate } = extractIssueAndEndDates(extractedText);
+
+      const { tenure,issueDate, endDate } = extractTenureAndIssueDate(extractedText, policyType);
+
+
       const extractTP = (text) => {
         const tpPatterns = [
           /TOTAL LIABILITY PREMIUM\s*₹?\s*([\d,.]+)/i,
-          /TOTAL LIABILITY PREMIUM \(B\)\s*₹?\s*([\d,.]+)/i
+          /TOTAL LIABILITY PREMIUM \(B\)\s*₹?\s*([\d,.]+)/i,
+          /Basic\s+TP\s+premium\s*[:₹]?\s*([\d,.]+)/i,
         ];
+
         for (const pattern of tpPatterns) {
           const value = extractField(pattern, text);
           if (value) return parseFloat(value.replace(/,/g, ""));
         }
+
         return null;
       };
 
-      const extractOD = (text) => {
+      const extractOwnDamagePremium = (text) => {
         const odPatterns = [
           /TOTAL OWN DAMAGE PREMIUM\s*₹?\s*([\d,.]+)/i,
-          /TOTAL OWN DAMAGE PREMIUM \(A\)\s*₹?\s*([\d,.]+)/i
+          /TOTAL OWN DAMAGE PREMIUM \(A\)\s*₹?\s*([\d,.]+)/i,
+          /Total Own Damage Premium \(A\)\s*₹?\s*([\d,.]+)/i,
         ];
+
         for (const pattern of odPatterns) {
           const value = extractField(pattern, text);
           if (value) return parseFloat(value.replace(/,/g, ""));
         }
+
         return null;
       };
-
       const extractNetPremium = (text) => {
-        const netPremiumPatterns = [
-          /NET PREMIUM \(B\+D\)\s*₹?\s*([\d,.]+)/i,
-          /NET PREMIUM \(A\+B\+C\+D\)\s*₹?\s*([\d,.]+)/i,
-          /NET PREMIUM \(A\+B\+C\)\s*₹?\s*([\d,.]+)/i
+        const netPatterns = [
+          /Net Premium \(A\+C\)\s*₹\s*([\d,.]+)/i,
+          /Net Premium \(A\+B\+C\)\s*₹\s*([\d,.]+)/i,
+          /Net Premium \(B\)\s*₹\s*([\d,.]+)/i,
+          /Net Premium \(B\+D\)\s*₹\s*([\d,.]+)/i,
         ];
-        for (const pattern of netPremiumPatterns) {
-          const value = extractField(pattern, text);
-          if (value) return parseFloat(value.replace(/,/g, ""));
+      
+        for (const pattern of netPatterns) {
+          const match = text.match(pattern);
+          if (match) {
+            return parseFloat(match[1].replace(/,/g, ""));
+          }
         }
+      
         return null;
-      };
+      };      
 
-      const extractedData = {
-        policyNumber: extractField(/Policy Number:\s*([\d\s]+)/, extractedText),
-        caseType: extractCaseType(extractField(/Policy Number:\s*([\d\s]+)/, extractedText)),
+      let extractedData = {
+        policyNumber: extractPolicyNumber(extractedText),
+        caseType: extractCaseType(
+          extractField(/Policy Number:\s*([\d\s]+)/, extractedText)
+        ),
         netPremium: extractNetPremium(extractedText),
         finalPremium: extractFinalPremium(extractedText),
         idv: parseFloat(extractIDV(extractedText)) || null,
-        ...extractVehicleDetailsDynamic(extractedText), 
+        ...extractVehicleDetails(extractedText),
         policyType: finalPolicyType,
         fuelType: extractField(/Fuel Type\s*:\s*([A-Za-z]+)/i, extractedText),
-        tp: extractTP(extractedText),
-        od: extractOD(extractedText),
         issueDate,
         endDate,
-        tenure: extractTypeOfCover(extractedText),
+        tenure,
         fullName: extractFullName(extractedText),
-        phoneNumber: extractField(/Contact Number:\s*(\d{10})/, extractedText),
-        rto: extractRtoAndVehicleNumber(extractField(/Registration\s*Number\s*:\s*([A-Za-z0-9]+)/, extractedText)).rto, // Adjusted for colon
-        vehicleNumber: extractRtoAndVehicleNumber(extractField(/Registration\s*Number\s*:\s*([A-Za-z0-9]+)/, extractedText)).vehicleNumber, // Adjusted for colon
+        phoneNumber: extractPhoneNumber(extractedText),
         productType: extractProductType(extractedText),
         category: "motor",
         ncb: extractNCB(extractedText),
@@ -234,20 +351,25 @@ export const TataPDFParsing = async (req, res) => {
         brokerId,
       };
 
-      const compressedPDFPath = `${filePath}-compressed.pdf`;
+      // Conditionally include or exclude tp and od based on policyType
+      const tp = extractTP(extractedText);
+      const od = extractOwnDamagePremium(extractedText);
 
-      compressPDFWithGhostscript(filePath, compressedPDFPath, 500000, (compressionError, finalPath) => {
-        if (compressionError) {
-          return res.status(500).json({ message: "PDF compression failed", error: compressionError.message });
-        }
+      if (policyType === "Third Party Only/ TP") {
+        extractedData.tp = tp;
+        delete extractedData.od;
+      } else if (policyType === "Own Damage Only/ OD") {
+        extractedData.od = od;
+        delete extractedData.tp;
+      } else if (policyType === "Comprehensive/ Package") {
+        extractedData.tp = tp;
+        extractedData.od = od;
+      }
 
-        req.files.file[0].path = finalPath;
-
-        return res.status(200).json({
-          message: "PDF data extracted and compressed successfully",
-          data: extractedData,
-          status: "Success",
-        });
+      return res.status(200).json({
+        message: "PDF data extracted successfully",
+        data: extractedData,
+        status: "Success",
       });
     });
   } catch (error) {
@@ -260,7 +382,7 @@ export const TataPDFParsing = async (req, res) => {
   }
 };
 
-/*------------------------------------ TP and OD tata ------------------------------------------ */
+/*------------------------------------ TP and OD tata ------------------------------------------ 
 
 const extractTenureAndIssueDate = (text) => {
   const tenurePattern = /TP cover period\s*:\s*([\d\w\s'():]+) to ([\d\w\s'():]+)/i;
@@ -312,7 +434,35 @@ const extractFinalPremiumTP = (text) => {
   return null;
 };
 
-// Main function to handle PDF parsing and compression
+const IDVExtract = (text) => {
+  const idvPattern = /Vehicle IDV\s*\(\s*₹\s*\)\s*([\d,.]+)/i;
+  const match = text.match(idvPattern);
+
+  if (match) {
+      return parseFloat(match[1].replace(/,/g, ""));
+  }
+
+  return null;
+};
+
+const NCBExtract = (text) => {
+  const claimPattern = /Claim in Previous Policy Period\s*:\s*(No|0%|NA)/i;
+  const ncbClaimedPattern = /NCB Claimed\s*:\s*(\d+\s?%|Yes|No)/i;  
+
+  const claimMatch = text.match(claimPattern);
+  const ncbClaimedMatch = text.match(ncbClaimedPattern);
+
+  if (claimMatch && (claimMatch[1] === "No" || claimMatch[1] === "0%" || claimMatch[1] === "NA")) {
+    return 'no';
+  }
+
+  if (ncbClaimedMatch && (ncbClaimedMatch[1] === "Yes" || /\d+\s?%/.test(ncbClaimedMatch[1]))) {
+    return 'yes';
+  }
+
+  return null;
+};
+
 export const TataPDFParsingTP = async (req, res) => {
   const filePath = req.files["file"][0].path;
   const { companyName, policyType, broker, brokerId } = req.body;
@@ -337,7 +487,6 @@ export const TataPDFParsingTP = async (req, res) => {
       const registrationDate = registrationDateRaw ? moment(registrationDateRaw, "DD/MM/YYYY").format("MM-DD-YYYY") : null;
 
       const { make, model } = extractMakeAndModel(extractedText);
-
       const finalPremium = extractFinalPremiumTP(extractedText);
 
       const extractNetPremium = (text) => {
@@ -356,7 +505,7 @@ export const TataPDFParsingTP = async (req, res) => {
       
         return null;
       };
-      
+
       const tp = parseFloat(
         extractField(/Basic\s+TP\s+premium\s*[:₹]?\s*([\d,.]+)/i, extractedText)?.replace(/,/g, "")
       ) || null;
@@ -365,7 +514,8 @@ export const TataPDFParsingTP = async (req, res) => {
         const odPattern = /Total Own Damage Premium \(A\)\s*₹\s*([\d,.]+)/i;
         const match = text.match(odPattern);
         return match ? parseFloat(match[1].replace(/,/g, "")) : null;
-      };      
+      };
+
       const vehicleNumberRaw = extractField(/Registration no :\s*([A-Za-z0-9\s]+) Registration Authority/, extractedText);
       const vehicleNumber = vehicleNumberRaw ? vehicleNumberRaw.trim() : null;
 
@@ -385,20 +535,31 @@ export const TataPDFParsingTP = async (req, res) => {
         registrationDate,
         finalPremium,
         netPremium: extractNetPremium(extractedText),
-        tp,
-        od:extractOwnDamagePremium(extractedText),
         broker: extractField(/Agent Name :\s*([A-Za-z\s]+)/, extractedText),
-        ncb: extractField(/Claim in Previous Policy Period:\s*(\w+)/, extractedText) === 'No' ? 'no' : 'yes',
+        ncb: NCBExtract(extractedText),
         tenure,
         issueDate,
         endDate,
         phoneNumber: extractPhoneNumber(extractedText),
-        category:"motor",
+        idv: IDVExtract(extractedText),
+        category: "motor",
         companyName,
         policyType,
         broker,
         brokerId,
       };
+
+      // Conditionally include/exclude OD and TP based on policyType
+      if (policyType === 'Third Party Only/ TP') {
+        extractedData.tp = tp;
+        delete extractedData.od; // Remove OD for TP-only policies
+      } else if (policyType === 'Own Damage Only/ OD') {
+        extractedData.od = extractOwnDamagePremium(extractedText);
+        delete extractedData.tp; // Remove TP for OD-only policies
+      } else if (policyType === 'Comprehensive/ Package') {
+        extractedData.tp = tp;
+        extractedData.od = extractOwnDamagePremium(extractedText); // Include both for comprehensive policies
+      }
 
       return res.status(200).json({
         message: "PDF data extracted successfully",
@@ -416,3 +577,4 @@ export const TataPDFParsingTP = async (req, res) => {
   }
 };
 
+*/
