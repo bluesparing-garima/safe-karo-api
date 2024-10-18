@@ -35,7 +35,10 @@ export const getAllNotifications = async (req, res) => {
     const { role, type, isView } = req.query;
 
     let filter = {};
-    if (role) filter.role = role;
+    if (role) {
+      const rolesArray = Array.isArray(role) ? role : role.split(",");
+      filter.role = { $in: rolesArray };
+    }
     if (type) filter.type = type;
     if (typeof isView !== 'undefined') filter.isView = isView;
 
