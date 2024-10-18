@@ -1,7 +1,5 @@
 import BookingRequest from "../../models/bookingModel/bookingRequestSchema.js";
 import leadGenerateModel from "../../models/partnerModels/leadGenerateSchema.js";
-
-// Controller function to fetch booking dashboard counts
 export const getOperationDashboardCount = async (req, res) => {
   const { leadCreatedBy } = req.params;
 
@@ -35,6 +33,8 @@ export const getOperationDashboardCount = async (req, res) => {
       totalLead += lead.count;
     });
 
+    let requestedLeadsCount = formattedLeadCounts["requested"] || 0;
+
     // Prepare leadCounts dynamically
     const leadRequests = {
       "Total Lead": totalLead,
@@ -62,7 +62,7 @@ export const getOperationDashboardCount = async (req, res) => {
       },
       {}
     );
-    
+
     const data = {
       message: "Operation dashboard counts retrieved successfully",
       data: [
