@@ -93,7 +93,7 @@ export const getDashboardCount = async (req, res) => {
             $sum: {
               $cond: [
                 { $in: ["$payInPaymentStatus", ["Paid", "paid"]] },
-                "$payInCommission",
+                "$payInAmount",
                 0,
               ],
             },
@@ -102,7 +102,7 @@ export const getDashboardCount = async (req, res) => {
             $sum: {
               $cond: [
                 { $in: ["$payOutPaymentStatus", ["Paid", "paid"]] },
-                "$payOutCommission",
+                "$payOutAmount",
                 0,
               ],
             },
