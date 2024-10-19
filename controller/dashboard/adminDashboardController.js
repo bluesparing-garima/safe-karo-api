@@ -68,7 +68,7 @@ export const getDashboardCount = async (req, res) => {
         "Monthly PayOut Left Dist.": 0,
       };
     });
-
+    
     // Fetch total policies and payments
     const totalPolicies = await MotorPolicyModel.aggregate([
       { $match: { isActive: true } },
@@ -81,7 +81,7 @@ export const getDashboardCount = async (req, res) => {
         },
       },
     ]);
-
+    
     const totalPayments = await MotorPolicyPaymentModel.aggregate([
       { $match: { isActive: true } },
       {
@@ -92,8 +92,8 @@ export const getDashboardCount = async (req, res) => {
           payInPaidTotal: {
             $sum: {
               $cond: [
-                { $in: ["$payInPaymentStatus", ["Paid", "paid"]] },
-                "$payInCommission",
+                { $in: ["$payInPaymentStatus", ["Paid", "paid","Partial","partial"]] },
+                "$payInAmount",
                 0,
               ],
             },
@@ -101,8 +101,8 @@ export const getDashboardCount = async (req, res) => {
           payOutPaidTotal: {
             $sum: {
               $cond: [
-                { $in: ["$payOutPaymentStatus", ["Paid", "paid"]] },
-                "$payOutCommission",
+                { $in: ["$payOutPaymentStatus", ["Paid", "paid","Partial","partial"]] },
+                "$payOutAmount",
                 0,
               ],
             },
@@ -111,12 +111,12 @@ export const getDashboardCount = async (req, res) => {
             $sum: {
               $cond: [
                 { $in: ["$payInPaymentStatus", ["UnPaid", "Partial", "unPaid", "partial"]] },
-                { 
+                {
                   $cond: [
-                    { $eq: ["$payInPaymentStatus", "UnPaid"] }, 
-                    "$payInCommission", 
-                    "$payInBalance"
-                  ]
+                    { $eq: ["$payInPaymentStatus", "UnPaid"] },
+                    "$payInCommission",
+                    "$payInBalance",
+                  ],
                 },
                 0,
               ],
@@ -126,10 +126,10 @@ export const getDashboardCount = async (req, res) => {
             $sum: {
               $cond: [
                 { $in: ["$payOutPaymentStatus", ["UnPaid", "Partial", "unPaid", "partial"]] },
-                { 
+                {
                   $cond: [
-                    { $eq: ["$payOutPaymentStatus", "UnPaid"] }, 
-                    "$payOutCommission", 
+                    { $eq: ["$payOutPaymentStatus", "UnPaid"] },
+                    "$payOutCommission",
                     "$payOutBalance"
                   ]
                 },
@@ -142,7 +142,7 @@ export const getDashboardCount = async (req, res) => {
         },
       },
     ]);
-
+    
     // Merge total policies and payments into totalData
     totalPolicies.forEach((policy) => {
       const category = policy._id || "";
@@ -152,7 +152,7 @@ export const getDashboardCount = async (req, res) => {
         totalData[category]["Total Final Premium"] = Math.round(policy.finalPremiumTotal);
       }
     });
-
+    
     totalPayments.forEach((payment) => {
       const category = payment._id || "";
       if (totalData[category]) {
@@ -167,7 +167,7 @@ export const getDashboardCount = async (req, res) => {
         totalData[category]["Total PayOut Left Dist."] = Math.round(payment.partnerBalanceTotal);
       }
     });
-
+    
     // Fetch monthly policies and payments
     const monthlyPolicies = await MotorPolicyModel.aggregate([
       { $match: { isActive: true, issueDate: dateFilter } },
@@ -180,7 +180,7 @@ export const getDashboardCount = async (req, res) => {
         },
       },
     ]);
-
+    
     const monthlyPayments = await MotorPolicyPaymentModel.aggregate([
       { $match: { isActive: true, policyDate: dateFilter } },
       {
@@ -191,7 +191,7 @@ export const getDashboardCount = async (req, res) => {
           payInPaidTotal: {
             $sum: {
               $cond: [
-                { $in: ["$payInPaymentStatus", ["Paid", "paid"]] },
+                { $in: ["$payInPaymentStatus", ["Paid", "paid","Partial","partial"]] },
                 "$payInAmount",
                 0,
               ],
@@ -200,7 +200,7 @@ export const getDashboardCount = async (req, res) => {
           payOutPaidTotal: {
             $sum: {
               $cond: [
-                { $in: ["$payOutPaymentStatus", ["Paid", "paid"]] },
+                { $in: ["$payOutPaymentStatus", ["Paid", "paid","Partial","partial"]] },
                 "$payOutAmount",
                 0,
               ],
@@ -210,12 +210,12 @@ export const getDashboardCount = async (req, res) => {
             $sum: {
               $cond: [
                 { $in: ["$payInPaymentStatus", ["UnPaid", "Partial", "unPaid", "partial"]] },
-                { 
+                {
                   $cond: [
-                    { $eq: ["$payInPaymentStatus", "UnPaid"] }, 
+                    { $eq: ["$payInPaymentStatus", "UnPaid"] },
                     "$payInCommission", 
-                    "$payInBalance"
-                  ]
+                    "$payInBalance",
+                  ],
                 },
                 0,
               ],
@@ -225,12 +225,12 @@ export const getDashboardCount = async (req, res) => {
             $sum: {
               $cond: [
                 { $in: ["$payOutPaymentStatus", ["UnPaid", "Partial", "unPaid", "partial"]] },
-                { 
+                {
                   $cond: [
-                    { $eq: ["$payOutPaymentStatus", "UnPaid"] }, 
+                    { $eq: ["$payOutPaymentStatus", "UnPaid"] },
                     "$payOutCommission", 
-                    "$payOutBalance"
-                  ]
+                    "$payOutBalance",
+                  ],
                 },
                 0,
               ],
@@ -241,7 +241,7 @@ export const getDashboardCount = async (req, res) => {
         },
       },
     ]);
-
+    
     // Merge monthly policies and payments into totalData
     monthlyPolicies.forEach((policy) => {
       const category = policy._id || "";
@@ -251,7 +251,7 @@ export const getDashboardCount = async (req, res) => {
         totalData[category]["Monthly Final Premium"] = Math.round(policy.finalPremiumTotal);
       }
     });
-
+    
     monthlyPayments.forEach((payment) => {
       const category = payment._id || "";
       if (totalData[category]) {
@@ -265,7 +265,7 @@ export const getDashboardCount = async (req, res) => {
         totalData[category]["Monthly PayOut Balance"] = Math.round(payment.payOutUnpaidOrPartial);
         totalData[category]["Monthly PayOut Left Dist."] = Math.round(payment.partnerBalanceTotal);
       }
-    })
+    });    
 
     // Aggregate role counts
     const roleCounts = await UserProfileModel.aggregate([

@@ -487,7 +487,7 @@ export const getAllBrokersWithPayInAmount = async (req, res) => {
         {
           $match: {
             policyNumber: { $in: policyNumbers },
-            payInPaymentStatus: "Paid",
+            payInPaymentStatus: { $in: ["Paid", "Partial"] },
             ...(category && { category }),
           },
         },
@@ -597,7 +597,7 @@ export const getAllBrokersWithPayInAmountAndDateFilter = async (req, res) => {
         {
           $match: {
             policyNumber: { $in: policyNumbers },
-            payInPaymentStatus: "Paid",
+            payInPaymentStatus: { $in: ["Paid", "Partial"] },
             ...(category && { category }),
           },
         },
@@ -706,7 +706,7 @@ export const getPayInAmountByBrokerAndCompany = async (req, res) => {
         {
           $match: {
             policyNumber: { $in: policyNumbers },
-            payInPaymentStatus: "Paid",
+            payInPaymentStatus: { $in: ["Paid", "Partial"] },
             ...(category && { category }),
           },
         },
@@ -824,7 +824,7 @@ export const getPayInAmountByBrokerAndCompanyWithDateFilter = async (
         {
           $match: {
             policyNumber: { $in: policyNumbers },
-            payInPaymentStatus: "Paid",
+            payInPaymentStatus: { $in: ["Paid", "Partial"] },
             ...(category && { category }),
           },
         },
