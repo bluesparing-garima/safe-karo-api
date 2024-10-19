@@ -62,6 +62,7 @@ const upload = multer({
   { name: "bankProof", maxCount: 1 },
   { name: "experience", maxCount: 1 },
   { name: "quotationImage", maxCount: 1 },
+  { name: "profileImage", maxCount: 1 },
   { name: "other", maxCount: 1 },
   { name: "file", maxCount: 1 }, // PDF or main file to extract data
 ]);
