@@ -48,37 +48,110 @@ export const getBrokerDashboardCount = async (req, res) => {
       { $match: matchFilter },
       { $group: { _id: null, totalNetPremium: { $sum: "$netPremium" } } },
     ]);
-    const netPremium = netPremiumAggregate.length > 0 ? netPremiumAggregate[0].totalNetPremium : 0;
+    const netPremium =
+      netPremiumAggregate.length > 0
+        ? netPremiumAggregate[0].totalNetPremium
+        : 0;
 
-    // Broker Payment In (PayIn) Calculation
-    const payInAggregate = await MotorPolicyPaymentModel.aggregate([
+     // Broker Payment In (PayIn) Calculation for the selected month
+     const monthlyPayInAggregate = await MotorPolicyPaymentModel.aggregate([
       { $match: { brokerId, policyDate: dateFilter } },
-      { $group: { _id: null, totalPayInAmount: { $sum: "$payInAmount" } } },
+      {
+        $group: {
+          _id: null,
+          totalPayInAmount: {
+            $sum: {
+              $cond: [
+                { $in: ["$status", ["Paid", "Partial"]] },
+                "$payInAmount",
+                0,
+              ],
+            },
+          },
+        },
+      },
     ]);
-    const payInAmount = payInAggregate.length > 0 ? payInAggregate[0].totalPayInAmount : 0;
+    const payInAmount = monthlyPayInAggregate.length > 0 ? monthlyPayInAggregate[0].totalPayInAmount : 0;
 
     const totalPayInAggregate = await MotorPolicyPaymentModel.aggregate([
       { $match: { brokerId } },
-      { $group: { _id: null, totalPayInAmount: { $sum: "$payInAmount" } } },
+      {
+        $group: {
+          _id: null,
+          totalPayInAmount: {
+            $sum: {
+              $cond: [
+                { $in: ["$status", ["Paid", "Partial"]] },
+                "$payInAmount",
+                0, 
+              ],
+            },
+          },
+        },
+      },
     ]);
     const totalPayInAmount = totalPayInAggregate.length > 0 ? totalPayInAggregate[0].totalPayInAmount : 0;
 
-    // Broker PayIn Commission (Monthly and Total)
+    // Existing Monthly and Total PayIn Commission
     const monthlyPayInCommissionAggregate = await MotorPolicyPaymentModel.aggregate([
       { $match: { brokerId, policyDate: dateFilter } },
-      { $group: { _id: null, totalPayInCommission: { $sum: "$payInCommission" } } },
+      {
+        $group: {
+          _id: null,
+          totalPayInCommission: { $sum: "$payInCommission" },
+        },
+      },
     ]);
     const monthlyPayInCommission = monthlyPayInCommissionAggregate.length > 0 ? monthlyPayInCommissionAggregate[0].totalPayInCommission : 0;
 
     const totalPayInCommissionAggregate = await MotorPolicyPaymentModel.aggregate([
       { $match: { brokerId } },
-      { $group: { _id: null, totalPayInCommission: { $sum: "$payInCommission" } } },
+      {
+        $group: {
+          _id: null,
+          totalPayInCommission: { $sum: "$payInCommission" },
+        },
+      },
     ]);
     const totalPayInCommission = totalPayInCommissionAggregate.length > 0 ? totalPayInCommissionAggregate[0].totalPayInCommission : 0;
 
-    // Calculate UnPaid Amounts
-    const monthlyUnPaidAmount = monthlyPayInCommission - payInAmount;
-    const totalUnPaidAmount = totalPayInCommission - totalPayInAmount;
+    const monthlyUnPaidAmountAggregate = await MotorPolicyPaymentModel.aggregate([
+      { $match: { brokerId, policyDate: dateFilter } },
+      {
+        $group: {
+          _id: null,
+          totalUnPaidAmount: {
+            $sum: {
+              $cond: [
+                { $eq: ["$status", "UnPaid"] },
+                "$payInCommission",
+                { $cond: [ { $eq: ["$status", "Partial"] }, "$payInBalance", 0 ] } 
+              ],
+            },
+          },
+        },
+      },
+    ]);
+    const monthlyUnPaidAmount = monthlyUnPaidAmountAggregate.length > 0 ? monthlyUnPaidAmountAggregate[0].totalUnPaidAmount : 0;
+
+    const totalUnPaidAmountAggregate = await MotorPolicyPaymentModel.aggregate([
+      { $match: { brokerId } },
+      {
+        $group: {
+          _id: null,
+          totalUnPaidAmount: {
+            $sum: {
+              $cond: [
+                { $eq: ["$status", "UnPaid"] }, 
+                "$payInCommission",
+                { $cond: [ { $eq: ["$status", "Partial"] }, "$payInBalance", 0 ] } 
+              ],
+            },
+          },
+        },
+      },
+    ]);
+    const totalUnPaidAmount = totalUnPaidAmountAggregate.length > 0 ? totalUnPaidAmountAggregate[0].totalUnPaidAmount : 0;
 
     // Booking Requests
     const bookingCounts = await BookingRequest.aggregate([
@@ -94,11 +167,16 @@ export const getBrokerDashboardCount = async (req, res) => {
     });
 
     const bookingStatuses = ["accepted", "requested", "booked", "rejected"];
-    const bookingRequestsWithDefaults = bookingStatuses.reduce((acc, status) => {
-      acc[`${status.charAt(0).toUpperCase()}${status.slice(1)} Booking`] = formattedBookingCounts[status] || 0;
-      totalBookingRequest += acc[`${status.charAt(0).toUpperCase()}${status.slice(1)} Booking`];
-      return acc;
-    }, { "Total Booking": totalBookingRequest });
+    const bookingRequestsWithDefaults = bookingStatuses.reduce(
+      (acc, status) => {
+        acc[`${status.charAt(0).toUpperCase()}${status.slice(1)} Booking`] =
+          formattedBookingCounts[status] || 0;
+        totalBookingRequest +=
+          acc[`${status.charAt(0).toUpperCase()}${status.slice(1)} Booking`];
+        return acc;
+      },
+      { "Total Booking": totalBookingRequest }
+    );
 
     // Balance
     const lastBalanceEntry = await creditAndDebitSchema.findOne(

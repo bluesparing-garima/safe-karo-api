@@ -170,81 +170,91 @@ export const getPartnerDashboardCount = async (req, res) => {
     );
     const balance = lastBalanceEntry ? lastBalanceEntry.partnerBalance : 0;
 
-    // Calculate Monthly Paid Amount
-    const monthlyPaidAmountAggregate = await MotorPolicyPaymentModel.aggregate([
-      {
-        $match: {
-          ...policyMatchFilter,
-          isActive: true,
-          payOutPaymentStatus: "Paid",
-        },
-      },
-      { $group: { _id: null, totalPayOutAmount: { $sum: "$payOutAmount" } } },
-    ]);
-    const monthlyPaidAmount =
-      monthlyPaidAmountAggregate.length > 0
-        ? monthlyPaidAmountAggregate[0].totalPayOutAmount
-        : 0;
+   // Calculate Monthly Paid Amount
+const monthlyPaidAmountAggregate = await MotorPolicyPaymentModel.aggregate([
+  {
+    $match: {
+      ...policyMatchFilter,
+      isActive: true,
+      payOutPaymentStatus: { $in: ["Paid", "Partial"] },
+    },
+  },
+  { $group: { _id: null, totalPayOutAmount: { $sum: "$payOutAmount" } } },
+]);
 
-    // Calculate Total Paid Amount
-    const totalPaidAmountAggregate = await MotorPolicyPaymentModel.aggregate([
-      { $match: { partnerId, isActive: true, payOutPaymentStatus: "Paid" } },
-      { $group: { _id: null, totalPayOutAmount: { $sum: "$payOutAmount" } } },
-    ]);
-    const totalPaidAmount =
-      totalPaidAmountAggregate.length > 0
-        ? totalPaidAmountAggregate[0].totalPayOutAmount
-        : 0;
+const monthlyPaidAmount =
+  monthlyPaidAmountAggregate.length > 0
+    ? monthlyPaidAmountAggregate[0].totalPayOutAmount
+    : 0;
 
-    // Calculate Monthly UnPaid Amount
-    const monthlyUnpaidAggregate = await MotorPolicyPaymentModel.aggregate([
-      {
-        $match: {
-          ...policyMatchFilter,
-          isActive: true,
-          payOutPaymentStatus: { $in: ["UnPaid", "Partial"] },
-        },
-      },
-      {
-        $addFields: {
-          relevantAmount: {
-            $cond: [
-              { $eq: ["$payOutPaymentStatus", "UnPaid"] },
-              "$payOutCommission",
-              { $cond: [{ $eq: ["$payOutPaymentStatus", "Partial"] }, "$payOutBalance", 0] },
-            ],
-          },
-        },
-      },
-      { $group: { _id: null, totalUnpaidAmount: { $sum: "$relevantAmount" } } },
-    ]);
-    const monthlyUnpaidAmount =
-      monthlyUnpaidAggregate.length > 0 ? monthlyUnpaidAggregate[0].totalUnpaidAmount : 0;
+// Calculate Total Paid Amount
+const totalPaidAmountAggregate = await MotorPolicyPaymentModel.aggregate([
+  {
+    $match: {
+      partnerId,
+      isActive: true,
+      payOutPaymentStatus: { $in: ["Paid", "Partial"] },
+    },
+  },
+  { $group: { _id: null, totalPayOutAmount: { $sum: "$payOutAmount" } } },
+]);
 
-    // Calculate Total UnPaid Amount
-    const totalUnpaidAggregate = await MotorPolicyPaymentModel.aggregate([
-      {
-        $match: {
-          partnerId,
-          isActive: true,
-          payOutPaymentStatus: { $in: ["UnPaid", "Partial"] },
-        },
+const totalPaidAmount =
+  totalPaidAmountAggregate.length > 0
+    ? totalPaidAmountAggregate[0].totalPayOutAmount
+    : 0;
+
+// Calculate Monthly UnPaid Amount
+const monthlyUnpaidAggregate = await MotorPolicyPaymentModel.aggregate([
+  {
+    $match: {
+      ...policyMatchFilter,
+      isActive: true,
+      payOutPaymentStatus: { $in: ["UnPaid", "Partial"] },
+    },
+  },
+  {
+    $addFields: {
+      relevantAmount: {
+        $cond: [
+          { $eq: ["$payOutPaymentStatus", "UnPaid"] },
+          "$payOutCommission",
+          { $cond: [{ $eq: ["$payOutPaymentStatus", "Partial"] }, "$payOutBalance", 0] },
+        ],
       },
-      {
-        $addFields: {
-          relevantAmount: {
-            $cond: [
-              { $eq: ["$payOutPaymentStatus", "UnPaid"] },
-              "$payOutCommission",
-              { $cond: [{ $eq: ["$payOutPaymentStatus", "Partial"] }, "$payOutBalance", 0] },
-            ],
-          },
-        },
+    },
+  },
+  { $group: { _id: null, totalUnpaidAmount: { $sum: "$relevantAmount" } } },
+]);
+
+const monthlyUnpaidAmount =
+  monthlyUnpaidAggregate.length > 0 ? monthlyUnpaidAggregate[0].totalUnpaidAmount : 0;
+
+// Calculate Total UnPaid Amount
+const totalUnpaidAggregate = await MotorPolicyPaymentModel.aggregate([
+  {
+    $match: {
+      partnerId,
+      isActive: true,
+      payOutPaymentStatus: { $in: ["UnPaid", "Partial"] },
+    },
+  },
+  {
+    $addFields: {
+      relevantAmount: {
+        $cond: [
+          { $eq: ["$payOutPaymentStatus", "UnPaid"] },
+          "$payOutCommission",
+          { $cond: [{ $eq: ["$payOutPaymentStatus", "Partial"] }, "$payOutBalance", 0] },
+        ],
       },
-      { $group: { _id: null, totalUnpaidAmount: { $sum: "$relevantAmount" } } },
-    ]);
-    const totalUnpaidAmount =
-      totalUnpaidAggregate.length > 0 ? totalUnpaidAggregate[0].totalUnpaidAmount : 0;
+    },
+  },
+  { $group: { _id: null, totalUnpaidAmount: { $sum: "$relevantAmount" } } },
+]);
+
+const totalUnpaidAmount =
+  totalUnpaidAggregate.length > 0 ? totalUnpaidAggregate[0].totalUnpaidAmount : 0;
 
     // 8. Final Data Structure
     const data = {

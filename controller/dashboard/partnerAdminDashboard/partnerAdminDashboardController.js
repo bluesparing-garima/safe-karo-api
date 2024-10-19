@@ -3,7 +3,10 @@ import MotorPolicyPaymentModel from "../../../models/policyModel/motorPolicyPaym
 import UserProfile from "../../../models/adminModels/userProfileSchema.js";
 import creditAndDebitSchema from "../../../models/accountsModels/creditAndDebitSchema.js";
 
-export const getAllPartnersWithPayOutCommissionAndDateFilter = async (req, res) => {
+export const getAllPartnersWithPayOutCommissionAndDateFilter = async (
+  req,
+  res
+) => {
   try {
     const { startDate, endDate, category } = req.query;
 
@@ -23,14 +26,16 @@ export const getAllPartnersWithPayOutCommissionAndDateFilter = async (req, res) 
       issueDate: { $gte: start, $lte: end },
       isActive: true,
     };
-    
+
     if (category) {
       matchCriteria.category = category; // Include category in the match criteria
     }
 
     const partners = await MotorPolicyModel.aggregate([
       { $match: matchCriteria },
-      { $group: { _id: "$partnerId", partnerName: { $first: "$partnerName" } } },
+      {
+        $group: { _id: "$partnerId", partnerName: { $first: "$partnerName" } },
+      },
     ]);
 
     if (partners.length === 0) {
@@ -47,30 +52,35 @@ export const getAllPartnersWithPayOutCommissionAndDateFilter = async (req, res) 
     let totalPayOutCommissionSum = 0;
 
     for (const partner of partners) {
-      const userProfile = await UserProfile.findOne({ _id: partner._id }).select("partnerId");
+      const userProfile = await UserProfile.findOne({
+        _id: partner._id,
+      }).select("partnerId");
 
       const policies = await MotorPolicyModel.find({
         partnerId: partner._id,
         isActive: true,
         issueDate: { $gte: start, $lte: end },
-      }).select("policyNumber").lean();
+      })
+        .select("policyNumber")
+        .lean();
 
       const policyNumbers = policies.map((policy) => policy.policyNumber);
 
       const totalCommission = await MotorPolicyPaymentModel.aggregate([
-        { 
-          $match: { 
-            policyNumber: { $in: policyNumbers }, 
+        {
+          $match: {
+            policyNumber: { $in: policyNumbers },
             ...(category && { category }),
-            isActive: true
-          } 
-        }, 
+            isActive: true,
+          },
+        },
         {
           $group: { _id: null, totalCommission: { $sum: "$payOutCommission" } },
         },
       ]);
 
-      const partnerCommission = totalCommission.length > 0 ? totalCommission[0].totalCommission : 0;
+      const partnerCommission =
+        totalCommission.length > 0 ? totalCommission[0].totalCommission : 0;
 
       if (partnerCommission > 0) {
         totalPayOutCommissionSum += partnerCommission;
@@ -145,11 +155,11 @@ export const getAllPartnersWithPayOutCommission = async (req, res) => {
       const policyNumbers = policies.map((policy) => policy.policyNumber);
 
       const totalCommission = await MotorPolicyPaymentModel.aggregate([
-        { 
-          $match: { 
-            policyNumber: { $in: policyNumbers }, 
-            isActive: true
-          } 
+        {
+          $match: {
+            policyNumber: { $in: policyNumbers },
+            isActive: true,
+          },
         },
         {
           $group: { _id: null, totalCommission: { $sum: "$payOutCommission" } },
@@ -202,7 +212,9 @@ export const getPayOutCommissionByCompanyWithDate = async (req, res) => {
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
 
-    const partner = await UserProfile.findOne({ _id: partnerId }).select("fullName partnerId");
+    const partner = await UserProfile.findOne({ _id: partnerId }).select(
+      "fullName partnerId"
+    );
     if (!partner) {
       return res.status(404).json({
         message: `No partner found for partnerId ${partnerId}.`,
@@ -243,17 +255,19 @@ export const getPayOutCommissionByCompanyWithDate = async (req, res) => {
         companyName: company._id,
         isActive: true,
         issueDate: { $gte: start, $lte: end },
-      }).select("policyNumber").lean();
+      })
+        .select("policyNumber")
+        .lean();
 
       const policyNumbers = policies.map((policy) => policy.policyNumber);
 
       const totalPayOutCommission = await MotorPolicyPaymentModel.aggregate([
-        { 
-          $match: { 
-            policyNumber: { $in: policyNumbers }, 
+        {
+          $match: {
+            policyNumber: { $in: policyNumbers },
             ...(category && { category }),
-            isActive: true, 
-          } 
+            isActive: true,
+          },
         },
         {
           $group: {
@@ -263,9 +277,10 @@ export const getPayOutCommissionByCompanyWithDate = async (req, res) => {
         },
       ]);
 
-      const payOutCommission = totalPayOutCommission.length > 0
-        ? totalPayOutCommission[0].totalPayOutCommission
-        : 0;
+      const payOutCommission =
+        totalPayOutCommission.length > 0
+          ? totalPayOutCommission[0].totalPayOutCommission
+          : 0;
 
       if (payOutCommission > 0) {
         totalAmount += payOutCommission;
@@ -299,7 +314,9 @@ export const getPayOutCommissionByCompany = async (req, res) => {
   try {
     const { partnerId, category } = req.query;
 
-    const partner = await UserProfile.findOne({ _id: partnerId }).select("fullName partnerId");
+    const partner = await UserProfile.findOne({ _id: partnerId }).select(
+      "fullName partnerId"
+    );
     if (!partner) {
       return res.status(404).json({
         message: `No partner found for partnerId ${partnerId}.`,
@@ -346,11 +363,11 @@ export const getPayOutCommissionByCompany = async (req, res) => {
       const policyNumbers = policies.map((policy) => policy.policyNumber);
 
       const totalPayOutCommission = await MotorPolicyPaymentModel.aggregate([
-        { 
-          $match: { 
-            policyNumber: { $in: policyNumbers }, 
+        {
+          $match: {
+            policyNumber: { $in: policyNumbers },
             isActive: true,
-          } 
+          },
         },
         {
           $group: {
@@ -360,9 +377,10 @@ export const getPayOutCommissionByCompany = async (req, res) => {
         },
       ]);
 
-      const payOutCommission = totalPayOutCommission.length > 0
-        ? totalPayOutCommission[0].totalPayOutCommission
-        : 0;
+      const payOutCommission =
+        totalPayOutCommission.length > 0
+          ? totalPayOutCommission[0].totalPayOutCommission
+          : 0;
 
       if (payOutCommission > 0) {
         totalAmount += payOutCommission;
@@ -454,23 +472,45 @@ export const getAllPartnersWithPayOutAmountAndDateFilter = async (req, res) => {
         .lean();
 
       const policyNumbers = policies.map((policy) => policy.policyNumber);
-
       const totalAmount = await MotorPolicyPaymentModel.aggregate([
         {
           $match: {
             policyNumber: { $in: policyNumbers },
-            payOutPaymentStatus: "Paid",
             isActive: true,
             policyDate: { $gte: start, $lte: end },
           },
         },
         {
+          $addFields: {
+            relevantPayOutAmount: {
+              $cond: [
+                { $in: ["$payOutPaymentStatus", ["Paid", "Partial"]] },
+                "$payOutAmount",
+                {
+                  $cond: [
+                    { $eq: ["$payOutPaymentStatus", "UnPaid"] },
+                    "$payOutCommission",
+                    {
+                      $cond: [
+                        { $eq: ["$payOutPaymentStatus", "Partial"] },
+                        "$payOutBalance",
+                        0,
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+        },
+        {
           $group: {
             _id: null,
-            totalAmount: { $sum: "$payOutCommission" },
+            totalAmount: { $sum: "$relevantPayOutAmount" },
           },
         },
       ]);
+
       const partnerPayOutAmount =
         totalAmount.length > 0 ? totalAmount[0].totalAmount : 0;
 
@@ -503,7 +543,7 @@ export const getAllPartnersWithPayOutAmountAndDateFilter = async (req, res) => {
 
 export const getAllPartnersWithPayOutAmount = async (req, res) => {
   try {
-    const { category } = req.query;
+    const { category } = req.query; // Only retrieve category from query
 
     const matchCriteria = { isActive: true };
     if (category) {
@@ -531,6 +571,11 @@ export const getAllPartnersWithPayOutAmount = async (req, res) => {
     let totalPayOutAmountSum = 0;
 
     for (const partner of partners) {
+      // Check if partner._id is valid
+      if (!partner._id) {
+        continue; // Skip if partner._id is undefined or null
+      }
+
       const userProfile = await UserProfile.findOne({
         _id: partner._id,
       }).select("partnerId");
@@ -545,17 +590,42 @@ export const getAllPartnersWithPayOutAmount = async (req, res) => {
 
       const policyNumbers = policies.map((policy) => policy.policyNumber);
 
+      // Calculate total payout without date filtering
       const totalAmount = await MotorPolicyPaymentModel.aggregate([
         {
           $match: {
             policyNumber: { $in: policyNumbers },
-            payOutPaymentStatus: "Paid",
             isActive: true,
-            ...(category && { category }),
           },
         },
         {
-          $group: { _id: null, totalAmount: { $sum: "$payOutCommission" } },
+          $addFields: {
+            relevantPayOutAmount: {
+              $cond: [
+                { $in: ["$payOutPaymentStatus", ["Paid", "Partial"]] },
+                "$payOutAmount",
+                {
+                  $cond: [
+                    { $eq: ["$payOutPaymentStatus", "UnPaid"] },
+                    "$payOutCommission",
+                    {
+                      $cond: [
+                        { $eq: ["$payOutPaymentStatus", "Partial"] },
+                        "$payOutBalance",
+                        0,
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalAmount: { $sum: "$relevantPayOutAmount" },
+          },
         },
       ]);
 
@@ -623,7 +693,7 @@ export const getPayOutAmountByCompanyWithDate = async (req, res) => {
           partnerId,
           issueDate: { $gte: start, $lte: end },
           isActive: true,
-          ...(category && { category }), // Adding category filter if present
+          ...(category && { category }),
         },
       },
       { $group: { _id: "$companyName" } },
@@ -650,7 +720,7 @@ export const getPayOutAmountByCompanyWithDate = async (req, res) => {
         companyName: company._id,
         isActive: true,
         issueDate: { $gte: start, $lte: end },
-        ...(category && { category }), // Adding category filter if present
+        ...(category && { category }),
       })
         .select("policyNumber")
         .lean();
@@ -658,17 +728,40 @@ export const getPayOutAmountByCompanyWithDate = async (req, res) => {
       const policyNumbers = policies.map((policy) => policy.policyNumber);
 
       const totalPayOutAmount = await MotorPolicyPaymentModel.aggregate([
-        { 
-          $match: { 
+        {
+          $match: {
             policyNumber: { $in: policyNumbers },
-            payOutPaymentStatus: { $in: ["Paid", "paid"] },
-            ...(category && { category }), // Assuming 'category' exists in MotorPolicyPaymentModel
-          } 
+            isActive: true,
+            policyDate: { $gte: start, $lte: end },
+          },
+        },
+        {
+          $addFields: {
+            relevantPayOutAmount: {
+              $cond: [
+                { $in: ["$payOutPaymentStatus", ["Paid", "Partial"]] },
+                "$payOutAmount",
+                {
+                  $cond: [
+                    { $eq: ["$payOutPaymentStatus", "UnPaid"] },
+                    "$payOutCommission",
+                    {
+                      $cond: [
+                        { $eq: ["$payOutPaymentStatus", "Partial"] },
+                        "$payOutBalance",
+                        0,
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          },
         },
         {
           $group: {
             _id: null,
-            totalPayOutAmount: { $sum: "$payOutCommission" },
+            totalPayOutAmount: { $sum: "$relevantPayOutAmount" },
           },
         },
       ]);
@@ -721,12 +814,12 @@ export const getPayOutAmountByCompany = async (req, res) => {
     }
 
     const companies = await MotorPolicyModel.aggregate([
-      { 
-        $match: { 
-          partnerId, 
-          isActive: true, 
-          ...(category && { category }) // Adding category filter if present
-        } 
+      {
+        $match: {
+          partnerId,
+          isActive: true,
+          ...(category && { category }),
+        },
       },
       { $group: { _id: "$companyName" } },
     ]);
@@ -751,7 +844,7 @@ export const getPayOutAmountByCompany = async (req, res) => {
         partnerId,
         companyName: company._id,
         isActive: true,
-        ...(category && { category }) // Adding category filter if present
+        ...(category && { category }),
       })
         .select("policyNumber")
         .lean();
@@ -759,17 +852,39 @@ export const getPayOutAmountByCompany = async (req, res) => {
       const policyNumbers = policies.map((policy) => policy.policyNumber);
 
       const totalPayOutAmount = await MotorPolicyPaymentModel.aggregate([
-        { 
-          $match: { 
+        {
+          $match: {
             policyNumber: { $in: policyNumbers },
-            payOutPaymentStatus: { $in: ["Paid", "paid"] },
-            ...(category && { category }), // Assuming 'category' exists in MotorPolicyPaymentModel
-          } 
+            isActive: true,
+          },
+        },
+        {
+          $addFields: {
+            relevantPayOutAmount: {
+              $cond: [
+                { $in: ["$payOutPaymentStatus", ["Paid", "Partial"]] },
+                "$payOutAmount",
+                {
+                  $cond: [
+                    { $eq: ["$payOutPaymentStatus", "UnPaid"] },
+                    "$payOutCommission",
+                    {
+                      $cond: [
+                        { $eq: ["$payOutPaymentStatus", "Partial"] },
+                        "$payOutBalance",
+                        0,
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          },
         },
         {
           $group: {
             _id: null,
-            totalPayOutAmount: { $sum: "$payOutCommission" },
+            totalPayOutAmount: { $sum: "$relevantPayOutAmount" },
           },
         },
       ]);
@@ -809,12 +924,15 @@ export const getPayOutAmountByCompany = async (req, res) => {
 
 // payOutAmount partial or unpaid
 
-export const getAllPartnersWithUnpaidAndPartialPayOutAmount = async (req, res) => {
+export const getAllPartnersWithUnpaidAndPartialPayOutAmount = async (
+  req,
+  res
+) => {
   try {
-    const { category } = req.query; // Extract category from query
+    const { category } = req.query;
 
     const partners = await MotorPolicyModel.aggregate([
-      { $match: { isActive: true, ...(category && { category }) } }, // Include category in match
+      { $match: { isActive: true, ...(category && { category }) } },
       {
         $group: { _id: "$partnerId", partnerName: { $first: "$partnerName" } },
       },
@@ -841,7 +959,7 @@ export const getAllPartnersWithUnpaidAndPartialPayOutAmount = async (req, res) =
       const policies = await MotorPolicyModel.find({
         partnerId: partner._id,
         isActive: true,
-        ...(category && { category }), // Include category filter
+        ...(category && { category }),
       })
         .select("policyNumber")
         .lean();
@@ -853,30 +971,39 @@ export const getAllPartnersWithUnpaidAndPartialPayOutAmount = async (req, res) =
           $match: {
             policyNumber: { $in: policyNumbers },
             payOutPaymentStatus: { $in: ["UnPaid", "unPaid", "Partial"] },
-            ...(category && { category }), // Include category filter
-          }
+            ...(category && { category }),
+          },
         },
         {
           $group: {
             _id: null,
             totalUnpaidCommission: {
               $sum: {
-                $cond: [{ $eq: ["$payOutPaymentStatus", "UnPaid"] }, "$payOutCommission", 0]
-              }
+                $cond: [
+                  { $eq: ["$payOutPaymentStatus", "UnPaid"] },
+                  "$payOutCommission",
+                  0,
+                ],
+              },
             },
             totalPartialBalance: {
               $sum: {
-                $cond: [{ $eq: ["$payOutPaymentStatus", "Partial"] }, "$payOutBalance", 0]
-              }
-            }
-          }
-        }
+                $cond: [
+                  { $eq: ["$payOutPaymentStatus", "Partial"] },
+                  "$payOutBalance",
+                  0,
+                ],
+              },
+            },
+          },
+        },
       ]);
-      
+
       const partnerPayOutAmount =
         totalAmount.length > 0
-          ? totalAmount[0].totalUnpaidCommission + totalAmount[0].totalPartialBalance
-          : 0;      
+          ? totalAmount[0].totalUnpaidCommission +
+            totalAmount[0].totalPartialBalance
+          : 0;
 
       if (partnerPayOutAmount > 0) {
         totalPayOutAmountSum += partnerPayOutAmount;
@@ -905,118 +1032,140 @@ export const getAllPartnersWithUnpaidAndPartialPayOutAmount = async (req, res) =
   }
 };
 
-export const getAllPartnersWithUnpaidAndPartialPayOutAmountAndDateFilter = async (req, res) => {
-  try {
-    const { startDate, endDate, category } = req.query; // Include category
+export const getAllPartnersWithUnpaidAndPartialPayOutAmountAndDateFilter =
+  async (req, res) => {
+    try {
+      const { startDate, endDate, category } = req.query;
 
-    if (!startDate || !endDate) {
-      return res.status(400).json({
-        message: "Please provide both startDate and endDate.",
-        success: false,
-        status: "error",
-      });
-    }
+      if (!startDate || !endDate) {
+        return res.status(400).json({
+          message: "Please provide both startDate and endDate.",
+          success: false,
+          status: "error",
+        });
+      }
 
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
 
-    const partners = await MotorPolicyModel.aggregate([
-      { $match: { issueDate: { $gte: start, $lte: end }, isActive: true, ...(category && { category }) } }, // Include category
-      {
-        $group: { _id: "$partnerId", partnerName: { $first: "$partnerName" } },
-      },
-    ]);
+      const partners = await MotorPolicyModel.aggregate([
+        {
+          $match: {
+            issueDate: { $gte: start, $lte: end },
+            isActive: true,
+            ...(category && { category }),
+          },
+        }, 
+        {
+          $group: {
+            _id: "$partnerId",
+            partnerName: { $first: "$partnerName" },
+          },
+        },
+      ]);
 
-    if (partners.length === 0) {
-      return res.status(200).json({
-        message: `No partners found between ${startDate} and ${endDate}.`,
-        data: [],
-        totalAmount: 0,
+      if (partners.length === 0) {
+        return res.status(200).json({
+          message: `No partners found between ${startDate} and ${endDate}.`,
+          data: [],
+          totalAmount: 0,
+          success: true,
+          status: "success",
+        });
+      }
+
+      const partnerSummaries = [];
+      let totalPayOutAmountSum = 0;
+
+      for (const partner of partners) {
+        const userProfile = await UserProfile.findOne({
+          _id: partner._id,
+        }).select("partnerId");
+
+        const policies = await MotorPolicyModel.find({
+          partnerId: partner._id,
+          isActive: true,
+          issueDate: { $gte: start, $lte: end },
+          ...(category && { category }),
+        })
+          .select("policyNumber")
+          .lean();
+
+        const policyNumbers = policies.map((policy) => policy.policyNumber);
+
+        const totalAmount = await MotorPolicyPaymentModel.aggregate([
+          {
+            $match: {
+              policyNumber: { $in: policyNumbers },
+              payOutPaymentStatus: { $in: ["UnPaid", "unPaid", "Partial"] },
+              ...(category && { category }),
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              totalUnpaidCommission: {
+                $sum: {
+                  $cond: [
+                    { $eq: ["$payOutPaymentStatus", "UnPaid"] },
+                    "$payOutCommission",
+                    0,
+                  ],
+                },
+              },
+              totalPartialBalance: {
+                $sum: {
+                  $cond: [
+                    { $eq: ["$payOutPaymentStatus", "Partial"] },
+                    "$payOutBalance",
+                    0,
+                  ],
+                },
+              },
+            },
+          },
+        ]);
+
+        const partnerPayOutAmount =
+          totalAmount.length > 0
+            ? totalAmount[0].totalUnpaidCommission +
+              totalAmount[0].totalPartialBalance
+            : 0;
+
+        if (partnerPayOutAmount > 0) {
+          totalPayOutAmountSum += partnerPayOutAmount;
+
+          partnerSummaries.push({
+            partnerId: partner._id,
+            partnerName: partner.partnerName,
+            partnerCode: userProfile?.partnerId || "N/A",
+            totalPayOutAmount: partnerPayOutAmount,
+          });
+        }
+      }
+      res.status(200).json({
+        message: `Partner payout amounts between ${startDate} and ${endDate}.`,
+        data: partnerSummaries,
+        totalAmount: totalPayOutAmountSum,
         success: true,
         status: "success",
       });
+    } catch (error) {
+      res.status(500).json({
+        status: "error",
+        success: false,
+        message: error.message,
+      });
     }
+  };
 
-    const partnerSummaries = [];
-    let totalPayOutAmountSum = 0;
-
-    for (const partner of partners) {
-      const userProfile = await UserProfile.findOne({
-        _id: partner._id,
-      }).select("partnerId");
-
-      const policies = await MotorPolicyModel.find({
-        partnerId: partner._id,
-        isActive: true,
-        issueDate: { $gte: start, $lte: end },
-        ...(category && { category }) // Include category filter
-      })
-        .select("policyNumber")
-        .lean();
-
-      const policyNumbers = policies.map((policy) => policy.policyNumber);
-
-      const totalAmount = await MotorPolicyPaymentModel.aggregate([
-        {
-          $match: {
-            policyNumber: { $in: policyNumbers },
-            payOutPaymentStatus: { $in: ["UnPaid", "unPaid", "Partial"] },
-            ...(category && { category }), // Include category filter
-          }
-        },
-        {
-          $group: {
-            _id: null,
-            totalUnpaidCommission: {
-              $sum: {
-                $cond: [{ $eq: ["$payOutPaymentStatus", "UnPaid"] }, "$payOutCommission", 0]
-              }
-            },
-            totalPartialBalance: {
-              $sum: {
-                $cond: [{ $eq: ["$payOutPaymentStatus", "Partial"] }, "$payOutBalance", 0]
-              }
-            }
-          }
-        }
-      ]);
-      
-      const partnerPayOutAmount =
-        totalAmount.length > 0
-          ? totalAmount[0].totalUnpaidCommission + totalAmount[0].totalPartialBalance
-          : 0;      
-
-      if (partnerPayOutAmount > 0) {
-        totalPayOutAmountSum += partnerPayOutAmount;
-
-        partnerSummaries.push({
-          partnerId: partner._id,
-          partnerName: partner.partnerName,
-          partnerCode: userProfile?.partnerId || "N/A",
-          totalPayOutAmount: partnerPayOutAmount,
-        });
-      }
-    }
-    res.status(200).json({
-      message: `Partner payout amounts between ${startDate} and ${endDate}.`,
-      data: partnerSummaries,
-      totalAmount: totalPayOutAmountSum,
-      success: true,
-      status: "success",
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: "error",
-      success: false,
-      message: error.message,
-    });
-  }
-};
-
-export const getUnpaidAndPartialPayOutAmountByCompanyWithDate = async (req, res) => {
+export const getUnpaidAndPartialPayOutAmountByCompanyWithDate = async (
+  req,
+  res
+) => {
   try {
-    const { partnerId, startDate, endDate, category } = req.query; // Include category
+    const { partnerId, startDate, endDate, category } = req.query;
 
     if (!startDate || !endDate) {
       return res.status(400).json({
@@ -1047,7 +1196,7 @@ export const getUnpaidAndPartialPayOutAmountByCompanyWithDate = async (req, res)
           partnerId,
           issueDate: { $gte: start, $lte: end },
           isActive: true,
-          ...(category && { category }), // Include category filter
+          ...(category && { category }),
         },
       },
       { $group: { _id: "$companyName" } },
@@ -1074,7 +1223,7 @@ export const getUnpaidAndPartialPayOutAmountByCompanyWithDate = async (req, res)
         companyName: company._id,
         isActive: true,
         issueDate: { $gte: start, $lte: end },
-        ...(category && { category }), // Include category filter
+        ...(category && { category }),
       })
         .select("policyNumber")
         .lean();
@@ -1086,29 +1235,38 @@ export const getUnpaidAndPartialPayOutAmountByCompanyWithDate = async (req, res)
           $match: {
             policyNumber: { $in: policyNumbers },
             payOutPaymentStatus: { $in: ["UnPaid", "unPaid", "Partial"] },
-            ...(category && { category }), // Include category filter
-          }
+            ...(category && { category }),
+          },
         },
         {
           $group: {
             _id: null,
             totalUnpaidCommission: {
               $sum: {
-                $cond: [{ $eq: ["$payOutPaymentStatus", "UnPaid"] }, "$payOutCommission", 0]
-              }
+                $cond: [
+                  { $eq: ["$payOutPaymentStatus", "UnPaid"] },
+                  "$payOutCommission",
+                  0,
+                ],
+              },
             },
             totalPartialBalance: {
               $sum: {
-                $cond: [{ $eq: ["$payOutPaymentStatus", "Partial"] }, "$payOutBalance", 0]
-              }
-            }
-          }
-        }
+                $cond: [
+                  { $eq: ["$payOutPaymentStatus", "Partial"] },
+                  "$payOutBalance",
+                  0,
+                ],
+              },
+            },
+          },
+        },
       ]);
 
       const companyPayOutAmount =
         totalPayOutAmount.length > 0
-          ? totalPayOutAmount[0].totalUnpaidCommission + totalPayOutAmount[0].totalPartialBalance
+          ? totalPayOutAmount[0].totalUnpaidCommission +
+            totalPayOutAmount[0].totalPartialBalance
           : 0;
 
       if (companyPayOutAmount > 0) {
@@ -1140,7 +1298,7 @@ export const getUnpaidAndPartialPayOutAmountByCompanyWithDate = async (req, res)
 
 export const getUnpaidAndPartialPayOutAmountByCompany = async (req, res) => {
   try {
-    const { partnerId, category } = req.query; // Extract category from query
+    const { partnerId, category } = req.query;
 
     const partner = await UserProfile.findOne({ _id: partnerId }).select(
       "fullName partnerId"
@@ -1158,8 +1316,8 @@ export const getUnpaidAndPartialPayOutAmountByCompany = async (req, res) => {
         $match: {
           partnerId,
           isActive: true,
-          ...(category && { category }), // Include category filter
-        }
+          ...(category && { category }),
+        },
       },
       { $group: { _id: "$companyName" } },
     ]);
@@ -1184,7 +1342,7 @@ export const getUnpaidAndPartialPayOutAmountByCompany = async (req, res) => {
         partnerId,
         companyName: company._id,
         isActive: true,
-        ...(category && { category }), // Include category filter
+        ...(category && { category }),
       })
         .select("policyNumber")
         .lean();
@@ -1196,30 +1354,39 @@ export const getUnpaidAndPartialPayOutAmountByCompany = async (req, res) => {
           $match: {
             policyNumber: { $in: policyNumbers },
             payOutPaymentStatus: { $in: ["UnPaid", "unPaid", "Partial"] },
-            ...(category && { category }), // Include category filter
-          }
+            ...(category && { category }),
+          },
         },
         {
           $group: {
             _id: null,
             totalUnpaidCommission: {
               $sum: {
-                $cond: [{ $eq: ["$payOutPaymentStatus", "UnPaid"] }, "$payOutCommission", 0]
-              }
+                $cond: [
+                  { $eq: ["$payOutPaymentStatus", "UnPaid"] },
+                  "$payOutCommission",
+                  0,
+                ],
+              },
             },
             totalPartialBalance: {
               $sum: {
-                $cond: [{ $eq: ["$payOutPaymentStatus", "Partial"] }, "$payOutBalance", 0]
-              }
-            }
-          }
-        }
+                $cond: [
+                  { $eq: ["$payOutPaymentStatus", "Partial"] },
+                  "$payOutBalance",
+                  0,
+                ],
+              },
+            },
+          },
+        },
       ]);
 
       const payOutAmount =
         totalPayOutAmount.length > 0
-          ? totalPayOutAmount[0].totalUnpaidCommission + totalPayOutAmount[0].totalPartialBalance
-          : 0;      
+          ? totalPayOutAmount[0].totalUnpaidCommission +
+            totalPayOutAmount[0].totalPartialBalance
+          : 0;
 
       if (payOutAmount > 0) {
         totalAmount += payOutAmount;
@@ -1251,7 +1418,10 @@ export const getUnpaidAndPartialPayOutAmountByCompany = async (req, res) => {
 
 // partnerBalance
 
-export const getAllPartnersWithPartnerBalanceAndDateFilter = async (req, res) => {
+export const getAllPartnersWithPartnerBalanceAndDateFilter = async (
+  req,
+  res
+) => {
   try {
     const { startDate, endDate, category } = req.query;
 
@@ -1306,7 +1476,9 @@ export const getAllPartnersWithPartnerBalanceAndDateFilter = async (req, res) =>
         { sort: { createdOn: -1 } }
       );
 
-      const partnerBalance = lastBalanceEntry ? lastBalanceEntry.partnerBalance : 0;
+      const partnerBalance = lastBalanceEntry
+        ? lastBalanceEntry.partnerBalance
+        : 0;
 
       if (partnerBalance !== 0) {
         totalPartnerBalanceSum += partnerBalance;
@@ -1374,7 +1546,9 @@ export const getAllPartnersWithPartnerBalance = async (req, res) => {
         { sort: { createdOn: -1 } }
       );
 
-      const partnerBalance = lastBalanceEntry ? lastBalanceEntry.partnerBalance : 0;
+      const partnerBalance = lastBalanceEntry
+        ? lastBalanceEntry.partnerBalance
+        : 0;
 
       if (partnerBalance !== 0) {
         totalPartnerBalanceSum += partnerBalance;
@@ -1475,7 +1649,7 @@ export const getPartnerBalanceByCompanyWithDate = async (req, res) => {
           $match: {
             policyNumber: { $in: policyNumbers },
             ...(category && { category }),
-          }
+          },
         },
         {
           $group: {
@@ -1575,7 +1749,7 @@ export const getPartnerBalanceByCompany = async (req, res) => {
           $match: {
             policyNumber: { $in: policyNumbers },
             ...(category && { category }),
-          }
+          },
         },
         {
           $group: {
@@ -1617,4 +1791,3 @@ export const getPartnerBalanceByCompany = async (req, res) => {
     });
   }
 };
-
