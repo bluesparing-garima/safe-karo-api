@@ -4,7 +4,6 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import upload from "../middlewares/uploadMiddleware.js";
 
-// Function to generate a unique partnerCode
 const generatePartnerCode = async (role) => {
   let prefix;
 
@@ -55,14 +54,12 @@ const generatePartnerCode = async (role) => {
   return newPartnerCode;
 };
 
-// JWT Token Generators
 const generateAccessToken = (user) =>
   jwt.sign({ userID: user._id }, process.env.JWT_SECRET_KEY, { expiresIn: "3h" });
 
 const generateRefreshToken = (user) =>
   jwt.sign({ userID: user._id }, process.env.JWT_REFRESH_SECRET_KEY, { expiresIn: "2d" });
 
-// User Registration Function
 const userRegistration = (req, res) => {
   upload(req, res, async (err) => {
     if (err) return res.status(400).json({ status: "failed", message: err.message });
@@ -85,7 +82,6 @@ const userRegistration = (req, res) => {
 
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      // Generate unique partnerCode (same as partnerId in UserProfile)
       const partnerCode = await generatePartnerCode(role);
 
       const fileDetails = {};
@@ -100,7 +96,7 @@ const userRegistration = (req, res) => {
         email,
         phoneNumber,
         role,
-        partnerId: partnerCode, // Using partnerCode as partnerId
+        partnerId: partnerCode,
         isActive: isActive ?? true,
         dateOfBirth,
         gender,
@@ -134,8 +130,8 @@ const userRegistration = (req, res) => {
         password: hashedPassword,
         phoneNumber,
         role,
-        partnerCode, // Storing the generated partnerCode
-        partnerId: savedUserProfile._id, // Reference to the userProfile
+        partnerCode,
+        partnerId: savedUserProfile._id,
         isActive: isActive ?? false,
       });
 
