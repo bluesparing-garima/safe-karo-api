@@ -44,6 +44,7 @@ const MotorPolicySchema = new mongoose.Schema({
   partnerName: { type: String, default: "", trim: true },
   relationshipManagerId: { type: String, default: "", trim: true },
   relationshipManagerName: { type: String, default: "", trim: true },
+  bookingRMId:{type: String, default: "", trim: true },
   bookingId: { type: String, default: "", trim: true },
   policyCompletedBy: { type: String, default: " ", trim: true },
   policyCompletedByName:{ type: String, trim: true},
