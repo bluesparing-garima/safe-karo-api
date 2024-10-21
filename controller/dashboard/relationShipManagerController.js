@@ -249,7 +249,15 @@ export const getRMDashboardCount = async (req, res) => {
 
     // Aggregate role counts
     const roleCounts = await UserProfileModel.aggregate([
-      { $match: { isActive: true } },
+      {
+        $match: {
+          isActive: true,
+          $or: [
+            { rmId: rmId }, 
+            { headRMId: rmId } 
+          ]
+        }
+      },
       {
         $project: {
           normalizedRole: {
@@ -265,7 +273,10 @@ export const getRMDashboardCount = async (req, res) => {
       { $group: { _id: "$normalizedRole", count: { $sum: 1 } } },
     ]);
 
-    const distinctRoles = await UserProfileModel.distinct("role");
+    const distinctRoles = await UserProfileModel.distinct("role", {
+      $or: [{ rmId: rmId }, { headRMId: rmId }],
+    });
+
     const formattedRoleCounts = { Total: distinctRoles.length };
     roleCounts.forEach((role) => {
       formattedRoleCounts[role._id] = role.count;
