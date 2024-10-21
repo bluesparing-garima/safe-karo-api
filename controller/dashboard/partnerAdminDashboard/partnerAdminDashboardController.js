@@ -486,19 +486,7 @@ export const getAllPartnersWithPayOutAmountAndDateFilter = async (req, res) => {
               $cond: [
                 { $in: ["$payOutPaymentStatus", ["Paid", "Partial"]] },
                 "$payOutAmount",
-                {
-                  $cond: [
-                    { $eq: ["$payOutPaymentStatus", "UnPaid"] },
-                    "$payOutCommission",
-                    {
-                      $cond: [
-                        { $eq: ["$payOutPaymentStatus", "Partial"] },
-                        "$payOutBalance",
-                        0,
-                      ],
-                    },
-                  ],
-                },
+                0 
               ],
             },
           },
@@ -604,19 +592,7 @@ export const getAllPartnersWithPayOutAmount = async (req, res) => {
               $cond: [
                 { $in: ["$payOutPaymentStatus", ["Paid", "Partial"]] },
                 "$payOutAmount",
-                {
-                  $cond: [
-                    { $eq: ["$payOutPaymentStatus", "UnPaid"] },
-                    "$payOutCommission",
-                    {
-                      $cond: [
-                        { $eq: ["$payOutPaymentStatus", "Partial"] },
-                        "$payOutBalance",
-                        0,
-                      ],
-                    },
-                  ],
-                },
+                0 
               ],
             },
           },
@@ -741,19 +717,6 @@ export const getPayOutAmountByCompanyWithDate = async (req, res) => {
               $cond: [
                 { $in: ["$payOutPaymentStatus", ["Paid", "Partial"]] },
                 "$payOutAmount",
-                {
-                  $cond: [
-                    { $eq: ["$payOutPaymentStatus", "UnPaid"] },
-                    "$payOutCommission",
-                    {
-                      $cond: [
-                        { $eq: ["$payOutPaymentStatus", "Partial"] },
-                        "$payOutBalance",
-                        0,
-                      ],
-                    },
-                  ],
-                },
               ],
             },
           },
@@ -864,19 +827,6 @@ export const getPayOutAmountByCompany = async (req, res) => {
               $cond: [
                 { $in: ["$payOutPaymentStatus", ["Paid", "Partial"]] },
                 "$payOutAmount",
-                {
-                  $cond: [
-                    { $eq: ["$payOutPaymentStatus", "UnPaid"] },
-                    "$payOutCommission",
-                    {
-                      $cond: [
-                        { $eq: ["$payOutPaymentStatus", "Partial"] },
-                        "$payOutBalance",
-                        0,
-                      ],
-                    },
-                  ],
-                },
               ],
             },
           },
