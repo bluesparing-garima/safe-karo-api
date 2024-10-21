@@ -443,14 +443,14 @@ export const getPaidPayments = async (req, res) => {
         $match: {
           partnerId,
           policyDate: { $gte: start, $lte: end },
-          payOutPaymentStatus: "Paid",
+          payOutPaymentStatus: { $in: ["Paid", "Partial"] },
           isActive: true,
         },
       },
       {
         $group: {
           _id: null,
-          totalAmount: { $sum: "$payOutCommission" },
+          totalAmount: { $sum: "$payOutAmount" },
           payments: { $push: "$$ROOT" },
         },
       },
@@ -503,7 +503,7 @@ export const getPaidPaymentsOfBroker = async (req, res) => {
         $match: {
           brokerId,
           policyDate: { $gte: start, $lte: end },
-          payInPaymentStatus: "Paid",
+          payInPaymentStatus: { $in: ["Paid", "Partial"] },
           isActive: true,
         },
       },

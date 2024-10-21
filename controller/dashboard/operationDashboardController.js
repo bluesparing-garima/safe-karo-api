@@ -25,20 +25,28 @@ export const getOperationDashboardCount = async (req, res) => {
       { $match: { leadCreatedBy: leadCreatedBy } },
       { $group: { _id: "$status", count: { $sum: 1 } } },
     ]);
+    
+    const requestedLeads = await leadGenerateModel.aggregate([
+      { $match: { status: "Requested" } },
+      { $group: { _id: null, count: { $sum: 1 } } },
+    ]);
 
     const formattedLeadCounts = {};
     let totalLead = 0;
+
     leadCounts.forEach((lead) => {
       formattedLeadCounts[lead._id] = lead.count;
       totalLead += lead.count;
     });
 
-    let requestedLeadsCount = formattedLeadCounts["requested"] || 0;
+    const requestedLeadsCount = requestedLeads.length > 0 ? requestedLeads[0].count : 0;
+    totalLead += requestedLeadsCount;
 
-    // Prepare leadCounts dynamically
     const leadRequests = {
       "Total Lead": totalLead,
+      "Requested Lead": requestedLeadsCount,
     };
+
     Object.keys(formattedLeadCounts).forEach((key) => {
       leadRequests[`${key.charAt(0).toUpperCase()}${key.slice(1)} Lead`] =
         formattedLeadCounts[key];
@@ -69,7 +77,6 @@ export const getOperationDashboardCount = async (req, res) => {
         {
           leadCounts: {
             ...leadRequests,
-            "Requested Lead": requestedLeadsCount,
           },
           bookingRequests: {
             "Total Booking": totalBookingRequests,
