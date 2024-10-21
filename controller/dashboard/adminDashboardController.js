@@ -92,7 +92,7 @@ export const getDashboardCount = async (req, res) => {
           payInPaidTotal: {
             $sum: {
               $cond: [
-                { $in: ["$payInPaymentStatus", ["Paid", "paid","Partial","partial"]] },
+                { $in: ["$payInPaymentStatus", ["Paid","Partial"]] },
                 "$payInAmount",
                 0,
               ],
@@ -101,7 +101,7 @@ export const getDashboardCount = async (req, res) => {
           payOutPaidTotal: {
             $sum: {
               $cond: [
-                { $in: ["$payOutPaymentStatus", ["Paid", "paid","Partial","partial"]] },
+                { $in: ["$payOutPaymentStatus", ["Paid","Partial"]] },
                 "$payOutAmount",
                 0,
               ],
@@ -110,7 +110,7 @@ export const getDashboardCount = async (req, res) => {
           payInUnpaidOrPartial: {
             $sum: {
               $cond: [
-                { $in: ["$payInPaymentStatus", ["UnPaid", "Partial", "unPaid", "partial"]] },
+                { $in: ["$payInPaymentStatus", ["UnPaid", "Partial"]] },
                 {
                   $cond: [
                     { $eq: ["$payInPaymentStatus", "UnPaid"] },
@@ -125,7 +125,7 @@ export const getDashboardCount = async (req, res) => {
           payOutUnpaidOrPartial: {
             $sum: {
               $cond: [
-                { $in: ["$payOutPaymentStatus", ["UnPaid", "Partial", "unPaid", "partial"]] },
+                { $in: ["$payOutPaymentStatus", ["UnPaid", "Partial"]] },
                 {
                   $cond: [
                     { $eq: ["$payOutPaymentStatus", "UnPaid"] },
@@ -191,7 +191,7 @@ export const getDashboardCount = async (req, res) => {
           payInPaidTotal: {
             $sum: {
               $cond: [
-                { $in: ["$payInPaymentStatus", ["Paid", "paid","Partial","partial"]] },
+                { $in: ["$payInPaymentStatus", ["Paid","Partial"]] },
                 "$payInAmount",
                 0,
               ],
@@ -200,7 +200,7 @@ export const getDashboardCount = async (req, res) => {
           payOutPaidTotal: {
             $sum: {
               $cond: [
-                { $in: ["$payOutPaymentStatus", ["Paid", "paid","Partial","partial"]] },
+                { $in: ["$payOutPaymentStatus", ["Paid","Partial"]] },
                 "$payOutAmount",
                 0,
               ],
@@ -209,7 +209,7 @@ export const getDashboardCount = async (req, res) => {
           payInUnpaidOrPartial: {
             $sum: {
               $cond: [
-                { $in: ["$payInPaymentStatus", ["UnPaid", "Partial", "unPaid", "partial"]] },
+                { $in: ["$payInPaymentStatus", ["UnPaid", "Partial"]] },
                 {
                   $cond: [
                     { $eq: ["$payInPaymentStatus", "UnPaid"] },
@@ -224,7 +224,7 @@ export const getDashboardCount = async (req, res) => {
           payOutUnpaidOrPartial: {
             $sum: {
               $cond: [
-                { $in: ["$payOutPaymentStatus", ["UnPaid", "Partial", "unPaid", "partial"]] },
+                { $in: ["$payOutPaymentStatus", ["UnPaid", "Partial"]] },
                 {
                   $cond: [
                     { $eq: ["$payOutPaymentStatus", "UnPaid"] },
