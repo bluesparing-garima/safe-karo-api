@@ -373,7 +373,8 @@ export const getRolesAndAttendanceStats = async (req, res) => {
     });
 
     const roleAttendanceStats = {};
-    const today = moment().startOf("day").toDate();
+    const todayStart = moment().startOf("day").toDate();
+    const todayEnd = moment().endOf("day").toDate();
 
     for (const role of roles) {
       const employees = await UserProfileModel.find({ role }).lean();
@@ -389,7 +390,7 @@ export const getRolesAndAttendanceStats = async (req, res) => {
 
         const todaysAttendanceRecord = await AttendanceModel.findOne({
           employeeId,
-          createdOn: { $gte: today, $lte: moment().endOf("day").toDate() },
+          createdOn: { $gte: todayStart, $lte: todayEnd },
         });
 
         if (!todaysAttendanceRecord) {
@@ -397,7 +398,7 @@ export const getRolesAndAttendanceStats = async (req, res) => {
             employeeId,
             employeeName: employee.fullName,
             attendanceType: "leave",
-            createdOn: today,
+            createdOn: todayStart,
             remarks: "Marked as leave due to no entry",
           });
 
@@ -416,6 +417,15 @@ export const getRolesAndAttendanceStats = async (req, res) => {
         let leaveCount = 0;
         let halfDayCount = 0;
         let todaysAttendance = todaysAttendanceRecord ? todaysAttendanceRecord.attendanceType : "leave";
+        let todayInTime = "0 hours 0 mins";
+        let todayOutTime = "0 hours 0 mins";
+
+        if (todaysAttendanceRecord && todaysAttendanceRecord.inTime) {
+          todayInTime = formatDateToTimeString(todaysAttendanceRecord.inTime);
+        }
+        if (todaysAttendanceRecord && todaysAttendanceRecord.outTime) {
+          todayOutTime = formatDateToTimeString(todaysAttendanceRecord.outTime);
+        }
 
         attendanceRecords.forEach((record) => {
           if (record.attendanceType === "present") {
@@ -434,6 +444,8 @@ export const getRolesAndAttendanceStats = async (req, res) => {
           leave: leaveCount,
           halfDay: halfDayCount,
           todaysAttendance,
+          todayInTime,
+          todayOutTime,
         });
       }
     }
@@ -454,9 +466,14 @@ export const getRolesAndAttendanceStats = async (req, res) => {
 // Get All Attendances by Employee ID and Date Range
 export const getAttendancesByEmployeeIdAndDateRange = async (req, res) => {
   try {
+
     const { employeeId, startDate, endDate } = req.query;
 
-    const employee = await UserProfileModel.findById(employeeId);
+    if (!mongoose.Types.ObjectId.isValid(employeeId)) {
+      return res.status(400).json({ message: "Invalid employee ID format" });
+    }
+
+    const employee = await UserProfileModel.findById(new mongoose.Types.ObjectId(employeeId));
     if (!employee) {
       return res.status(404).json({ message: "Employee not found" });
     }
@@ -466,12 +483,12 @@ export const getAttendancesByEmployeeIdAndDateRange = async (req, res) => {
     if (endDate) dateFilter.$lte = new Date(endDate);
 
     const attendances = await AttendanceModel.find({
-      employeeId,
-      inTime: dateFilter,
+      employeeId: new mongoose.Types.ObjectId(employeeId),
+      createdOn: dateFilter,
     }).populate("employeeId", "fullName").lean();
 
     const formattedAttendances = attendances.map((attendance) => {
-      const { inTime, outTime } = attendance;
+      const { inTime, outTime, attendanceType, remarks } = attendance;
       return {
         ...attendance,
         employeeId: attendance.employeeId._id,
@@ -479,11 +496,18 @@ export const getAttendancesByEmployeeIdAndDateRange = async (req, res) => {
         inTime: inTime ? formatDateToTimeString(inTime) : undefined,
         outTime: outTime ? formatDateToTimeString(outTime) : undefined,
         totalHours: attendance.totalHours || "0 hours 0 mins",
+        attendanceType: attendanceType || "Not Mentioned",
+        remarks: remarks || "No remarks",
       };
     });
 
-    res.status(200).json({ message:"Attendance record retrived successfully by employeeId and date filter.",data: formattedAttendances, status: "success" });
+    res.status(200).json({
+      message: "Attendance records retrieved successfully.",
+      data: formattedAttendances,
+      status: "success",
+    });
   } catch (error) {
+    console.error("Error:", error.message);
     res.status(500).json({
       message: "Error retrieving attendance records",
       error: error.message,

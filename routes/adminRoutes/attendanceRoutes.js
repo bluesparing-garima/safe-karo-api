@@ -21,6 +21,9 @@ router.post("/", createAttendance);
 // Get All Attendances
 router.get("/", getAllAttendances);
 
+// Get All Attendances by Employee ID and Date Range
+router.get("/employee/date-range", getAttendancesByEmployeeIdAndDateRange);
+
 // Get Attendance by Employee ID and date filter
 router.get("/employee/:employeeId", getAttendanceByEmployeeId);
 
@@ -35,9 +38,6 @@ router.get("/stats/employee/:employeeId", getRolesAndAttendanceStatsByEmployeeId
 
 // API Endpoint: Get roles and attendance statistics
 router.get("/stats", getRolesAndAttendanceStats);
-
-// Get All Attendances by Employee ID and Date Range
-router.get("/employee", getAttendancesByEmployeeIdAndDateRange);
 
 // Get Attendance by ID
 router.get("/:id", getAttendanceById);
