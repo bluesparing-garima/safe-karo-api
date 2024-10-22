@@ -69,7 +69,7 @@ export const getRMDashboardCount = async (req, res) => {
 
     const policies = await MotorPolicyModel.find({
       isActive: true,
-      relationshipManagerId: rmId,
+      bookingRMId: rmId,
     }).lean();
 
     // Group policies by category and aggregate the required fields
@@ -159,7 +159,7 @@ export const getRMDashboardCount = async (req, res) => {
     // Fetch monthly policies data filtered by date and rmId
     const monthlyPolicies = await MotorPolicyModel.find({
       isActive: true,
-      relationshipManagerId: rmId,
+      bookingRMId: rmId,
       issueDate: dateFilter,
     }).lean();
 
