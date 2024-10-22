@@ -97,7 +97,7 @@ const userRegistration = (req, res) => {
         phoneNumber,
         role,
         partnerId: partnerCode,
-        isActive: isActive ?? true,
+        isActive: false,
         dateOfBirth,
         gender,
         branchName,
@@ -132,7 +132,7 @@ const userRegistration = (req, res) => {
         role,
         partnerCode,
         partnerId: savedUserProfile._id,
-        isActive: isActive ?? false,
+        isActive: false,
       });
 
       const savedUser = await user.save();
