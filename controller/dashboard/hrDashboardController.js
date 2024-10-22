@@ -90,7 +90,7 @@ export const getHRDashboardCount = async (req, res) => {
     const end = new Date(endDate);
 
     const monthlyHolidays = await HolidayCalendar.find({
-      date: { $gte: start, $lt: end },
+      date: { $gte: start, $lte: end },
     }).select("date name");
 
     const monthlyHolidayCount = monthlyHolidays.length;
