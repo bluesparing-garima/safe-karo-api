@@ -1174,7 +1174,7 @@ export const getMotorPolicyByPartnerId = async (req, res) => {
 
 export const getMotorPolicyByRelationshipManagerId = async (req, res) => {
   try {
-    const { relationshipManagerId } = req.params;
+    const { bookingRMId } = req.params;
     const { startDate, endDate, page = 1, limit = Infinity } = req.query;
 
     if (!startDate || !endDate) {
@@ -1190,7 +1190,7 @@ export const getMotorPolicyByRelationshipManagerId = async (req, res) => {
     end.setHours(23, 59, 59, 999);
 
     const policies = await MotorPolicyModel.find({
-      relationshipManagerId,
+      bookingRMId,
       isActive: true,
       issueDate: { $gte: start, $lte: end },
     })
@@ -1201,7 +1201,7 @@ export const getMotorPolicyByRelationshipManagerId = async (req, res) => {
 
     if (policies.length === 0) {
       return res.status(200).json({
-        message: `No motor policies found for relationship manager ${relationshipManagerId} between ${startDate} and ${endDate}.`,
+        message: `No motor policies found for relationship manager ${bookingRMId} between ${startDate} and ${endDate}.`,
         data: [],
         success: true,
         status: "success",
@@ -1247,7 +1247,7 @@ export const getMotorPolicyByRelationshipManagerId = async (req, res) => {
     }));
 
     res.status(200).json({
-      message: `Motor Policies from ${startDate} to ${endDate} for relationship manager ${relationshipManagerId} with payout details.`,
+      message: `Motor Policies from ${startDate} to ${endDate} for relationship manager ${bookingRMId} with payout details.`,
       data: policiesWithDetails,
       success: true,
       status: "success",

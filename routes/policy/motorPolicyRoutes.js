@@ -42,7 +42,7 @@ router.get('/policy-number/:policyNumber', getMotorPolicyByPolicyNumber);
 router.get('/vehicle-number/:vehicleNumber', getMotorPolicyByVehicleNumber);
 router.get("/policyId/:policyId", logActivity, getMotorPolicyByPolicyId);
 router.get("/partner/:partnerId", logActivity, getMotorPolicyByPartnerId);
-router.get("/relationship-manager/:relationshipManagerId", logActivity, getMotorPolicyByRelationshipManagerId );
+router.get("/relationship-manager/:bookingRMId", logActivity, getMotorPolicyByRelationshipManagerId );
 router.get("/policy-completed-by/:policyCompletedBy", logActivity, getMotorPolicyByPolicyCompletedBy);
 
 router.put("/:id", logActivity, updateMotorPolicy);
