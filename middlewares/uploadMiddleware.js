@@ -40,7 +40,7 @@ const checkFileType = (file, cb) => {
 // Multer upload middleware
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 3000000 }, // 3MB limit
+  limits: { fileSize: 2097152  },
   fileFilter: (req, file, cb) => {
     checkFileType(file, cb);
   },
@@ -63,7 +63,7 @@ const upload = multer({
   { name: "quotationImage", maxCount: 1 },
   { name: "profileImage", maxCount: 1 },
   { name: "other", maxCount: 1 },
-  { name: "file", maxCount: 1 }, // PDF or main file to extract data
+  { name: "file", maxCount: 1 },
 ]);
 
 // Main file upload handler
@@ -74,7 +74,7 @@ export const handleFileUpload = (req, res) => {
         if (err.code === 'LIMIT_FILE_SIZE') {
           return res.status(400).json({
             status: "error",
-            message: "File size too large. Max allowed size is 3MB."
+            message: "File size too large. Max allowed size is 2MB."
           });
         }
         return res.status(400).json({ message: err.message });
