@@ -109,6 +109,14 @@ import ranks from "./routes/adminRoutes/rankRoutes.js";
 //HR and Attendance
 import attendance from "./routes/adminRoutes/attendanceRoutes.js";
 
+/* ---------------------------------------- Non-Motor -------------------------------------------------- */
+
+/* ------------- State & City & Area ----------- */
+import state from "./routes/Non-Motor Routes/stateRoutes/stateRoutes.js";
+import city from "./routes/Non-Motor Routes/cityRoutes/cityRoutes.js";
+import area from "./routes/Non-Motor Routes/areaRoutes/areaRoutes.js";
+
+
 const app = express();
 const port = process.env.PORT;
 const DATABASE_URL = process.env.DATEBASE_URL;
@@ -309,6 +317,12 @@ app.use("/api/blogs", checkUserAuth, blogs);
 app.use("/api/news-letter-category", checkUserAuth, NewsLetterCategories);
 app.use("/api/news-letter", checkUserAuth, NewsLetter);
 
+/* ---------------------------------------- Non-Motor -------------------------------------------------- */
+
+/* ------------- State & City & Area ----------- */
+app.use("/api/non-motor/state",state);
+app.use("/api/non-motor/city",city);
+app.use("/api/non-motor/area",area);
 
 // ---------------------------------------- HR and attendance ------------------------------
 
