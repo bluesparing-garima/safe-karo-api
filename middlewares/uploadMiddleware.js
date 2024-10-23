@@ -1,8 +1,7 @@
-import fs from 'fs';
+import fs from 'fs'; 
 import path from 'path';
 import multer from 'multer';
 import { fileURLToPath } from 'url';
-import { exec } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -41,7 +40,7 @@ const checkFileType = (file, cb) => {
 // Multer upload middleware
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 2000000 }, // 2MB limit
+  limits: { fileSize: 3000000 }, // 3MB limit
   fileFilter: (req, file, cb) => {
     checkFileType(file, cb);
   },
@@ -67,85 +66,25 @@ const upload = multer({
   { name: "file", maxCount: 1 }, // PDF or main file to extract data
 ]);
 
-// PDF Compression with Ghostscript
-const compressPDFWithGhostscript = (inputPath, outputPath, targetSize, callback) => {
-  const gsCommand = `"C:\\Program Files\\gs\\gs10.03.1\\bin\\gswin64c.exe" -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen -dNOPAUSE -dQUIET -dBATCH -sOutputFile=${outputPath} ${inputPath}`;
-
-  exec(gsCommand, (error, stdout, stderr) => {
-    if (error) {
-      console.error(`Error during Ghostscript compression: ${error.message}`);
-      return callback(error, null);
-    }
-
-    const fileSize = fs.statSync(outputPath).size;
-
-    if (fileSize > targetSize) {
-      console.warn(`Warning: Final compressed file is larger than target size of ${targetSize} bytes.`);
-    }
-
-    fs.unlinkSync(inputPath); // Remove the original file after compression
-
-    callback(null, outputPath);
-  });
-};
-
-// Function to extract data from PDF (implement your extraction logic here)
-const extractDataFromPDF = (pdfFilePath) => {
-  // This is a placeholder; replace with your actual PDF extraction logic.
-  // You can use libraries like 'pdf-parse' or any other suitable tool for extraction.
-  
-  // Simulate extraction result
-  const extractedData = {
-    title: "Sample PDF Title",
-    content: "Extracted content goes here...",
-    // Add more fields as needed
-  };
-
-  return extractedData;
-};
-
 // Main file upload handler
-export const handleFileUpload = (req, res, next) => {
-  upload(req, res, async (err) => {
+export const handleFileUpload = (req, res) => {
+  upload(req, res, (err) => {
     if (err) {
       if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(400).json({
+            status: "error",
+            message: "File size too large. Max allowed size is 3MB."
+          });
+        }
         return res.status(400).json({ message: err.message });
       } else {
         return res.status(500).json({ message: err.message });
       }
     }
 
-    try {
-      // Step 1: Extract data from the original PDF (if PDF file is uploaded)
-      if (req.files && req.files.file) {
-        const pdfFilePath = req.files.file[0].path;
-        console.log("PDF uploaded:", pdfFilePath);
-
-        // Extract data before compressing
-        const extractedData = extractDataFromPDF(pdfFilePath);
-        req.extractedData = extractedData; // Store the extracted data for further use
-
-        console.log("PDF data extracted:", extractedData);
-
-        // Step 2: Compress PDF after data extraction
-        const compressedPDFPath = `${pdfFilePath}-compressed.pdf`;
-        compressPDFWithGhostscript(pdfFilePath, compressedPDFPath, 500000, (error, finalPath) => {
-          if (error) {
-            return res.status(500).json({ message: "PDF compression failed", error: error.message });
-          }
-
-          // Update the file path after compression
-          req.files.file[0].path = finalPath;
-          console.log("PDF compressed to:", finalPath);
-          next(); // Proceed to the next middleware after compression
-        });
-      } else {
-        // If no PDF file, move to next middleware
-        next();
-      }
-    } catch (compressionError) {
-      return res.status(500).json({ message: "File processing failed", error: compressionError.message });
-    }
+    // Proceed to further handling if needed
+    res.status(200).json({ status: "success", message: "File uploaded successfully" });
   });
 };
 
