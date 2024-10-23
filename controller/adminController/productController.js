@@ -76,6 +76,32 @@ const getProductNameById = async (req, res) => {
   }
 };
 
+const getProductByCategoryName = async (req, res) => {
+  try {
+    const { categoryName } = req.params;
+
+    // Fetch products by category name, case insensitive
+    const products = await ProductModel.find({
+      categoryName: { $regex: new RegExp(`^${categoryName}$`, "i") }
+    });
+
+    if (!products || products.length === 0) {
+      return res
+        .status(404)
+        .json({ status: "failed", message: "No products found for the given category name" });
+    }
+
+    res.status(200).json({
+      message: "Success! Here are the products for the given category name",
+      data: products,
+      status: "success",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ status: "failed", message: "Unable to retrieve products" });
+  }
+};
+
 // Update product name
 const updateProductName = async (req, res) => {
   try {
@@ -143,4 +169,5 @@ export {
   getProductNameById,
   updateProductName,
   deleteProductName,
+  getProductByCategoryName,
 };
