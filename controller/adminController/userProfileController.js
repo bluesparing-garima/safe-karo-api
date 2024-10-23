@@ -32,6 +32,10 @@ const generatePartnerId = async (role) => {
     case "Partner":
       prefix = "8717A";
       break;
+      case "sale":
+      case "Sale":
+        prefix = "717S";
+        break;
     case "IT":
     case "it":
       prefix = "IT";
