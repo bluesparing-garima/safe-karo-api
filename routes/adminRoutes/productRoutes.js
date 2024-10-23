@@ -5,6 +5,7 @@ import {
   getProductNameById,
   updateProductName,
   deleteProductName,
+  getProductByCategoryName,
 } from "../../controller/adminController/productController.js";
 import logActivity from "../../middlewares/logActivity.js";
 const router = expres.Router();
@@ -17,6 +18,9 @@ router.get("/", logActivity, getAllProductNames);
 
 // Get product types by ID
 router.get("/:id", logActivity, getProductNameById);
+
+// Get product types by categoryName
+router.get("/categoryName/:categoryName", logActivity, getProductByCategoryName);
 
 // Update a product type by id
 router.put("/:id", logActivity, updateProductName);
