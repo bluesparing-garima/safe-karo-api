@@ -1,19 +1,10 @@
 import mongoose from "mongoose"
 
-const citySchema = new mongoose.Schema({
-  city: {
+const investigationSchema = new mongoose.Schema({
+  investigation: {
     type: String,
     required: true,
     trim: true,
-  },
-  stateId: {
-    type: String,
-    trim:true,
-    required: true,
-  },
-  stateName: {
-    type: String,
-    required: true,
   },
   isActive: {
     type: Boolean,
@@ -36,5 +27,5 @@ const citySchema = new mongoose.Schema({
 });
 
 // Export the model
-const CityModel = mongoose.model('City', citySchema);
-export default CityModel;
+const InvestigationModel = mongoose.model('Investigation', investigationSchema);
+export default InvestigationModel;
