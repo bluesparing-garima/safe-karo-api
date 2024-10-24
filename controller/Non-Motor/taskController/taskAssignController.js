@@ -170,6 +170,17 @@ export const getTasksByStatus = async (req, res) => {
   }
 };
 
+// Get all tasks based on RelationShipManager
+export const getTasksByRelationShipManager = async (req, res) => {
+  try {
+    const { relationshipManagerId } = req.params;
+    const tasks = await TaskModel.find({ relationshipManagerId, isActive: true }).lean();
+    return res.status(200).json({ message:"Retrived tasks based on employee", tasks, success: true });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // Get a task by ID
 export const getTaskById = async (req, res) => {
   try {

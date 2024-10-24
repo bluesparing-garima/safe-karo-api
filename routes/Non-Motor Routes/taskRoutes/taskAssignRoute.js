@@ -6,6 +6,7 @@ import {
   getTasksByArea,
   getTasksByInvestigation,
   getTasksByStatus,
+  getTasksByRelationShipManager,
   getTaskById,
   updateTask,
   deleteTask,
@@ -20,6 +21,7 @@ router.get("/investigation-id/:investigationId", getTasksByInvestigation);
 router.get("/employee-id/:employeeId", getTasksByEmployee);
 router.get("/area-id/:areaId", getTasksByArea);
 router.get("/status/:status", getTasksByStatus);
+router.get("/relationshipManager-id/:relationshipManagerId", getTasksByRelationShipManager);
 router.get("/:id", getTaskById);
 router.put("/:id", updateTask);
 router.delete("/:id", deleteTask);
