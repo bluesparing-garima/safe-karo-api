@@ -115,7 +115,10 @@ import attendance from "./routes/adminRoutes/attendanceRoutes.js";
 import state from "./routes/Non-Motor Routes/stateRoutes/stateRoutes.js";
 import city from "./routes/Non-Motor Routes/cityRoutes/cityRoutes.js";
 import area from "./routes/Non-Motor Routes/areaRoutes/areaRoutes.js";
+import investigation from "./routes/Non-Motor Routes/investigationRoutes/investigationRoute.js";
 
+/* ------------- Task Management ----------- */
+import task from "./routes/Non-Motor Routes/taskRoutes/taskAssignRoute.js";
 
 const app = express();
 const port = process.env.PORT;
@@ -323,6 +326,10 @@ app.use("/api/news-letter", checkUserAuth, NewsLetter);
 app.use("/api/non-motor/state",state);
 app.use("/api/non-motor/city",city);
 app.use("/api/non-motor/area",area);
+app.use("/api/non-motor/investigation",investigation);
+
+/* ------------- State & City & Area ----------- */
+app.use("/api/non-motor/task",task);
 
 // ---------------------------------------- HR and attendance ------------------------------
 

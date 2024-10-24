@@ -12,7 +12,7 @@ const stateSchema = new mongoose.Schema({
   },
   createdBy: {
     type: String,
-    required: true,
+    default: "Relationship Manager"
   },
   createdOn: {
     type: Date,
