@@ -98,11 +98,12 @@ export const updateState = async (req, res) => {
   }
 };
 
-// Delete state by ID
+// Deactivate state by setting isActive to false
 export const deleteState = async (req, res) => {
   try {
-    const deletedState = await StateModel.findByIdAndDelete(req.params.id);
-    if (!deletedState) {
+    const state = await StateModel.findById(req.params.id);
+
+    if (!state) {
       return res.status(404).json({
         status: "error",
         message: "State not found",
@@ -110,16 +111,21 @@ export const deleteState = async (req, res) => {
       });
     }
 
+    state.isActive = false;
+    await state.save();
+
     res.status(200).json({
       status: "success",
-      message: "State deleted successfully",
-      data: deletedState,
+      message: "State deactivated successfully",
+      data: state,
     });
   } catch (error) {
+    console.error("Error deactivating state:", error);
     res.status(500).json({
       status: "error",
-      message: "Error deleting state",
+      message: "Error deactivating state",
       data: null,
     });
   }
 };
+

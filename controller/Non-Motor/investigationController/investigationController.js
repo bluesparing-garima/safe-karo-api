@@ -98,28 +98,34 @@ export const updateinvestigation = async (req, res) => {
   }
 };
 
-// Delete investigation by ID
+// Deactivate investigation by setting isActive to false
 export const deleteinvestigation = async (req, res) => {
   try {
-    const deletedinvestigation = await investigationModel.findByIdAndDelete(req.params.id);
-    if (!deletedinvestigation) {
+    const investigation = await investigationModel.findById(req.params.id);
+
+    if (!investigation) {
       return res.status(404).json({
         status: "error",
-        message: "investigation not found",
+        message: "Investigation not found",
         data: null,
       });
     }
 
+    investigation.isActive = false;
+    await investigation.save();
+
     res.status(200).json({
       status: "success",
-      message: "investigation deleted successfully",
-      data: deletedinvestigation,
+      message: "Investigation deactivated successfully",
+      data: investigation,
     });
   } catch (error) {
+    console.error("Error deactivating investigation:", error);
     res.status(500).json({
       status: "error",
-      message: "Error deleting investigation",
+      message: "Error deactivating investigation",
       data: null,
     });
   }
 };
+

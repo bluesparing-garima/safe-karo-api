@@ -64,6 +64,16 @@ export const getAreasByCity = async (req, res) => {
       });
     }
 
+    // Check if the city is active
+    const city = await CityModel.findOne({ _id: cityId, isActive: true });
+    if (!city) {
+      return res.status(404).json({
+        status: "error",
+        message: "City not found or inactive",
+        data: null,
+      });
+    }
+
     const areas = await AreaModel.find({ cityId, isActive: true });
 
     if (areas.length === 0) {
@@ -92,11 +102,19 @@ export const getAreasByCity = async (req, res) => {
 // Get all active areas
 export const getAllAreas = async (req, res) => {
   try {
-    const areas = await AreaModel.find({ isActive: true });
+    const areas = await AreaModel.find({ isActive: true })
+      .populate({
+        path: "cityId",
+        match: { isActive: true },
+        select: "city",
+      });
+
+    const activeAreas = areas.filter(area => area.cityId);
+
     res.status(200).json({
       status: "success",
       message: "Active areas fetched successfully",
-      data: areas,
+      data: activeAreas,
     });
   } catch (error) {
     console.error("Error fetching areas:", error);
@@ -111,12 +129,17 @@ export const getAllAreas = async (req, res) => {
 // Get area by ID
 export const getAreaById = async (req, res) => {
   try {
-    const area = await AreaModel.findOne({ _id: req.params.id, isActive: true });
+    const area = await AreaModel.findOne({ _id: req.params.id, isActive: true })
+      .populate({
+        path: "cityId",
+        match: { isActive: true },
+        select: "city",
+      });
 
-    if (!area) {
+    if (!area || !area.cityId) {
       return res.status(404).json({
         status: "error",
-        message: "Area not found or inactive",
+        message: "Area not found, or area or city is inactive",
         data: null,
       });
     }
@@ -169,12 +192,12 @@ export const updateArea = async (req, res) => {
   }
 };
 
-// Delete area by ID
+// Deactivate area by ID
 export const deleteArea = async (req, res) => {
   try {
-    const deletedArea = await AreaModel.findByIdAndDelete(req.params.id);
+    const area = await AreaModel.findById(req.params.id);
 
-    if (!deletedArea) {
+    if (!area) {
       return res.status(404).json({
         status: "error",
         message: "Area not found",
@@ -182,16 +205,21 @@ export const deleteArea = async (req, res) => {
       });
     }
 
+    area.isActive = false;
+    await area.save();
+
     res.status(200).json({
       status: "success",
-      message: "Area deleted successfully",
-      data: deletedArea,
+      message: "Area deactivated successfully",
+      data: area,
     });
   } catch (error) {
+    console.error("Error deactivating area:", error);
     res.status(500).json({
       status: "error",
-      message: "Error deleting area",
+      message: "Error deactivating area",
       data: null,
     });
   }
 };
+

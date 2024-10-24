@@ -40,11 +40,19 @@ export const createCity = async (req, res) => {
 // Get all active cities
 export const getAllCities = async (req, res) => {
   try {
-    const cities = await CityModel.find({ isActive: true }).populate("stateId", "state");
+    const cities = await CityModel.find({ isActive: true })
+      .populate({
+        path: "stateId",
+        match: { isActive: true },
+        select: "state",
+      });
+
+    const activeCities = cities.filter(city => city.stateId);
+
     res.status(200).json({
       status: "success",
       message: "Success! Here are all active cities",
-      data: cities,
+      data: activeCities,
     });
   } catch (error) {
     console.error("Error fetching cities:", error);
@@ -61,6 +69,17 @@ export const getCitiesByStateId = async (req, res) => {
   try {
     const { stateId } = req.params;
 
+    const state = await StateModel.findOne({ _id: stateId, isActive: true });
+
+    if (!state) {
+      return res.status(404).json({
+        status: "error",
+        message: `State not found or inactive for ID: ${stateId}`,
+        data: null,
+      });
+    }
+
+    // Then fetch active cities within the active state
     const cities = await CityModel.find({
       stateId,
       isActive: true,
@@ -92,12 +111,18 @@ export const getCitiesByStateId = async (req, res) => {
 // Get city by ID
 export const getCityById = async (req, res) => {
   try {
-    const city = await CityModel.findOne({ _id: req.params.id, isActive: true }).populate("stateId", "state");
-    
-    if (!city) {
+    const city = await CityModel.findOne({ _id: req.params.id, isActive: true })
+      .populate({
+        path: "stateId",
+        match: { isActive: true }, // Ensure state is active
+        select: "state",
+      });
+
+    // If either the city or the state is inactive, respond with an error
+    if (!city || !city.stateId) {
       return res.status(404).json({
         status: "error",
-        message: "City not found or inactive",
+        message: "City not found or inactive, or state is inactive",
         data: null,
       });
     }
@@ -119,23 +144,13 @@ export const getCityById = async (req, res) => {
 // Update city by ID
 export const updateCity = async (req, res) => {
   try {
-    const { city, stateId, updatedBy, isActive } = req.body;
+    const { city, updatedBy, isActive } = req.body;
 
-    const state = await StateModel.findById(stateId);
-    if (!state) {
-      return res.status(404).json({
-        status: "error",
-        message: "State not found",
-        data: null,
-      });
-    }
-
+    // Update the city fields
     const updatedCity = await CityModel.findByIdAndUpdate(
       req.params.id,
       {
         city,
-        stateId,
-        stateName: state.state,
         updatedBy,
         updatedOn: Date.now(),
         isActive,
@@ -151,10 +166,25 @@ export const updateCity = async (req, res) => {
       });
     }
 
+    const stateId = updatedCity.stateId;
+    const stateName = updatedCity.stateName;
+
+    if (!stateId) {
+      return res.status(404).json({
+        status: "error",
+        message: "City does not have an associated state",
+        data: null,
+      });
+    }
+
     res.status(200).json({
       status: "success",
       message: "City updated successfully",
-      data: updatedCity,
+      data: {
+        ...updatedCity.toObject(),
+        stateId,
+        stateName,
+      },
     });
   } catch (error) {
     res.status(500).json({
@@ -165,11 +195,16 @@ export const updateCity = async (req, res) => {
   }
 };
 
-// Delete city by ID
+// Deactivate city by ID
 export const deleteCity = async (req, res) => {
   try {
-    const deletedCity = await CityModel.findByIdAndDelete(req.params.id);
-    if (!deletedCity) {
+    const updatedCity = await CityModel.findByIdAndUpdate(
+      req.params.id,
+      { isActive: false, updatedOn: Date.now() },
+      { new: true }
+    );
+
+    if (!updatedCity) {
       return res.status(404).json({
         status: "error",
         message: "City not found",
@@ -179,14 +214,15 @@ export const deleteCity = async (req, res) => {
 
     res.status(200).json({
       status: "success",
-      message: "City deleted successfully",
-      data: deletedCity,
+      message: "City deactivated successfully",
+      data: updatedCity,
     });
   } catch (error) {
     res.status(500).json({
       status: "error",
-      message: "Error deleting city",
+      message: "Error deactivating city",
       data: null,
     });
   }
 };
+
